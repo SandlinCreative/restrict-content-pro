@@ -42,10 +42,6 @@ rcp_show_error_messages( 'register' ); ?>
 	<?php do_action( 'rcp_before_register_form_fields' ); ?>
 
 	<fieldset class="rcp_user_fieldset">
-		<p id="rcp_user_login_wrap">
-			<label for="rcp_user_login"><?php echo apply_filters ( 'rcp_registration_username_label', __( 'Username', 'rcp' ) ); ?></label>
-			<input name="rcp_user_login" id="rcp_user_login" class="required" type="text" <?php if( isset( $_POST['rcp_user_login'] ) ) { echo 'value="' . esc_attr( $_POST['rcp_user_login'] ) . '"'; } ?>/>
-		</p>
 		<p id="rcp_user_email_wrap">
 			<label for="rcp_user_email"><?php echo apply_filters ( 'rcp_registration_email_label', __( 'Email', 'rcp' ) ); ?></label>
 			<input name="rcp_user_email" id="rcp_user_email" class="required" type="text" <?php if( isset( $_POST['rcp_user_email'] ) ) { echo 'value="' . esc_attr( $_POST['rcp_user_email'] ) . '"'; } ?>/>
