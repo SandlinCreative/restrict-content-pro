@@ -16,26 +16,25 @@
 
 global $rcp_options, $post, $rcp_levels_db, $rcp_register_form_atts;
 $discount = ! empty( $_REQUEST['discount'] ) ? sanitize_text_field( $_REQUEST['discount'] ) : '';
-?>
-
-<?php if( ! is_user_logged_in() ) { ?>
-	<h3 class="rcp_header">
-		<?php echo apply_filters( 'rcp_registration_header_logged_out', $rcp_register_form_atts['logged_out_header'] ); ?>
-	</h3>
-<?php } else { ?>
-	<h3 class="rcp_header">
-		<?php echo apply_filters( 'rcp_registration_header_logged_in', $rcp_register_form_atts['logged_in_header'] ); ?>
-	</h3>
-<?php }
 
 // show any error messages after form submission
 rcp_show_error_messages( 'register' ); ?>
 
 <form id="rcp_registration_form" class="rcp_form" method="POST" action="<?php echo esc_url( rcp_get_current_url() ); ?>">
 
-	<div class="container-fluid">
+	<div class="container-fluid registration-container">
 		<div class="row">
-			<div class="col">
+			<div class="col right-rule">
+
+			<?php if( ! is_user_logged_in() ) { ?>
+				<h3 class="rcp_header">
+					<?php echo apply_filters( 'rcp_registration_header_logged_out', $rcp_register_form_atts['logged_out_header'] ); ?>
+				</h3>
+			<?php } else { ?>
+				<h3 class="rcp_header">
+					<?php echo apply_filters( 'rcp_registration_header_logged_in', $rcp_register_form_atts['logged_in_header'] ); ?>
+				</h3>
+			<?php } ?>
 
 			<?php if( ! is_user_logged_in() ) { ?>
 
@@ -99,7 +98,7 @@ rcp_show_error_messages( 'register' ); ?>
 			$levels = rcp_get_subscription_levels( 'active' );
 			$i      = 0;
 			if( $levels ) : ?>
-				<p class="rcp_subscription_message"><?php echo apply_filters ( 'rcp_registration_choose_subscription', __( 'Choose your subscription level', 'rcp' ) ); ?></p>
+				<h3 class="rcp_subscription_message"><?php echo apply_filters ( 'rcp_registration_choose_subscription', __( 'Choose your subscription level', 'rcp' ) ); ?></h3>
 				<ul id="rcp_subscription_levels">
 					<?php foreach( $levels as $key => $level ) : ?>
 						<?php if( rcp_show_subscription_level( $level->id ) ) :
