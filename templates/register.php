@@ -41,51 +41,46 @@ rcp_show_error_messages( 'register' ); ?>
 
 	<?php do_action( 'rcp_before_register_form_fields' ); ?>
 
+	
 	<fieldset class="rcp_user_fieldset">
-		<div class="form-group row">
-			<p id="rcp_user_email_wrap">
-				<label class="col-sm-2 col-form-label col-form-label-lg" for="rcp_user_email"><?php echo apply_filters ( 'rcp_registration_email_label', __( 'Email', 'rcp' ) ); ?></label>
-				<div class="col-sm-10">
-					<input class="form-control form-control-lg" name="rcp_user_email" id="rcp_user_email" class="required" type="text" <?php if( isset( $_POST['rcp_user_email'] ) ) { echo 'value="' . esc_attr( $_POST['rcp_user_email'] ) . '"'; } ?>/>
-				</div>
-			</p>
-		</div>
-		<div class="form-group row">
-			<p id="rcp_user_first_wrap">
-				<label class="col-sm-2 col-form-label col-form-label-lg" for="rcp_user_first"><?php echo apply_filters ( 'rcp_registration_firstname_label', __( 'First Name', 'rcp' ) ); ?></label>
-				<div class="col-sm-10">
-					<input class="form-control form-control-lg" name="rcp_user_first" id="rcp_user_first" type="text" <?php if( isset( $_POST['rcp_user_first'] ) ) { echo 'value="' . esc_attr( $_POST['rcp_user_first'] ) . '"'; } ?>/>
-				</div>
-			</p>
-		</div>
-		<div class="form-group row">
-			<p id="rcp_user_last_wrap">
-				<label class="col-sm-2 col-form-label col-form-label-lg" for="rcp_user_last"><?php echo apply_filters ( 'rcp_registration_lastname_label', __( 'Last Name', 'rcp' ) ); ?></label>
-				<div class="col-sm-10">
-					<input class="form-control form-control-lg" name="rcp_user_last" id="rcp_user_last" type="text" <?php if( isset( $_POST['rcp_user_last'] ) ) { echo 'value="' . esc_attr( $_POST['rcp_user_last'] ) . '"'; } ?>/>
-				</div>
-			</p>
-		</div>
-		<div class="form-group row">
-			<p id="rcp_password_wrap">
-				<label class="col-sm-2 col-form-label col-form-label-lg" for="rcp_password"><?php echo apply_filters ( 'rcp_registration_password_label', __( 'Password', 'rcp' ) ); ?></label>
-				<div class="col-sm-10">
-					<input class="form-control form-control-lg" name="rcp_user_pass" id="rcp_password" class="required" type="password"/>
-				</div>
-			</p>
-		</div>
-		<div class="form-group row">
-			<p id="rcp_password_again_wrap">
-				<label class="col-sm-2 col-form-label col-form-label-lg" for="rcp_password_again"><?php echo apply_filters ( 'rcp_registration_password_again_label', __( 'Password Again', 'rcp' ) ); ?></label>
-				<div class="col-sm-10">
-					<input class="form-control form-control-lg" name="rcp_user_pass_confirm" id="rcp_password_again" class="required" type="password"/>
-				</div>
-			</p>
-		</div>
+		<div class="container-fluid">
 
-		<?php do_action( 'rcp_after_password_registration_field' ); ?>
+			<div id="rcp_user_email_wrap" class="form-group row">
+					<label class="col-md-4 col-form-label col-form-label-lg" for="rcp_user_email"><?php echo apply_filters ( 'rcp_registration_email_label', __( 'Email', 'rcp' ) ); ?></label>
+					<div class="col-md-8">
+						<input class="form-control form-control-lg" name="rcp_user_email" id="rcp_user_email" class="required" type="text" <?php if( isset( $_POST['rcp_user_email'] ) ) { echo 'value="' . esc_attr( $_POST['rcp_user_email'] ) . '"'; } ?>/>
+					</div>
+			</div>
+			<div id="rcp_user_first_wrap" class="form-group row">
+					<label class="col-md-4 col-form-label col-form-label-lg" for="rcp_user_first"><?php echo apply_filters ( 'rcp_registration_firstname_label', __( 'First Name', 'rcp' ) ); ?></label>
+					<div class="col-md-8">
+						<input class="form-control form-control-lg" name="rcp_user_first" id="rcp_user_first" type="text" <?php if( isset( $_POST['rcp_user_first'] ) ) { echo 'value="' . esc_attr( $_POST['rcp_user_first'] ) . '"'; } ?>/>
+					</div>
+			</div>
+			<div id="rcp_user_last_wrap" class="form-group row">
+					<label class="col-md-4 col-form-label col-form-label-lg" for="rcp_user_last"><?php echo apply_filters ( 'rcp_registration_lastname_label', __( 'Last Name', 'rcp' ) ); ?></label>
+					<div class="col-md-8">
+						<input class="form-control form-control-lg" name="rcp_user_last" id="rcp_user_last" type="text" <?php if( isset( $_POST['rcp_user_last'] ) ) { echo 'value="' . esc_attr( $_POST['rcp_user_last'] ) . '"'; } ?>/>
+					</div>
+			</div>
+			<div id="rcp_password_wrap" class="form-group row">
+					<label class="col-md-4 col-form-label col-form-label-lg" for="rcp_password"><?php echo apply_filters ( 'rcp_registration_password_label', __( 'Password', 'rcp' ) ); ?></label>
+					<div class="col-md-8">
+						<input class="form-control form-control-lg" name="rcp_user_pass" id="rcp_password" class="required" type="password"/>
+					</div>
+			</div>
+			<div id="rcp_password_again_wrap" class="form-group row">
+					<label class="col-md-4 col-form-label col-form-label-lg" for="rcp_password_again"><?php echo apply_filters ( 'rcp_registration_password_again_label', __( 'Password Again', 'rcp' ) ); ?></label>
+					<div class="col-md-8">
+						<input class="form-control form-control-lg" name="rcp_user_pass_confirm" id="rcp_password_again" class="required" type="password"/>
+					</div>
+			</div>
 
+			<?php do_action( 'rcp_after_password_registration_field' ); ?>
+
+		</div>
 	</fieldset>
+	
 	<?php } ?>
 
 	<?php do_action( 'rcp_before_subscription_form_fields' ); ?>
