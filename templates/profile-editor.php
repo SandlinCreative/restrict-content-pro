@@ -46,7 +46,7 @@ if ( is_user_logged_in() ):
 						<input name="rcp_last_name" id="rcp_last_name" class="text rcp-input" type="text" value="<?php echo esc_attr( $last_name ); ?>" />
 					</p>
 				</div> <!-- /col -->
-				
+
 				<div class="col-md">
 					<p id="rcp_profile_display_name_wrap">
 						<label for="rcp_display_name"><?php _e( 'Display Name', 'rcp' ); ?></label>
@@ -98,6 +98,7 @@ if ( is_user_logged_in() ):
 					<input name="rcp_profile_editor_submit" id="rcp_profile_editor_submit" type="submit" class="rcp_submit" value="<?php esc_attr_e( 'Save Changes', 'rcp' ); ?>"/>
 				</p>
 			</fieldset>
+		</div>
 	</form><!-- #rcp_profile_editor_form -->
 	<?php
 else:
