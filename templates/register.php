@@ -24,7 +24,7 @@ rcp_show_error_messages( 'register' ); ?>
 
 	<div class="container-fluid registration-container">
 		<div class="row pad-bottom">
-			<div class="col right-rule">
+			<div class="col-md right-rule">
 
 			<?php if( ! is_user_logged_in() ) { ?>
 				<h3 class="rcp_header">
@@ -89,7 +89,7 @@ rcp_show_error_messages( 'register' ); ?>
 
 		</div> <!-- /col -->
 
-		<div class="col">
+		<div class="col-md">
 
 			<?php do_action( 'rcp_before_subscription_form_fields' ); ?>
 
