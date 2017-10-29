@@ -180,7 +180,7 @@ rcp_show_error_messages( 'register' ); ?>
 
 			<p id="rcp_submit_wrap">
 				<input type="hidden" name="rcp_register_nonce" value="<?php echo wp_create_nonce('rcp-register-nonce' ); ?>"/>
-				<input type="submit" class="btn btn-primary btn-lg" name="rcp_submit_registration" id="rcp_submit" value="<?php esc_attr_e( apply_filters ( 'rcp_registration_register_button', __( 'Register', 'rcp' ) ) ); ?>"/>
+				<input type="submit" class="btn btn-primary btn-lg bg-success" name="rcp_submit_registration" id="rcp_submit" value="<?php esc_attr_e( apply_filters ( 'rcp_registration_register_button', __( 'Register', 'rcp' ) ) ); ?>"/>
 			</p>
 
 		</div> <!-- /col -->
