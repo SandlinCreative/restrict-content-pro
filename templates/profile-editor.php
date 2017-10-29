@@ -64,7 +64,7 @@ if ( is_user_logged_in() ):
 							<?php endif; ?>
 						</select>
 					</div>
-					<p>
+					<div>
 						<label for="rcp_email"><?php _e( 'Email Address', 'rcp' ); ?></label>
 						<input name="rcp_email" id="rcp_email" class="text rcp-input required" type="email" value="<?php echo esc_attr( $current_user->user_email ); ?>" />
 					</div>
