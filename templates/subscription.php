@@ -95,7 +95,7 @@ if( isset( $_GET['profile'] ) && 'cancelled' == $_GET['profile'] ) : ?>
 			</tr>
 		<?php endforeach; ?>
 	<?php else : ?>
-		<tr><td data-th="<?php _e( 'Subscription', 'rcp' ); ?>" colspan="6"><?php _e( 'You have not made any payments.', 'rcp' ); ?></td></tr>
+		<tr><td data-th="<?php _e( 'Subscription', 'rcp' ); ?>" colspan="6"><?php _e( 'No payments found.', 'rcp' ); ?></td></tr>
 	<?php endif; ?>
 	</tbody>
 </table>
