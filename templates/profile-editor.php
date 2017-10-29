@@ -37,18 +37,18 @@ if ( is_user_logged_in() ):
 				<legend><?php _e( 'Change your Name', 'rcp' ); ?></legend>
 
 				<div class="col-md right-rule">
-					<p id="rcp_profile_first_name_wrap">
+					<div id="rcp_profile_first_name_wrap">
 						<label for="rcp_first_name"><?php _e( 'First Name', 'rcp' ); ?></label>
 						<input name="rcp_first_name" id="rcp_first_name" class="text rcp-input" type="text" value="<?php echo esc_attr( $first_name ); ?>" />
-					</p>
-					<p id="rcp_profile_last_name_wrap">
+					</div>
+					<div id="rcp_profile_last_name_wrap">
 						<label for="rcp_last_name"><?php _e( 'Last Name', 'rcp' ); ?></label>
 						<input name="rcp_last_name" id="rcp_last_name" class="text rcp-input" type="text" value="<?php echo esc_attr( $last_name ); ?>" />
-					</p>
+					</div>
 				</div> <!-- /col -->
 
 				<div class="col-md">
-					<p id="rcp_profile_display_name_wrap">
+					<div id="rcp_profile_display_name_wrap">
 						<label for="rcp_display_name"><?php _e( 'Display Name', 'rcp' ); ?></label>
 						<select name="rcp_display_name">
 							<?php if ( ! empty( $current_user->first_name ) ): ?>
@@ -63,11 +63,11 @@ if ( is_user_logged_in() ):
 							<option <?php selected( $display_name, $current_user->last_name . ' ' . $current_user->first_name ); ?> value="<?php echo esc_attr( $current_user->last_name ) . ' ' . esc_attr( $current_user->first_name ); ?>"><?php echo $current_user->last_name . ' ' . $current_user->first_name; ?></option>
 							<?php endif; ?>
 						</select>
-					</p>
+					</div>
 					<p>
 						<label for="rcp_email"><?php _e( 'Email Address', 'rcp' ); ?></label>
 						<input name="rcp_email" id="rcp_email" class="text rcp-input required" type="email" value="<?php echo esc_attr( $current_user->user_email ); ?>" />
-					</p>
+					</div>
 				</div> <!-- /col -->
 
 					<?php do_action( 'rcp_profile_editor_after', $current_user->ID ); ?>
@@ -76,16 +76,16 @@ if ( is_user_logged_in() ):
 			<fieldset class="row">
 				<legend><?php _e( 'Change your Password', 'rcp' ); ?></legend>
 				<div class="col-md">
-					<p id="rcp_profile_password_wrap">
+					<div id="rcp_profile_password_wrap">
 						<label for="rcp_user_pass"><?php _e( 'New Password', 'rcp' ); ?></label>
 						<input name="rcp_new_user_pass1" id="rcp_new_user_pass1" class="password rcp-input" type="password"/>
-					</p>
+					</div>
 				</div>
 				<div class="col-md">
-					<p id="rcp_profile_password_confirm_wrap">
+					<div id="rcp_profile_password_confirm_wrap">
 						<label for="rcp_user_pass"><?php _e( 'Re-enter Password', 'rcp' ); ?></label>
 						<input name="rcp_new_user_pass2" id="rcp_new_user_pass2" class="password rcp-input" type="password"/>
-					</p>
+					</div>
 				</div>
 				<p class="rcp_password_change_notice"><?php _e( 'Please note after changing your password, you must log back in.', 'rcp' ); ?></p>
 			</fieldset>
