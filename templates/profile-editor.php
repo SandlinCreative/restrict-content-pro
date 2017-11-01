@@ -73,9 +73,9 @@ if ( is_user_logged_in() ):
 						<?php do_action( 'rcp_profile_editor_after', $current_user->ID ); ?>
 				</div><!-- /row -->
 				</fieldset> 
-			
-			<div class="row" style="margin-bottom: 2em;">
+
 				<fieldset>
+				<div class="row" style="margin-bottom: 2em;">
 					<legend><?php _e( 'Change your Password', 'rcp' ); ?></legend>
 					<div class="col-md">
 						<div id="rcp_profile_password_wrap">
@@ -90,16 +90,18 @@ if ( is_user_logged_in() ):
 							<input name="rcp_new_user_pass2" id="rcp_new_user_pass2" class="password rcp-input" type="password"/>
 						</div>
 					</div> <!-- /col -->
+				</div> <!-- /row -->
 				</fieldset>
-			</div> <!-- /row -->
 
 			<fieldset>
+			<div class="row" style="margin-bottom: 2em;">
 				<p id="rcp_profile_submit_wrap">
 					<input type="hidden" name="rcp_profile_editor_nonce" value="<?php echo wp_create_nonce( 'rcp-profile-editor-nonce' ); ?>"/>
 					<input type="hidden" name="rcp_action" value="edit_user_profile" />
 					<input type="hidden" name="rcp_redirect" value="<?php echo esc_url( rcp_get_current_url() ); ?>" />
 					<input name="rcp_profile_editor_submit" id="rcp_profile_editor_submit" type="submit" class="rcp_submit btn btn-primary" value="<?php esc_attr_e( 'Save Changes', 'rcp' ); ?>"/>
 				</p>
+			</div>
 			</fieldset>
 		</div>
 	</form><!-- #rcp_profile_editor_form -->
