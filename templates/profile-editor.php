@@ -28,7 +28,7 @@ if ( is_user_logged_in() ):
 
 	<form id="rcp_profile_editor_form" class="rcp_form" action="<?php echo rcp_get_current_url(); ?>" method="post">
 		
-		<div class="container-fluid registration-container">
+		<div class="registration-container">
 
 			<fieldset class="row" style="margin-bottom: 2em;">
 
