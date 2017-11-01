@@ -29,8 +29,9 @@ if ( is_user_logged_in() ):
 	<form id="rcp_profile_editor_form" class="rcp_form" action="<?php echo rcp_get_current_url(); ?>" method="post">
 		
 		<div class="registration-container">
-			<div class="row" style="margin-bottom: 2em;">
+			
 				<fieldset>
+				<div class="row" style="margin-bottom: 2em;">
 					<?php do_action( 'rcp_profile_editor_before', $current_user->ID ); ?>
 
 					<legend><?php _e( 'Change your Name', 'rcp' ); ?></legend>
@@ -70,8 +71,9 @@ if ( is_user_logged_in() ):
 					</div> <!-- /col -->
 
 						<?php do_action( 'rcp_profile_editor_after', $current_user->ID ); ?>
+				</div><!-- /row -->
 				</fieldset> 
-			</div><!-- /row -->
+			
 			<div class="row" style="margin-bottom: 2em;">
 				<fieldset>
 					<legend><?php _e( 'Change your Password', 'rcp' ); ?></legend>
