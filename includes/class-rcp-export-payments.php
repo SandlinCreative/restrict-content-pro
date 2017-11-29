@@ -35,12 +35,22 @@ class RCP_Payments_Export extends RCP_Export {
 	public function csv_cols() {
 		$cols = array(
 			'id'               => __( 'ID',   'rcp' ),
-			'subscription'     => __( 'Subscription', 'rcp' ),
+			'status'           => __( 'Status', 'rcp' ),
+			'object_type'      => __( 'Purchase Type', 'rcp' ),
+			'object_id'        => __( 'Subscription ID', 'rcp' ),
+			'subscription'     => __( 'Subscription Name', 'rcp' ),
 			'amount'           => __( 'Amount', 'rcp' ),
+			'subtotal'         => __( 'Subtotal', 'rcp' ),
+			'credits'          => __( 'Credits', 'rcp' ),
+			'fees'             => __( 'Fees', 'rcp' ),
+			'discount_amount'  => __( 'Discount Amount', 'rcp' ),
+			'discount_code'    => __( 'Discount Code', 'rcp' ),
 			'user_id'          => __( 'User ID', 'rcp' ),
 			'user_login'       => __( 'User Login', 'rcp' ),
 			'payment_type'     => __( 'Payment Type', 'rcp' ),
+			'gateway'          => __( 'Gateway', 'rcp' ),
 			'subscription_key' => __( 'Subscription Key', 'rcp' ),
+			'transaction_id'   => __( 'Transaction ID', 'rcp' ),
 			'date'             => __( 'Date', 'rcp' )
 		);
 		return $cols;
@@ -83,12 +93,22 @@ class RCP_Payments_Export extends RCP_Export {
 
 			$data[] = apply_filters( 'rcp_export_payments_get_data_row', array(
 				'id'               => $payment->id,
+				'status'           => $payment->status,
+				'object_type'      => $payment->object_type,
+				'object_id'        => $payment->object_id,
 				'subscription'     => $payment->subscription,
 				'amount'           => $payment->amount,
+				'subtotal'         => $payment->subtotal,
+				'credits'          => $payment->credits,
+				'fees'             => $payment->fees,
+				'discount_amount'  => $payment->discount_amount,
+				'discount_code'    => $payment->discount_code,
 				'user_id'          => $payment->user_id,
 				'user_login'       => isset( $user->user_login ) ? $user->user_login : '',
 				'payment_type'     => $payment->payment_type,
+				'gateway'          => $payment->gateway,
 				'subscription_key' => $payment->subscription_key,
+				'transaction_id'   => $payment->transaction_id,
 				'date'             => $payment->date
 			), $payment );
 
