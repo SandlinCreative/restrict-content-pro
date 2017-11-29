@@ -391,7 +391,7 @@ class RCP_WooCommerce {
 		}
 
 		// User level setting
-		if ( $access_level && rcp_user_has_access( get_current_user_id(), $access_level ) ) {
+		if ( $access_level && ! rcp_user_has_access( get_current_user_id(), $access_level ) ) {
 			$visible = false;
 		}
 
