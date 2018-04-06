@@ -50,6 +50,11 @@ function rcp_process_registration() {
 		$gateway = sanitize_text_field( $_POST['rcp_gateway'] );
 	}
 
+	// Change gateway to "free" if this subscription doesn't require payment.
+	if ( $full_discount || empty( $price ) ) {
+		$gateway = 'free';
+	}
+
 	rcp_log( sprintf( 'Started new registration for subscription #%d via %s.', $subscription_id, $gateway ) );
 
 	/***********************
@@ -172,26 +177,6 @@ function rcp_process_registration() {
 		update_user_meta( $user_data['id'], '_rcp_old_subscription_id', $old_subscription_id );
 	}
 
-	if( ! $member->is_active() ) {
-
-		// Ensure no pending level details are set
-		delete_user_meta( $user_data['id'], 'rcp_pending_subscription_level' );
-		delete_user_meta( $user_data['id'], 'rcp_pending_subscription_key' );
-
-		$member->set_status( 'pending' );
-
-	} else {
-
-		// Flag the member as having just upgraded
-		update_user_meta( $user_data['id'], '_rcp_just_upgraded', current_time( 'timestamp' ) );
-
-	}
-
-	// Remove trialing status, if it exists
-	if ( ! $trial_duration || $trial_duration && $member_has_trialed ) {
-		delete_user_meta( $user_data['id'], 'rcp_is_trialing' );
-	}
-
 	// Delete pending payment ID. A new one may be created for paid subscriptions.
 	delete_user_meta( $user_data['id'], 'rcp_pending_payment_id' );
 
@@ -225,6 +210,26 @@ function rcp_process_registration() {
 	$rcp_payments = new RCP_Payments();
 	$payment_id   = $rcp_payments->insert( $payment_data );
 	update_user_meta( $user_data['id'], 'rcp_pending_payment_id', $payment_id );
+
+	if( ! $member->get_subscription_id() || $member->is_expired() || in_array( $member->get_status(), array( 'expired', 'pending' ) ) ) {
+
+		// Ensure no pending level details are set
+		delete_user_meta( $user_data['id'], 'rcp_pending_subscription_level' );
+		delete_user_meta( $user_data['id'], 'rcp_pending_subscription_key' );
+
+		$member->set_status( 'pending' );
+
+	} else {
+
+		// Flag the member as having just upgraded
+		update_user_meta( $user_data['id'], '_rcp_just_upgraded', current_time( 'timestamp' ) );
+
+	}
+
+	// Remove trialing status, if it exists
+	if ( ! $trial_duration || $trial_duration && $member_has_trialed ) {
+		delete_user_meta( $user_data['id'], 'rcp_is_trialing' );
+	}
 
 	/**
 	 * Triggers after all the form data has been processed, but before the user is sent to the payment gateway.

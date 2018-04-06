@@ -248,6 +248,15 @@ global $rcp_options, $rcp_payment, $rcp_member; ?>
 				<article>
 					<p><strong><?php echo $rcp_member->first_name . ' ' . $rcp_member->last_name; ?></strong></p>
 					<p><strong><?php echo $rcp_member->user_email; ?></strong></p>
+					<?php
+					/**
+					 * Insert content after the member's name and email.
+					 *
+					 * @param object     $rcp_payment Payment object from the database.
+					 * @param RCP_Member $rcp_member  Member object.
+					 */
+					do_action( 'rcp_invoice_bill_to', $rcp_payment, $rcp_member );
+					?>
 				</article>
 
 			</div>
@@ -290,7 +299,7 @@ global $rcp_options, $rcp_payment, $rcp_member; ?>
 				<header><?php _e( 'Additional Info:', 'rcp' ); ?></header>
 
 				<article>
-					<p><?php echo __( 'Payment Date:', 'rcp' ) . ' ' . date_i18n( 'dS F, Y', strtotime( $rcp_payment->date, current_time( 'timestamp' ) ) ); ?></p>
+					<p><?php echo __( 'Payment Date:', 'rcp' ) . ' ' . date_i18n( get_option( 'date_format' ), strtotime( $rcp_payment->date, current_time( 'timestamp' ) ) ); ?></p>
 				</article>
 
 				<?php if( ! empty( $rcp_options['invoice_notes'] ) ) : ?>

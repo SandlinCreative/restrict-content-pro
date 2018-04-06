@@ -12,7 +12,7 @@ namespace Stripe;
  * @property mixed $data
  * @property bool $livemode
  * @property int $pending_webhooks
- * @property string $request
+ * @property mixed $request
  * @property string $type
  *
  * @package Stripe
@@ -20,7 +20,8 @@ namespace Stripe;
 class Event extends ApiResource
 {
     /**
-     * @param string $id The ID of the event to retrieve.
+     * @param array|string $id The ID of the event to retrieve, or an options
+     *     array containing an `id` key.
      * @param array|string|null $opts
      *
      * @return Event

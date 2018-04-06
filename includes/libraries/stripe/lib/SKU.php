@@ -5,12 +5,28 @@ namespace Stripe;
 /**
  * Class SKU
  *
+ * @property string $id
+ * @property string $object
+ * @property bool $active
+ * @property mixed $attributes
+ * @property int $created
+ * @property string $currency
+ * @property string $image
+ * @property mixed $inventory
+ * @property bool $livemode
+ * @property AttachedObject $metadata
+ * @property mixed $package_dimensions
+ * @property int $price
+ * @property string $product
+ * @property int $updated
+ *
  * @package Stripe
  */
 class SKU extends ApiResource
 {
     /**
-     * @param string $id The ID of the SKU to retrieve.
+     * @param array|string $id The ID of the SKU to retrieve, or an options
+     *     array containing an `id` key.
      * @param array|string|null $opts
      *
      * @return SKU

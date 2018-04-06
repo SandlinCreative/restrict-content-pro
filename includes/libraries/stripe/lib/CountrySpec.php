@@ -5,6 +5,14 @@ namespace Stripe;
 /**
  * Class CountrySpec
  *
+ * @property string $id
+ * @property string $object
+ * @property string $default_currency
+ * @property mixed $supported_bank_account_currencies
+ * @property string[] $supported_payment_currencies
+ * @property string[] $supported_payment_methods
+ * @property mixed $verification_fields
+ *
  * @package Stripe
  */
 class CountrySpec extends ApiResource
@@ -21,7 +29,9 @@ class CountrySpec extends ApiResource
     }
 
     /**
-     * @param string $country The ISO country code of the country we retrieve the CountrySpec for.
+     * @param array|string $country The ISO country code of the country we
+     *     retrieve the country specfication for, or an options array
+     *     containing an `id` containing that code.
      * @param array|string|null $opts
      *
      * @return CountrySpec

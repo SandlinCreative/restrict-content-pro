@@ -184,7 +184,6 @@ function rcp_tools_system_info_report() {
 	$return .= 'Prevent Account Sharing:          ' . ( ! empty( $rcp_options['no_login_sharing'] ) ? "True\n" : "False\n" );
 	$return .= 'One Time Discounts                ' . ( ! empty( $rcp_options['one_time_discounts'] ) ? "True\n" : "False\n" );
 	$return .= 'Disable WordPress Toolbar         ' . ( ! empty( $rcp_options['disable_toolbar'] ) ? "True\n" : "False\n" );
-	$return .= 'Email IPN Reports:                ' . ( ! empty( $rcp_options['email_ipn_reports'] ) ? "True\n" : "False\n" );
 	$return .= 'Disable Form CSS:                 ' . ( ! empty( $rcp_options['disable_css'] ) ? "True\n" : "False\n" );
 	$return .= 'Enable reCaptcha:                 ' . ( ! empty( $rcp_options['enable_recaptcha'] ) ? "True\n" : "False\n" );
 	$return .= 'reCaptcha Site Key:               ' . ( ! empty( $rcp_options['recaptcha_public_key'] ) ? "Set\n" : "Unset\n" );

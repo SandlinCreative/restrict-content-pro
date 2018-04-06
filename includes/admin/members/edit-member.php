@@ -90,7 +90,7 @@ if ( 'pending' == $current_status ) {
 					<p id="rcp-revoke-access-wrap">
 						<input type="checkbox" id="rcp-revoke-access" name="rcp-revoke-access" value="1">
 						<label for="rcp-revoke-access"><?php _e( 'Revoke access now', 'rcp' ); ?></label>
-						<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php esc_attr_e( 'If not enabled, the member will retain access until the end of their current term. If checked, access will be revoked immediately.', 'rcp' ); ?>"></span>
+						<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php esc_attr_e( 'If not enabled, the member will retain access until the end of their current term. If checked, the member\'s status will be changed to "expired" and access will be revoked immediately.', 'rcp' ); ?>"></span>
 					</p>
 				</td>
 			</tr>

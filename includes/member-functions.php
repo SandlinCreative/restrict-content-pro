@@ -726,7 +726,7 @@ function rcp_get_user_payments( $user_id = 0, $args = array() ) {
 }
 
 /**
- * Returns the role of the specified user
+ * Returns the slug of the role for the specified user.
  *
  * @param int $user_id The ID of the user to get the role of
  *
@@ -755,6 +755,34 @@ function rcp_get_user_role( $user_id ) {
 	}
 
 	return $user_role;
+}
+
+/**
+ * Returns the name of the role for the specified user.
+ *
+ * @param int $user_id The ID of the user to get the role of
+ *
+ * @since 3.0
+ * @return string
+ */
+function rcp_get_user_role_name( $user_id ) {
+
+	if ( ! isset( $wp_roles ) ) {
+		$wp_roles = new WP_Roles();
+	}
+
+	$role_slug = rcp_get_user_role( $user_id );
+	$role_name = '';
+
+	if ( empty( $role_slug ) ) {
+		return $role_name;
+	}
+
+	if ( array_key_exists( $role_slug, $wp_roles->role_names ) ) {
+		$role_name = $wp_roles->role_names[ $role_slug ];
+	}
+
+	return $role_name;
 }
 
 /**
@@ -1127,6 +1155,10 @@ function rcp_can_member_renew( $user_id = 0 ) {
 	if( $member->is_recurring() && $member->is_active() && 'cancelled' !== $member->get_status() ) {
 		$ret = false;
 
+	}
+
+	if ( 'none' == $member->get_expiration_date( false ) ) {
+		$ret = false;
 	}
 
 	if( 'free' == $member->get_status() ) {

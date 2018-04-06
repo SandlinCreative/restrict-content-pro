@@ -165,11 +165,7 @@ class RCP_Export {
 	 */
 	public function esc_field( $field ) {
 
-		$active_content_triggers = array( '=', '+', '-', '@' );
-
-		if ( in_array( mb_substr( $field, 0, 1 ), $active_content_triggers, true ) ) {
-			$field = '"' . $field;
-		}
+		$field = addslashes( preg_replace( "/\"/","'", $field ) );
 
 		return $field;
 	}

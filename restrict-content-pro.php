@@ -3,7 +3,7 @@
  * Plugin Name: Restrict Content Pro
  * Plugin URL: https://restrictcontentpro.com
  * Description: Set up a complete subscription system for your WordPress site and deliver premium content to your subscribers. Unlimited subscription packages, membership management, discount codes, registration / login forms, and more.
- * Version: 2.9.6
+ * Version: 2.9.10
  * Author: Restrict Content Pro Team
  * Author URI: https://restrictcontentpro.com
  * Contributors: mordauk
@@ -20,7 +20,7 @@ if ( !defined( 'RCP_PLUGIN_FILE' ) ) {
 	define( 'RCP_PLUGIN_FILE', __FILE__ );
 }
 if ( !defined( 'RCP_PLUGIN_VERSION' ) ) {
-	define( 'RCP_PLUGIN_VERSION', '2.9.6' );
+	define( 'RCP_PLUGIN_VERSION', '2.9.10' );
 }
 if ( ! defined( 'CAL_GREGORIAN' ) ) {
 	define( 'CAL_GREGORIAN', 1 );
@@ -364,10 +364,10 @@ function rcp_register_databases() {
 
 	global $wpdb, $rcp_payments_db, $rcp_levels_db, $rcp_discounts_db;
 
-	$rcp_payments_db   = new RCP_Payments;
-	$rcp_levels_db     = new RCP_Levels;
-	$rcp_discounts_db  = new RCP_Discounts;
-	$wpdb->levelmeta   = $rcp_levels_db->meta_db_name;
-	$wpdb->paymentmeta = $rcp_payments_db->meta_db_name;
+	$rcp_payments_db       = new RCP_Payments;
+	$rcp_levels_db         = new RCP_Levels;
+	$rcp_discounts_db      = new RCP_Discounts;
+	$wpdb->levelmeta       = $rcp_levels_db->meta_db_name;
+	$wpdb->rcp_paymentmeta = $rcp_payments_db->meta_db_name;
 
 }

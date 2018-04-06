@@ -143,7 +143,7 @@ class RCP_Levels {
 		else
 			$limit = '';
 
-		$cache_key = md5( implode( '|', $args ) . $where );
+		$cache_key = md5( implode( '|', $args ) );
 
 		$levels = wp_cache_get( $cache_key, 'rcp' );
 
@@ -337,6 +337,7 @@ class RCP_Levels {
 
 			$level_id = $wpdb->insert_id;
 
+			// Delete caches for both "all" statuses and "active" statuses.
 			$cache_args = array(
 				'status'  => 'all',
 				'limit'   => null,
@@ -346,6 +347,12 @@ class RCP_Levels {
 			$cache_key = md5( implode( '|', $cache_args ) );
 
 			wp_cache_delete( $cache_key, 'rcp' );
+
+			$cache_args['status'] = 'active';
+			$cache_key            = md5( implode( '|', $cache_args ) );
+			wp_cache_delete( $cache_key, 'rcp' );
+
+			// Delete transients for level counts.
 			delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'all' ) ) ) );
 			delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => $args['status'] ) ) ) );
 
@@ -448,6 +455,7 @@ class RCP_Levels {
 			)
 		);
 
+		// Delete caches for both "all" statuses and "active" statuses.
 		$cache_args = array(
 			'status'  => 'all',
 			'limit'   => null,
@@ -457,7 +465,14 @@ class RCP_Levels {
 		$cache_key = md5( implode( '|', $cache_args ) );
 
 		wp_cache_delete( $cache_key, 'rcp' );
+
+		$cache_args['status'] = 'active';
+		$cache_key            = md5( implode( '|', $cache_args ) );
+		wp_cache_delete( $cache_key, 'rcp' );
+
 		wp_cache_delete( 'level_' . $level_id, 'rcp' );
+
+		// Delete transients for level counts.
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'all' ) ) ) );
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'active' ) ) ) );
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'inactive' ) ) ) );
@@ -492,6 +507,7 @@ class RCP_Levels {
 
 		$remove = $wpdb->query( $wpdb->prepare( "DELETE FROM " . $this->db_name . " WHERE `id`='%d';", absint( $level_id ) ) );
 
+		// Delete caches for both "all" statuses and "active" statuses.
 		$args = array(
 			'status'  => 'all',
 			'limit'   => null,
@@ -501,6 +517,12 @@ class RCP_Levels {
 		$cache_key = md5( implode( '|', $args ) );
 
 		wp_cache_delete( $cache_key, 'rcp' );
+
+		$cache_args['status'] = 'active';
+		$cache_key            = md5( implode( '|', $cache_args ) );
+		wp_cache_delete( $cache_key, 'rcp' );
+
+		// Delete transients for level counts.
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'all' ) ) ) );
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'active' ) ) ) );
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'inactive' ) ) ) );

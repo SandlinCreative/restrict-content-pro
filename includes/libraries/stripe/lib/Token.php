@@ -9,7 +9,7 @@ namespace Stripe;
  * @property string $object
  * @property mixed $bank_account
  * @property mixed $card
- * @property mixed $client_ip
+ * @property string $client_ip
  * @property int $created
  * @property bool $livemode
  * @property string $type
@@ -20,7 +20,8 @@ namespace Stripe;
 class Token extends ApiResource
 {
     /**
-     * @param string $id The ID of the token to retrieve.
+     * @param array|string $id The ID of the token to retrieve, or an options
+     *     array containing an `id` key.
      * @param array|string|null $opts
      *
      * @return Token

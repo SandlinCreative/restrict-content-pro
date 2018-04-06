@@ -16,7 +16,7 @@ namespace Stripe;
  * @property mixed $evidence_details
  * @property bool $is_charge_refundable
  * @property bool $livemode
- * @property mixed $metadata
+ * @property AttachedObject $metadata
  * @property string $reason
  * @property string $status
  *
@@ -25,7 +25,8 @@ namespace Stripe;
 class Dispute extends ApiResource
 {
     /**
-     * @param string $id The ID of the dispute to retrieve.
+     * @param array|string $id The ID of the dispute to retrieve, or an options
+     *     array containing an `id` key.
      * @param array|string|null $options
      *
      * @return Dispute

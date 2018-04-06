@@ -78,7 +78,7 @@ $subscription = rcp_get_subscription_details( $payment->object_id );
 				<label for="rcp-date"><?php _e( 'Payment Date', 'rcp' ); ?></label>
 			</th>
 			<td>
-				<input name="date" id="rcp-date" type="text" class="rcp-datepicker" value="<?php echo esc_attr( date( 'Y-m-d', strtotime( $payment->date, current_time( 'timestamp' ) ) ) ); ?>"/>
+				<input name="date" id="rcp-date" type="text" class="rcp-datepicker" value="<?php echo esc_attr( date( 'Y-m-d H:i:s', strtotime( $payment->date, current_time( 'timestamp' ) ) ) ); ?>"/>
 				<p class="description"><?php _e( 'The date for this payment in the format of yyyy-mm-dd', 'rcp' ); ?></p>
 			</td>
 		</tr>

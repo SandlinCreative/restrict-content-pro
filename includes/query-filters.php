@@ -26,7 +26,7 @@ function rcp_hide_premium_posts( $query ) {
 	$suppress_filters = isset( $query->query_vars['suppress_filters'] );
 
 	if( isset( $rcp_options['hide_premium'] ) && ! is_singular() && false == $suppress_filters ) {
-		if( ! rcp_is_active( $user_ID ) ) {
+		if( ! user_can( $user_ID, 'manage_options' ) && ( rcp_is_expired( $user_ID ) || ! rcp_get_subscription_id( $user_ID ) ) ) {
 			$premium_ids              = rcp_get_restricted_post_ids();
 			$term_restricted_post_ids = rcp_get_post_ids_assigned_to_restricted_terms();
 			$post_ids                 = array_unique( array_merge( $premium_ids, $term_restricted_post_ids ) );

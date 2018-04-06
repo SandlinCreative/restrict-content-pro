@@ -983,7 +983,7 @@ class RCP_Payments {
 	 * @return  mixed                 Will be an array if $single is false. Will be value of meta data field if $single is true.
 	 */
 	public function get_meta( $payment_id = 0, $meta_key = '', $single = false ) {
-		return get_metadata( 'payment', $payment_id, $meta_key, $single );
+		return get_metadata( 'rcp_payment', $payment_id, $meta_key, $single );
 	}
 
 	/**
@@ -999,7 +999,7 @@ class RCP_Payments {
 	 * @return  bool                  False for failure. True for success.
 	 */
 	public function add_meta( $payment_id = 0, $meta_key = '', $meta_value, $unique = false ) {
-		return add_metadata( 'payment', $payment_id, $meta_key, $meta_value, $unique );
+		return add_metadata( 'rcp_payment', $payment_id, $meta_key, $meta_value, $unique );
 	}
 
 	/**
@@ -1020,7 +1020,7 @@ class RCP_Payments {
 	 * @return  bool                  False on failure, true if success.
 	 */
 	public function update_meta( $payment_id = 0, $meta_key = '', $meta_value, $prev_value = '' ) {
-		return update_metadata( 'payment', $payment_id, $meta_key, $meta_value, $prev_value );
+		return update_metadata( 'rcp_payment', $payment_id, $meta_key, $meta_value, $prev_value );
 	}
 
 	/**
@@ -1039,7 +1039,7 @@ class RCP_Payments {
 	 * @return  bool                  False for failure. True for success.
 	 */
 	public function delete_meta( $payment_id = 0, $meta_key = '', $meta_value = '' ) {
-		return delete_metadata( 'payment', $payment_id, $meta_key, $meta_value );
+		return delete_metadata( 'rcp_payment', $payment_id, $meta_key, $meta_value );
 	}
 
 }

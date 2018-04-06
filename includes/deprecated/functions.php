@@ -613,3 +613,24 @@ function rcp_print_user_payments( $user_id ) {
 	endif;
 	return $payments_list;
 }
+
+/**
+ * Log a user in
+ *
+ * @deprecated 3.0 Deprecated in favor of using wp_signon() from WordPress core.
+ *
+ * @param int    $user_id    ID of the user to login.
+ * @param string $user_login Login name of the user.
+ * @param bool   $remember   Whether or not to remember the user.
+ *
+ * @since  1.0
+ * @return void
+ */
+function rcp_login_user_in( $user_id, $user_login, $remember = false ) {
+	$user = get_userdata( $user_id );
+	if( ! $user )
+		return;
+	wp_set_auth_cookie( $user_id, $remember );
+	wp_set_current_user( $user_id, $user_login );
+	do_action( 'wp_login', $user_login, $user );
+}

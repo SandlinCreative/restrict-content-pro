@@ -34,6 +34,13 @@ if( isset( $rcp_options['remove_data_on_uninstall'] ) ) {
 	// Delete all term meta.
 	$wpdb->query( "DELETE FROM $wpdb->termmeta WHERE meta_key = 'rcp_restricted_meta'" );
 
+	// Delete all user meta.
+	$wpdb->query( "DELETE FROM $wpdb->usermeta WHERE meta_key LIKE 'rcp\_%' OR meta_key LIKE '\_rcp\_%'" );
+
+	// Remove custom capabilities.
+	$caps = new RCP_Capabilities;
+	$caps->remove_caps();
+
 	// Delete the plugin pages.
 	$rcp_pages = array( 'registration_page', 'redirect', 'account_page', 'edit_profile', 'update_card' );
 	foreach( $rcp_pages as $page_option ) {

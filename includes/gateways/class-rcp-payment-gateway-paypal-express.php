@@ -74,6 +74,11 @@ class RCP_Payment_Gateway_PayPal_Express extends RCP_Payment_Gateway {
 			$amount = $this->initial_amount;
 		}
 
+		$cancel_url = wp_get_referer();
+		if ( empty( $cancel_url ) ) {
+			$cancel_url = get_permalink( $rcp_options['registration_page'] );
+		}
+
 		$args = array(
 			'USER'                           => $this->username,
 			'PWD'                            => $this->password,
@@ -91,7 +96,7 @@ class RCP_Payment_Gateway_PayPal_Express extends RCP_Payment_Gateway {
 			'PAYMENTREQUEST_0_NOTIFYURL'     => add_query_arg( 'listener', 'EIPN', home_url( 'index.php' ) ),
 			'EMAIL'                          => $this->email,
 			'RETURNURL'                      => add_query_arg( array( 'rcp-confirm' => 'paypal_express', 'user_id' => $this->user_id ), get_permalink( $rcp_options['registration_page'] ) ),
-			'CANCELURL'                      => get_permalink( $rcp_options['registration_page'] ),
+			'CANCELURL'                      => $cancel_url,
 			'REQCONFIRMSHIPPING'             => 0,
 			'NOSHIPPING'                     => 1,
 			'ALLOWNOTE'                      => 0,
@@ -111,7 +116,11 @@ class RCP_Payment_Gateway_PayPal_Express extends RCP_Payment_Gateway {
 			$args['PAYMENTREQUEST_0_CUSTOM'] .= '|trial';
 		}
 
-		$request = wp_remote_post( $this->api_endpoint, array( 'timeout' => 45, 'sslverify' => false, 'httpversion' => '1.1', 'body' => $args ) );
+		$request = wp_remote_post( $this->api_endpoint, array(
+			'timeout' => 45,
+			'httpversion' => '1.1',
+			'body' => $args
+		) );
 		$body    = wp_remote_retrieve_body( $request );
 		$code    = wp_remote_retrieve_response_code( $request );
 		$message = wp_remote_retrieve_response_message( $request );
@@ -223,7 +232,11 @@ class RCP_Payment_Gateway_PayPal_Express extends RCP_Payment_Gateway {
 					unset( $args['INITAMT'] );
 				}
 
-				$request = wp_remote_post( $this->api_endpoint, array( 'timeout' => 45, 'sslverify' => false, 'httpversion' => '1.1', 'body' => $args ) );
+				$request = wp_remote_post( $this->api_endpoint, array(
+					'timeout' => 45,
+					'httpversion' => '1.1',
+					'body' => $args
+				) );
 				$body    = wp_remote_retrieve_body( $request );
 				$code    = wp_remote_retrieve_response_code( $request );
 				$message = wp_remote_retrieve_response_message( $request );
@@ -291,7 +304,11 @@ class RCP_Payment_Gateway_PayPal_Express extends RCP_Payment_Gateway {
 					'BUTTONSOURCE'                   => 'EasyDigitalDownloads_SP'
 				);
 
-				$request = wp_remote_post( $this->api_endpoint, array( 'timeout' => 45, 'sslverify' => false, 'httpversion' => '1.1', 'body' => $args ) );
+				$request = wp_remote_post( $this->api_endpoint, array(
+					'timeout' => 45,
+					'httpversion' => '1.1',
+					'body' => $args
+				) );
 				$body    = wp_remote_retrieve_body( $request );
 				$code    = wp_remote_retrieve_response_code( $request );
 				$message = wp_remote_retrieve_response_message( $request );
@@ -462,11 +479,12 @@ class RCP_Payment_Gateway_PayPal_Express extends RCP_Payment_Gateway {
 		$amount = number_format( (float) $posted['mc_gross'], 2, '.', '' );
 
 		// setup the payment info in an array for storage
+		$pending_key = $member->get_pending_subscription_key();
 		$payment_data = array(
 			'date'             => date( 'Y-m-d H:i:s', strtotime( $posted['payment_date'] ) ),
 			'subscription'     => $subscription_level->name,
 			'payment_type'     => $posted['txn_type'],
-			'subscription_key' => $member->get_subscription_key(),
+			'subscription_key' => ! empty( $pending_key ) ? $pending_key : $member->get_subscription_key(),
 			'amount'           => $amount,
 			'user_id'          => $user_id,
 			'transaction_id'   => $posted['txn_id'],
@@ -474,10 +492,6 @@ class RCP_Payment_Gateway_PayPal_Express extends RCP_Payment_Gateway {
 		);
 
 		do_action( 'rcp_valid_ipn', $payment_data, $user_id, $posted );
-
-		if( isset( $rcp_options['email_ipn_reports'] ) ) {
-			wp_mail( get_bloginfo('admin_email'), __( 'IPN report', 'rcp' ), $listener->getTextReport() );
-		}
 
 		/* now process the kind of subscription/payment */
 
@@ -641,7 +655,11 @@ class RCP_Payment_Gateway_PayPal_Express extends RCP_Payment_Gateway {
 					case 'expired' :
 					case 'failed' :
 					case 'voided' :
-						$member->cancel();
+						if ( $member->is_active() ) {
+							$member->cancel();
+						} else {
+							rcp_log( sprintf( 'Member #%d is not active - not cancelling account.', $member->ID ) );
+						}
 						break;
 
 				endswitch;
@@ -675,7 +693,6 @@ class RCP_Payment_Gateway_PayPal_Express extends RCP_Payment_Gateway {
 
 		$request = wp_remote_post( $this->api_endpoint, array(
 			'timeout'     => 45,
-			'sslverify'   => false,
 			'httpversion' => '1.1',
 			'body'        => $args
 		) );

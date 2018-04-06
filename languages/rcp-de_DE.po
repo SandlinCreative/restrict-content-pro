@@ -3,14 +3,14 @@ msgstr ""
 "Project-Id-Version: sz\n"
 "Report-Msgid-Bugs-To: https://restrictcontentpro.com/support/\n"
 "POT-Creation-Date: 2016-10-06 09:34:23+00:00\n"
-"PO-Revision-Date: 2016-05-29 12:40+0200\n"
+"PO-Revision-Date: 2018-01-15 22:46+0100\n"
 "Last-Translator: flowdee <coder@flowdee.de>\n"
 "Language-Team: sz\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 1.8.7\n"
+"X-Generator: Poedit 2.0.5\n"
 "X-Poedit-Basepath: ..\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Poedit-SourceCharset: UTF-8\n"
@@ -25,8 +25,8 @@ msgstr ""
 
 #: RCP_Plugin_Updater.php:194
 msgid ""
-"There is a new version of %1$s available. %2$sView version %3$s details%4$s "
-"or %5$supdate now%6$s."
+"There is a new version of %1$s available. %2$sView version %3$s details%4$s or "
+"%5$supdate now%6$s."
 msgstr ""
 
 #: RCP_Plugin_Updater.php:337 includes/admin/class-rcp-add-on-updater.php:276
@@ -99,8 +99,8 @@ msgstr ""
 
 #: includes/admin/add-ons.php:51
 msgid ""
-"Pro add-ons are only available with a Professional or Ultimate license. If "
-"you already have one of these licenses, simply <a href=\"%s\">log in to your "
+"Pro add-ons are only available with a Professional or Ultimate license. If you "
+"already have one of these licenses, simply <a href=\"%s\">log in to your "
 "account</a> to download any of these add-ons."
 msgstr ""
 
@@ -129,8 +129,7 @@ msgstr "﻿Keine Benutzer gefunden"
 
 #: includes/admin/admin-notices.php:12
 msgid "You should now configure your Restrict Content Pro settings"
-msgstr ""
-"﻿Sie sollten jetzt Ihre Restrict Content Pro Einstellungen konfigurieren"
+msgstr "﻿Sie sollten jetzt Ihre Restrict Content Pro Einstellungen konfigurieren"
 
 #: includes/admin/admin-notices.php:16
 #, fuzzy
@@ -173,9 +172,9 @@ msgstr ""
 
 #: includes/admin/admin-notices.php:40
 msgid ""
-"You are using an outdated version of the PayPal Pro / Express integration "
-"for Restrict Content Pro. Please <a href=\"%s\">deactivate</a> the add-on "
-"version to configure the new version."
+"You are using an outdated version of the PayPal Pro / Express integration for "
+"Restrict Content Pro. Please <a href=\"%s\">deactivate</a> the add-on version "
+"to configure the new version."
 msgstr ""
 
 #: includes/admin/admin-notices.php:47
@@ -339,25 +338,25 @@ msgstr "Zugriffsebene ist erforderlich, um Inhalte dieser Kategorie anzusehen."
 
 #: includes/admin/categories.php:75
 msgid ""
-"Subscription levels allowed to view content in this category. Leave "
-"unchecked for all."
+"Subscription levels allowed to view content in this category. Leave unchecked "
+"for all."
 msgstr ""
 "Mitgliedschaftsstufe ist erlaubt um Inhalte dieser Kategorie anzusehen. Für "
 "alle deaktiviert lassen."
 
 #: includes/admin/class-rcp-add-on-updater.php:186
 msgid ""
-"There is a new version of %1$s available. <a target=\"_blank\" class="
-"\"thickbox\" href=\"%2$s\">View version %3$s details</a>."
+"There is a new version of %1$s available. <a target=\"_blank\" class=\"thickbox"
+"\" href=\"%2$s\">View version %3$s details</a>."
 msgstr ""
 "Es steht eine neue Version von%1$s zur verfügung. <a target=\"_blank\" class="
 "\"thickbox\" href=\"%2$s\">Version ansehen %3$s Details</a>."
 
 #: includes/admin/class-rcp-add-on-updater.php:193
 msgid ""
-"There is a new version of %1$s available. <a target=\"_blank\" class="
-"\"thickbox\" href=\"%2$s\">View version %3$s details</a> or <a href=\"%4$s"
-"\">update now</a>."
+"There is a new version of %1$s available. <a target=\"_blank\" class=\"thickbox"
+"\" href=\"%2$s\">View version %3$s details</a> or <a href=\"%4$s\">update now</"
+"a>."
 msgstr ""
 "﻿Es steht eine neue Version von%1$s zur verfügung. <a target=\"_blank\" class="
 "\"thickbox\" href=\"%2$s\">Version ansehen %3$s Details</a> or <a href=\"%4$s"
@@ -427,7 +426,7 @@ msgstr "Mitgliedschaft"
 #: includes/member-functions.php:554 includes/member-functions.php:594
 #: templates/register-total-details.php:15 templates/subscription.php:58
 msgid "Amount"
-msgstr "Menge"
+msgstr "Betrag"
 
 #: includes/admin/discounts/discount-codes.php:22
 #: includes/admin/discounts/discount-codes.php:65
@@ -596,8 +595,8 @@ msgstr "Ablaufdatum"
 
 #: includes/admin/discounts/discount-codes.php:183
 msgid ""
-"Enter the expiration date for this discount code in the format of yyyy-mm-"
-"dd. For no expiration, leave blank"
+"Enter the expiration date for this discount code in the format of yyyy-mm-dd. "
+"For no expiration, leave blank"
 msgstr ""
 "Ablaufdatum für diesen Rabattcode im folgenden Format eingeben: YYYY-mm-dd. "
 "Falls kein Ablaufdatum benötigt, leer lassen."
@@ -684,8 +683,8 @@ msgstr "Ablaufdatum"
 
 #: includes/admin/discounts/edit-discount.php:87
 msgid ""
-" Enter the expiration date for this discount code in the format of yyyy-mm-"
-"dd. Leave blank for no expiration"
+" Enter the expiration date for this discount code in the format of yyyy-mm-dd. "
+"Leave blank for no expiration"
 msgstr ""
 "Ablaufdatum für diesen Rabatt im folgenden Format eingeben, yyyy-mm-dd. Wenn "
 "kein Ablaufdatum, leer lassen. "
@@ -729,8 +728,8 @@ msgstr "Mitglieder Export"
 #: includes/admin/export.php:13
 #, fuzzy
 msgid ""
-"Download member data as a CSV file. This is useful for tasks such as "
-"importing batch users into MailChimp, or other systems."
+"Download member data as a CSV file. This is useful for tasks such as importing "
+"batch users into MailChimp, or other systems."
 msgstr ""
 "Mitgliedsdaten als CSV-Datei downloaden. Dies ist nützlich für Aufgaben wie "
 "das Importieren von Batch-Benutzern in MailChimp oder andere Systeme."
@@ -786,8 +785,8 @@ msgstr "Anzahl der Mitglieder, die ausgelassen werden"
 
 #: includes/admin/export.php:41
 msgid ""
-"If you need to export a large number of members, export them in batches "
-"using the max and offset options"
+"If you need to export a large number of members, export them in batches using "
+"the max and offset options"
 msgstr ""
 "Wenn Sie eine große Anzahl von Mitgliedern exportieren möchten, exportieren "
 "Sie diese in Batches mit den max und offset Optionen."
@@ -802,11 +801,11 @@ msgstr "Zahlungen Export"
 
 #: includes/admin/export.php:48
 msgid ""
-"Download payment data as a CSV file. Use this file for your own record "
-"keeping or tracking."
+"Download payment data as a CSV file. Use this file for your own record keeping "
+"or tracking."
 msgstr ""
-"Downloaden Sie die Zahlungsdaten als CSV-Datei. Verwenden Sie diese Datei "
-"für Ihre eigenen Aufzeichnungen oder für Tracking."
+"Downloaden Sie die Zahlungsdaten als CSV-Datei. Verwenden Sie diese Datei für "
+"Ihre eigenen Aufzeichnungen oder für Tracking."
 
 #: includes/admin/export.php:52
 msgid "All years"
@@ -966,9 +965,9 @@ msgstr ""
 
 #: includes/admin/members/edit-member.php:33
 msgid ""
-"An Active status is required to access paid content. Members with a status "
-"of Cancelled may continue to access paid content until the expiration date "
-"on their account is reached."
+"An Active status is required to access paid content. Members with a status of "
+"Cancelled may continue to access paid content until the expiration date on "
+"their account is reached."
 msgstr ""
 
 #: includes/admin/members/edit-member.php:34
@@ -1008,15 +1007,14 @@ msgstr ""
 
 #: includes/admin/members/edit-member.php:72
 msgid ""
-"This is the date the member will lose access to content if their membership "
-"is not renewed."
+"This is the date the member will lose access to content if their membership is "
+"not renewed."
 msgstr ""
 
 #: includes/admin/members/edit-member.php:73
 #: includes/admin/members/members-page.php:293
 msgid "Enter the expiration date for this user in the format of yyyy-mm-dd"
-msgstr ""
-"Geben Sie das Ablaufdatum für diesen Benutzer im Format yyyy-mm-dd ein."
+msgstr "Geben Sie das Ablaufdatum für diesen Benutzer im Format yyyy-mm-dd ein."
 
 #: includes/admin/members/edit-member.php:78
 #: includes/class-rcp-export-members.php:47
@@ -1056,8 +1054,8 @@ msgstr "Hat dieser Benutzer eine Probe-Mitgliedschaft?"
 
 #: includes/admin/members/edit-member.php:106
 msgid ""
-"Members are limited to a single trial membership. Once a trial has been "
-"used, the member may not sign up for another trial membership."
+"Members are limited to a single trial membership. Once a trial has been used, "
+"the member may not sign up for another trial membership."
 msgstr ""
 
 #: includes/admin/members/edit-member.php:111
@@ -1092,8 +1090,7 @@ msgstr ""
 msgid "Discount codes used"
 msgstr "Rabattcode verbraucht"
 
-#: includes/admin/members/edit-member.php:145
-#: includes/discount-functions.php:265
+#: includes/admin/members/edit-member.php:145 includes/discount-functions.php:265
 msgid "None"
 msgstr "Keiner"
 
@@ -1185,7 +1182,7 @@ msgstr "Ablaufdatum"
 #: includes/admin/members/members-page.php:129 templates/register-single.php:67
 #: templates/register.php:92
 msgid "Apply"
-msgstr ""
+msgstr "Anwenden"
 
 #: includes/admin/members/members-page.php:136
 #: includes/admin/members/members-page.php:213
@@ -1242,10 +1239,9 @@ msgstr "Neue Mitgliedschaft hinzufügen (für bestehende Benutzer)"
 
 #: includes/admin/members/members-page.php:250
 msgid ""
-"If you wish to create a brand new account, that may be done from Users "
-"&rarr; Add New. <br/><strong>Note</strong>: this will not create a payment "
-"profile for the member. That must be done manually through your merchant "
-"account."
+"If you wish to create a brand new account, that may be done from Users &rarr; "
+"Add New. <br/><strong>Note</strong>: this will not create a payment profile "
+"for the member. That must be done manually through your merchant account."
 msgstr ""
 
 #: includes/admin/members/members-page.php:257 templates/login.php:12
@@ -1264,8 +1260,8 @@ msgstr "--wählen--"
 #: includes/admin/members/members-page.php:279
 msgid ""
 "The subscription level determines the content the member has access to. "
-"<strong>Note</strong>: adding a subscription level to a member will not "
-"create a payment profile in your merchant account."
+"<strong>Note</strong>: adding a subscription level to a member will not create "
+"a payment profile in your merchant account."
 msgstr ""
 
 #: includes/admin/members/members-page.php:280
@@ -1290,10 +1286,10 @@ msgstr ""
 msgid ""
 "<strong>Subscription level</strong>: a subscription level refers to a "
 "membership option. For example, you might have a Gold, Silver, and Bronze "
-"membership level. <br/><br/><strong>Access Level</strong>: refers to a "
-"tiered system where a member's ability to view content is determined by the "
-"access level assigned to their account. A member with an access level of 5 "
-"can view content assigned to access levels of 5 and lower."
+"membership level. <br/><br/><strong>Access Level</strong>: refers to a tiered "
+"system where a member's ability to view content is determined by the access "
+"level assigned to their account. A member with an access level of 5 can view "
+"content assigned to access levels of 5 and lower."
 msgstr ""
 
 #: includes/admin/metabox-view.php:23
@@ -1354,12 +1350,12 @@ msgstr ""
 #: includes/admin/metabox-view.php:90
 #, fuzzy
 msgid ""
-"Optionally use [restrict paid=\"true\"] ... [/restrict] shortcode to "
-"restrict partial content. %sView documentation for additional options%s."
+"Optionally use [restrict paid=\"true\"] ... [/restrict] shortcode to restrict "
+"partial content. %sView documentation for additional options%s."
 msgstr ""
 "Verwenden Sie diese Optionen um den Zugriff des gesamten Eintrag zu "
-"beschränken, oder verwenden Sie den [restrict] ... [/restrict] code,  um "
-"einen Teil des Inhalts zu vor Zugriff zu beschränken.%sView documentation%s."
+"beschränken, oder verwenden Sie den [restrict] ... [/restrict] code,  um einen "
+"Teil des Inhalts zu vor Zugriff zu beschränken.%sView documentation%s."
 
 #: includes/admin/metabox.php:14
 msgid "Restrict this content"
@@ -1433,8 +1429,7 @@ msgstr "Zahlung erstellen"
 
 #: includes/admin/payments/new-payment.php:18
 msgid "Begin typing the user name to add a payment record for."
-msgstr ""
-"Bitte Benutzernamen eintragen, um eine Zahlungsbestätigung hinzuzufügen."
+msgstr "Bitte Benutzernamen eintragen, um eine Zahlungsbestätigung hinzuzufügen."
 
 #: includes/admin/payments/new-payment.php:36
 msgid "Enter the date for this payment in the format of yyyy-mm-dd"
@@ -1620,8 +1615,8 @@ msgstr "Keine Seiten gefunden"
 msgid ""
 "Choose the primary registration page. This must contain the [register_form] "
 "short code. Additional registration forms may be added to other pages with "
-"[register_form id=\"x\"]. <a href=\"%s\" target=\"_blank\">See "
-"documentation</a>."
+"[register_form id=\"x\"]. <a href=\"%s\" target=\"_blank\">See documentation</"
+"a>."
 msgstr ""
 
 #: includes/admin/settings/settings.php:102
@@ -1630,8 +1625,7 @@ msgstr "Erfolg Seite"
 
 #: includes/admin/settings/settings.php:120
 #, fuzzy
-msgid ""
-"This is the page users are redirected to after a successful registration."
+msgid "This is the page users are redirected to after a successful registration."
 msgstr ""
 "Seite, auf welche Benutzer nach der erfolgreichen Registrierung umgeleitet "
 "werden."
@@ -1655,8 +1649,8 @@ msgstr "Seite umleiten"
 
 #: includes/admin/settings/settings.php:168
 msgid ""
-"This page displays a profile edit form for logged-in members. Contains <a "
-"href=\"%s\" target=\"_blank\">[rcp_profile_editor] shortcode."
+"This page displays a profile edit form for logged-in members. Contains <a href="
+"\"%s\" target=\"_blank\">[rcp_profile_editor] shortcode."
 msgstr ""
 
 #: includes/admin/settings/settings.php:173
@@ -1665,8 +1659,8 @@ msgstr ""
 
 #: includes/admin/settings/settings.php:192
 msgid ""
-"This page displays a profile edit form for logged-in members. Contains <a "
-"href=\"%s\" target=\"_blank\">[rcp_update_card] short code</a>."
+"This page displays a profile edit form for logged-in members. Contains <a href="
+"\"%s\" target=\"_blank\">[rcp_update_card] short code</a>."
 msgstr ""
 
 #: includes/admin/settings/settings.php:197 includes/member-forms.php:128
@@ -1711,8 +1705,8 @@ msgstr "Premium-Inhalte Nachricht"
 
 #: includes/admin/settings/settings.php:227
 msgid ""
-"This is the message shown to users that do not have privilege to view "
-"premium content."
+"This is the message shown to users that do not have privilege to view premium "
+"content."
 msgstr ""
 "Das ist die angezeigte Nachricht, welche Benutzer erhalten, die nicht die "
 "Berechtigung haben, den Premium-Inhalt anzusehen."
@@ -1826,10 +1820,9 @@ msgstr ""
 
 #: includes/admin/settings/settings.php:361
 msgid ""
-"in order for subscription payments made through Stripe to be tracked, you "
-"must enter the following URL to your <a href=\"https://dashboard.stripe.com/"
-"account/webhooks\" target=\"_blank\">Stripe Webhooks</a> under Account "
-"Settings:"
+"in order for subscription payments made through Stripe to be tracked, you must "
+"enter the following URL to your <a href=\"https://dashboard.stripe.com/account/"
+"webhooks\" target=\"_blank\">Stripe Webhooks</a> under Account Settings:"
 msgstr ""
 
 #: includes/admin/settings/settings.php:367
@@ -1850,11 +1843,11 @@ msgstr ""
 
 #: includes/admin/settings/settings.php:381
 msgid ""
-"The PayPal API credentials are required in order to use PayPal Express, "
-"PayPal Pro, and to support advanced subscription cancellation options in "
-"PayPal Standard. Test API credentials can be obtained at <a href=\"http://"
-"docs.pippinsplugins.com/article/826-setting-up-paypal-sandbox-accounts\" "
-"target=\"_blank\">developer.paypal.com</a>."
+"The PayPal API credentials are required in order to use PayPal Express, PayPal "
+"Pro, and to support advanced subscription cancellation options in PayPal "
+"Standard. Test API credentials can be obtained at <a href=\"http://docs."
+"pippinsplugins.com/article/826-setting-up-paypal-sandbox-accounts\" target="
+"\"_blank\">developer.paypal.com</a>."
 msgstr ""
 
 #: includes/admin/settings/settings.php:387
@@ -1963,8 +1956,8 @@ msgstr ""
 #: includes/admin/settings/settings.php:489
 msgid ""
 "Enter your test private key. Your test API keys can be obtained from the <a "
-"href=\"https://sandbox.2checkout.com/sandbox/api\" target=\"_blank"
-"\">2Checkout Sandbox</a>."
+"href=\"https://sandbox.2checkout.com/sandbox/api\" target=\"_blank\">2Checkout "
+"Sandbox</a>."
 msgstr ""
 
 #: includes/admin/settings/settings.php:505
@@ -2045,8 +2038,8 @@ msgid ""
 "The subject line for the email sent to users when their subscription becomes "
 "active."
 msgstr ""
-"An Benutzer gesendete E-Mail-Betreffzeile, wenn ihre Mitgliedschaft "
-"aktiviert wird."
+"An Benutzer gesendete E-Mail-Betreffzeile, wenn ihre Mitgliedschaft aktiviert "
+"wird."
 
 #: includes/admin/settings/settings.php:596
 #: includes/admin/settings/settings.php:628
@@ -2082,8 +2075,8 @@ msgid ""
 "The subject line for the email sent to users when their subscription is "
 "cancelled."
 msgstr ""
-"An Benutzer gesendete E-Mail-Betreffzeile, wenn ihre Mitgliedschaft "
-"gekündigt wird."
+"An Benutzer gesendete E-Mail-Betreffzeile, wenn ihre Mitgliedschaft gekündigt "
+"wird."
 
 #: includes/admin/settings/settings.php:632
 msgid ""
@@ -2106,8 +2099,8 @@ msgid ""
 "The subject line for the email sent to users when their subscription is "
 "expired."
 msgstr ""
-"An Benutzer gesendete E-Mail-Betreffzeile, wenn ihre Mitgliedschaft "
-"abgelaufen ist."
+"An Benutzer gesendete E-Mail-Betreffzeile, wenn ihre Mitgliedschaft abgelaufen "
+"ist."
 
 #: includes/admin/settings/settings.php:664
 msgid ""
@@ -2121,8 +2114,7 @@ msgstr "E-Mail Mitgliedschaft endet bald"
 
 #: includes/admin/settings/settings.php:676
 msgid ""
-"The subject line for the email sent to users before their subscription "
-"expires."
+"The subject line for the email sent to users before their subscription expires."
 msgstr ""
 "An Benutzer gesendete E-Mail-Betreffzeile, bevor ihre Mitgliedschaft abläuft."
 
@@ -2217,8 +2209,8 @@ msgid ""
 "The subject line for the email sent to users upon a successful payment being "
 "received."
 msgstr ""
-"An Benutzer gesendete E-Mail-Betreffzeile, wenn ihre Mitgliedschaft "
-"aktiviert wird."
+"An Benutzer gesendete E-Mail-Betreffzeile, wenn ihre Mitgliedschaft aktiviert "
+"wird."
 
 #: includes/admin/settings/settings.php:797
 msgid ""
@@ -2266,8 +2258,7 @@ msgid "will be replaced with the last name of the person receiving the email"
 msgstr "wird mit dem Nachnamen der Person, die das E-Mail erhält,  ersetzt"
 
 #: includes/admin/settings/settings.php:826
-msgid ""
-"will be replaced with the display name of the person receiving the email"
+msgid "will be replaced with the display name of the person receiving the email"
 msgstr "wird mit dem Anzeigenamen der Person, die das E-Mail erhält, ersetzt"
 
 #: includes/admin/settings/settings.php:827
@@ -2310,14 +2301,12 @@ msgstr "Firmenname"
 #, fuzzy
 msgid "Enter the company name that will be shown on the invoice."
 msgstr ""
-"Geben Sie den persönlichen Namen ein, der auf der Rechnung gezeigt werden "
-"soll."
+"Geben Sie den persönlichen Namen ein, der auf der Rechnung gezeigt werden soll."
 
 #: includes/admin/settings/settings.php:866
 msgid "Enter the personal name that will be shown on the invoice."
 msgstr ""
-"Geben Sie den persönlichen Namen ein, der auf der Rechnung gezeigt werden "
-"soll."
+"Geben Sie den persönlichen Namen ein, der auf der Rechnung gezeigt werden soll."
 
 #: includes/admin/settings/settings.php:871
 msgid "Address Line 1"
@@ -2345,8 +2334,8 @@ msgstr "PLZ, Ort und Kanton (Bundesland)"
 msgid ""
 "Enter the city, state and zip/postal code that will appear on the invoice."
 msgstr ""
-"Geben Sie PLZ, Ort und Kanton (Bundesland) an, die auf der Rechnung "
-"erscheinen sollen."
+"Geben Sie PLZ, Ort und Kanton (Bundesland) an, die auf der Rechnung erscheinen "
+"sollen."
 
 #: includes/admin/settings/settings.php:898 templates/register-single.php:33
 #: templates/register.php:32
@@ -2373,8 +2362,7 @@ msgid "Notes"
 msgstr "Hinweise"
 
 #: includes/admin/settings/settings.php:920
-msgid ""
-"Enter additional notes you would like displayed below the invoice totals."
+msgid "Enter additional notes you would like displayed below the invoice totals."
 msgstr ""
 "Zusätzliche Hinweise, die Sie unterhalb der Rechnungssummen anzeigen möchten."
 
@@ -2396,8 +2384,8 @@ msgstr "Premium Posts ausblenden?"
 #: includes/admin/settings/settings.php:944
 #, fuzzy
 msgid ""
-"Check this to hide all premium posts from queries when user is not logged "
-"in. Note, this will only hide posts that are restricted to paid memberships."
+"Check this to hide all premium posts from queries when user is not logged in. "
+"Note, this will only hide posts that are restricted to paid memberships."
 msgstr ""
 "Aktivieren Sie diese Option, um alle Premium-Beiträge aus Abfragen zu "
 "verstecken, wenn der Benutzer nicht angemeldet ist. Hinweis: Dies versteckt "
@@ -2447,8 +2435,8 @@ msgstr "Verhindere Konto Sharing"
 
 #: includes/admin/settings/settings.php:1006
 msgid ""
-"Check this if you'd like to prevent multiple users from logging into the "
-"same account simultaneously."
+"Check this if you'd like to prevent multiple users from logging into the same "
+"account simultaneously."
 msgstr ""
 "Aktivieren Sie diese Option, wenn Sie verhindern möchten, dass mehrere User "
 "gleichzeitig den selben Account verwenden."
@@ -2459,14 +2447,14 @@ msgstr "E-Mail IPN Reports"
 
 #: includes/admin/settings/settings.php:1015
 msgid ""
-"Check this to send an email each time an IPN request is made with PayPal. "
-"The email will contain a list of all data sent. This is useful for debugging "
-"in the case that something is not working with the PayPal integration."
+"Check this to send an email each time an IPN request is made with PayPal. The "
+"email will contain a list of all data sent. This is useful for debugging in "
+"the case that something is not working with the PayPal integration."
 msgstr ""
-"Aktivieren Sie diese Option, um jedes Mal eine Benachrichtigung zu "
-"versenden, wenn eine IPN Anfrage mit PayPal gemacht wird. Diese E-Mail wird "
-"eine Liste aller gesendeten Daten enthalten. Dies erleichtert die "
-"Fehlersuche, im Falle, dass etwas mit der PayPal-Integration nicht stimmt."
+"Aktivieren Sie diese Option, um jedes Mal eine Benachrichtigung zu versenden, "
+"wenn eine IPN Anfrage mit PayPal gemacht wird. Diese E-Mail wird eine Liste "
+"aller gesendeten Daten enthalten. Dies erleichtert die Fehlersuche, im Falle, "
+"dass etwas mit der PayPal-Integration nicht stimmt."
 
 #: includes/admin/settings/settings.php:1020
 msgid "Disable Form CSS"
@@ -2539,8 +2527,7 @@ msgstr "Mitgliedschaftsstufe bearbeiten"
 #: includes/admin/subscriptions/edit-subscription.php:20
 msgid "The name of this subscription. This is shown on the registration page."
 msgstr ""
-"Name dieser Mitgliedschaft. Dieser wird auf der Registrierungsseite "
-"angezeigt."
+"Name dieser Mitgliedschaft. Dieser wird auf der Registrierungsseite angezeigt."
 
 #: includes/admin/subscriptions/edit-subscription.php:29
 msgid ""
@@ -2597,16 +2584,15 @@ msgstr "Preis für diese Mitgliedschaftsstufe. Geben Sie 0 für Gratis ein."
 
 #: includes/admin/subscriptions/edit-subscription.php:72
 #: includes/admin/subscriptions/subscription-levels.php:179
-#: includes/class-rcp-registration.php:60
-#: templates/paypal-express-confirm.php:16
+#: includes/class-rcp-registration.php:60 templates/paypal-express-confirm.php:16
 msgid "Signup Fee"
 msgstr "Anmeldegebühr"
 
 #: includes/admin/subscriptions/edit-subscription.php:76
 #: includes/admin/subscriptions/subscription-levels.php:183
 msgid ""
-"Optional signup fee to charge subscribers for the first billing cycle. Enter "
-"a negative number to give a discount on the first payment."
+"Optional signup fee to charge subscribers for the first billing cycle. Enter a "
+"negative number to give a discount on the first payment."
 msgstr ""
 
 #: includes/admin/subscriptions/edit-subscription.php:86
@@ -2623,8 +2609,7 @@ msgstr ""
 #: includes/admin/subscriptions/edit-subscription.php:99
 #: includes/admin/subscriptions/subscription-levels.php:206
 msgid "The user role given to the member after signing up."
-msgstr ""
-"Die Benutzerrolle, die nach der Anmeldung an das Mitglied vergeben wird."
+msgstr "Die Benutzerrolle, die nach der Anmeldung an das Mitglied vergeben wird."
 
 #: includes/admin/subscriptions/edit-subscription.php:108
 msgid "Update Subscription"
@@ -2661,8 +2646,7 @@ msgstr "Name der Mitgliedschaftsstufe"
 #: includes/admin/subscriptions/subscription-levels.php:122
 msgid "Membership level description. This is shown on the registration form."
 msgstr ""
-"Beschreibung der Mitgliedschaftsstufe. Dies wird im Anmeldeformular "
-"angezeigt."
+"Beschreibung der Mitgliedschaftsstufe. Dies wird im Anmeldeformular angezeigt."
 
 #: includes/admin/subscriptions/subscription-levels.php:139
 #, fuzzy
@@ -2670,8 +2654,8 @@ msgid ""
 "Level of access this subscription gives. Leave None for default or you are "
 "unsure what this is."
 msgstr ""
-"Zugriffsebene für diese Mitgliedschaft. Für Standard oder wenn Sie sich "
-"nicht sicher sind, bei 0 belassen."
+"Zugriffsebene für diese Mitgliedschaft. Für Standard oder wenn Sie sich nicht "
+"sicher sind, bei 0 belassen."
 
 #: includes/admin/subscriptions/subscription-levels.php:140
 msgid ""
@@ -2684,16 +2668,14 @@ msgstr ""
 
 #: includes/admin/subscriptions/subscription-levels.php:157
 msgid ""
-"<strong>Example</strong>: setting this to 1 month would make memberships "
-"last 1 month, after which they will renew automatically or be marked as "
-"expired."
+"<strong>Example</strong>: setting this to 1 month would make memberships last "
+"1 month, after which they will renew automatically or be marked as expired."
 msgstr ""
 
 #: includes/admin/subscriptions/subscription-levels.php:173
 msgid ""
 "This price refers to the amount paid per duration period. For example, if "
-"duration period is set to 1 month, this would be the amount charged each "
-"month."
+"duration period is set to 1 month, this would be the amount charged each month."
 msgstr ""
 
 #: includes/admin/subscriptions/subscription-levels.php:214
@@ -2935,7 +2917,7 @@ msgstr ""
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:158
 #: includes/gateways/paypal/functions.php:190
 msgid "Something has gone wrong, please try again"
-msgstr ""
+msgstr "Da ist etwas schief gelaufen, bitte versuche es nochmal."
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:156
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:185
@@ -2947,7 +2929,7 @@ msgstr ""
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:219
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:289
 msgid "PayPal payment processing failed."
-msgstr ""
+msgstr "PayPal Verarbeitung fehlgeschlagen"
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:437
 #: includes/gateways/class-rcp-payment-gateway-paypal.php:343
@@ -2956,12 +2938,12 @@ msgstr "IPN Report"
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:125
 msgid "PayPal subscription creation failed."
-msgstr ""
+msgstr "PayPal Abo fehlgeschlagen."
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:189
 #: includes/gateways/class-rcp-payment-gateway-stripe.php:654
 msgid "The card number you have entered is invalid"
-msgstr ""
+msgstr "Die Kartennummer die du eingegeben hast ist ungültig."
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:201
 #: includes/gateways/class-rcp-payment-gateway-stripe.php:666
@@ -3067,8 +3049,8 @@ msgstr ""
 
 #: includes/gateways/class-rcp-payment-gateway-stripe.php:678
 msgid ""
-"Missing Stripe test keys. Please enter your test keys to use Stripe in "
-"Sandbox Mode."
+"Missing Stripe test keys. Please enter your test keys to use Stripe in Sandbox "
+"Mode."
 msgstr ""
 
 #: includes/gateways/class-rcp-payment-gateway-stripe.php:682
@@ -3095,7 +3077,7 @@ msgstr ""
 #: includes/gateways/class-rcp-payment-gateways.php:82
 #: includes/gateways/class-rcp-payment-gateways.php:87
 msgid "Credit / Debit Card"
-msgstr ""
+msgstr "Kreditkarte"
 
 #: includes/gateways/class-rcp-payment-gateways.php:73
 msgid "PayPal Pro"
@@ -3516,17 +3498,20 @@ msgstr "gratis"
 
 #: includes/registration-functions.php:704
 msgid " every %s %s"
-msgstr ""
+msgstr " Alle %s %s"
 
 #: includes/registration-functions.php:830
 msgid "Proration Credit"
-msgstr ""
+msgstr "Gutschrift aus vorheriger Zahlung"
 
 #: includes/registration-functions.php:844
 msgid ""
 "If you upgrade or downgrade your account, the new subscription will be "
 "prorated up to %s for the first payment. Prorated prices are shown below."
 msgstr ""
+"Wenn du deine Mitgliedschaft hochstufst, werden dir schon geleistete Zahlungen "
+"bis zu %s bei der ersten Zahlung gutgeschrieben. Die entsprechenden Preise "
+"werden unten angezeigt."
 
 #: includes/scripts.php:28
 msgid "Are you sure you wish to cancel this member's subscription?"
@@ -3562,11 +3547,11 @@ msgstr "Wähle ein Logo"
 
 #: includes/scripts.php:130
 msgid "Please Wait . . . "
-msgstr ""
+msgstr "Bitte warten . . . "
 
 #: includes/scripts.php:131
 msgid "Submit Payment"
-msgstr ""
+msgstr "Zahlung abschicken"
 
 #: includes/shortcodes.php:231
 msgid "You are already registered and have an active subscription."
@@ -3574,24 +3559,23 @@ msgstr "Sie sind bereits ein registriertes Mitglied"
 
 #: includes/shortcodes.php:295
 msgid "Join %s"
-msgstr ""
+msgstr "Teilnehmen %s"
 
 #: includes/shortcodes.php:296
 msgid "Register - {{amount}}"
-msgstr ""
+msgstr "Registrieren - {{amount}}"
 
 #: includes/shortcodes.php:322
 msgid "You are already subscribed."
-msgstr ""
+msgstr "Du hast schon ein Abonnement"
 
 #: includes/shortcodes.php:514
-#, fuzzy
 msgid "Billing card updated successfully"
-msgstr "Passwort erfolgreich geändert"
+msgstr "Karte erfolgreich aktualisiert"
 
 #: includes/shortcodes.php:523
 msgid "Billing card could not be updated, please try again."
-msgstr ""
+msgstr "Karte konnte nicht aktualisiert werden, bitte versuche es erneut."
 
 #: includes/subscription-functions.php:216
 msgid "Days"
@@ -3692,48 +3676,47 @@ msgstr ""
 #: templates/card-form-full.php:3 templates/card-form.php:3
 #: templates/card-update-form.php:22
 msgid "Card Number"
-msgstr ""
+msgstr "Kartennummer"
 
 #: templates/card-form-full.php:7 templates/card-form.php:7
 #: templates/card-update-form.php:26
 msgid "Card CVC"
-msgstr ""
+msgstr "CVC"
 
 #: templates/card-form-full.php:11
 msgid "Address"
-msgstr "E-Mail-Adresse"
+msgstr "Adresse"
 
 #: templates/card-form-full.php:15
 msgid "City"
-msgstr ""
+msgstr "Stadt"
 
 #: templates/card-form-full.php:19
 msgid "State or Providence"
-msgstr ""
+msgstr "Bundesland oder Region"
 
 #: templates/card-form-full.php:23
-#, fuzzy
 msgid "Country"
-msgstr "Menge"
+msgstr "Land"
 
 #: templates/card-form-full.php:274 templates/card-form.php:11
 #: templates/card-update-form.php:30
 msgid "Card ZIP or Postal Code"
-msgstr ""
+msgstr "PLZ der Rechnungsadresse"
 
 #: templates/card-form-full.php:278 templates/card-form.php:15
 #: templates/card-update-form.php:34
 msgid "Name on Card"
-msgstr ""
+msgstr "Name (wie auf der Karte)"
 
 #: templates/card-form-full.php:282 templates/card-form.php:19
 #: templates/card-update-form.php:38
 msgid "Expiration (MM/YYYY)"
-msgstr ""
+msgstr "Ablaufdatum (MM/JJJJ)"
 
 #: templates/card-update-form.php:7
 msgid "Your Cards"
-msgstr ""
+msgstr "Deine Karten"
 
 #: templates/card-update-form.php:11
 msgid "Name:"
@@ -3741,19 +3724,19 @@ msgstr ""
 
 #: templates/card-update-form.php:12
 msgid "Type:"
-msgstr ""
+msgstr "Typ:"
 
 #: templates/card-update-form.php:13
 msgid "Last 4:"
-msgstr ""
+msgstr "Letzte 4 Ziffern:"
 
 #: templates/card-update-form.php:14
 msgid "Exp:"
-msgstr ""
+msgstr "Ablauf:"
 
 #: templates/card-update-form.php:58
 msgid "Update Card"
-msgstr ""
+msgstr "Karte aktualisieren"
 
 #: templates/change-password.php:7
 msgid "Password changed successfully"
@@ -3768,42 +3751,36 @@ msgid "Password Confirm"
 msgstr "Passwort bestätigen"
 
 #: templates/invoice.php:10 templates/invoice.php:195 templates/invoice.php:205
-#, fuzzy
 msgid "Invoice %s"
 msgstr "Rechnung #%d"
 
 #: templates/invoice.php:232
 msgid "Bill To:"
-msgstr ""
+msgstr "Rechnung an:"
 
 #: templates/invoice.php:245
-#, fuzzy
 msgid "Invoice Items:"
 msgstr "Rechnungs Artikel"
 
 #: templates/invoice.php:257
-#, fuzzy
 msgid "Total Price:"
 msgstr "Gesamtsumme"
 
 #: templates/invoice.php:263
-#, fuzzy
 msgid "Payment Status:"
-msgstr "Zahlungsdatum"
+msgstr "Zahlung:"
 
 #: templates/invoice.php:273
-#, fuzzy
 msgid "Additional Info:"
 msgstr "Zusätzliche Hinweise"
 
 #: templates/invoice.php:276
-#, fuzzy
 msgid "Payment Date:"
 msgstr "Zahlungsdatum"
 
 #: templates/invoice.php:292
 msgid "Print"
-msgstr ""
+msgstr "Drucken"
 
 #: templates/login.php:16 templates/register-single.php:45
 #: templates/register.php:44
@@ -3811,7 +3788,6 @@ msgid "Password"
 msgstr "Passwort"
 
 #: templates/login.php:22
-#, fuzzy
 msgid "Remember me"
 msgstr "Angemeldet bleiben"
 
@@ -3838,35 +3814,35 @@ msgstr "Passwort zurücksetzen"
 
 #: templates/lostpassword_checkemail.php:5
 msgid "Check your e-mail for the confirmation link."
-msgstr ""
+msgstr "Überprüfe dein eMail-Postfach für den Bestätigung-Link"
 
 #: templates/paypal-express-confirm.php:3
 msgid "Please confirm your payment"
-msgstr ""
+msgstr "Bitte bestätige deine Zahlung"
 
 #: templates/paypal-express-confirm.php:5
 msgid "PayPal Status:"
-msgstr ""
+msgstr "PayPal Status:"
 
 #: templates/paypal-express-confirm.php:6
 msgid "Email:"
-msgstr ""
+msgstr "eMail:"
 
 #: templates/paypal-express-confirm.php:13
 msgid "Recurs"
-msgstr ""
+msgstr "Wiederholt sich"
 
 #: templates/paypal-express-confirm.php:18
 msgid "Subscription Cost"
-msgstr ""
+msgstr "Abokosten"
 
 #: templates/paypal-express-confirm.php:27
 msgid "Every %d %s"
-msgstr ""
+msgstr "Alle %d %s"
 
 #: templates/paypal-express-confirm.php:49
 msgid "Confirm"
-msgstr ""
+msgstr "Bestätigen"
 
 #: templates/profile-editor.php:16
 msgid "Success"
@@ -3898,8 +3874,7 @@ msgstr "Passwort erneut eingeben"
 
 #: templates/profile-editor.php:62
 msgid "Please note after changing your password, you must log back in."
-msgstr ""
-"Hinweis: Nach dem Ändern deines Passwortes, musst du dich neu anmelden."
+msgstr "Hinweis: Nach dem Ändern deines Passwortes, musst du dich neu anmelden."
 
 #: templates/profile-editor.php:67
 msgid "Save Changes"
@@ -3935,25 +3910,25 @@ msgstr "Zahlungsmethode auswählen"
 
 #: templates/register-total-details.php:26
 msgid "Discounts and Fees"
-msgstr ""
+msgstr "Rabatte und Gebühren"
 
 #: templates/register-total-details.php:54
 msgid "Total Today"
-msgstr ""
+msgstr "Heute fällig"
 
 #: templates/register-total-details.php:63
 msgid "Total Recurring Per %s"
-msgstr ""
+msgstr "Zukünftig pro %s"
 
 #: templates/register-total-details.php:65
-#, fuzzy
 msgid "Total Recurring Every %s %s"
-msgstr "Nicht wiederkehrend"
+msgstr "Zukünftig wiederkehrend alle %s %s"
 
 #: templates/register.php:21
-msgid ""
-"<a href=\"%s\">Log in</a> if you wish to renew an existing subscription."
+msgid "<a href=\"%s\">Log in</a> if you wish to renew an existing subscription."
 msgstr ""
+"<a href=„%s“>Melde dich hier an</a>, wenn du eine bestehende Mitgliedschaft "
+"erneuern willst."
 
 #: templates/register.php:62
 msgid "Choose your subscription level"
@@ -3965,7 +3940,7 @@ msgstr "Sie Haben noch keine Mitgliedschaftsstufe erstellt."
 
 #: templates/subscription.php:10
 msgid "Your profile has been successfully cancelled."
-msgstr ""
+msgstr "Dein Profil wurde erfolgreich gelöscht."
 
 #: templates/subscription.php:18
 msgid "Renewal Date"
@@ -3977,7 +3952,7 @@ msgstr "Verlängern Sie Ihre Mitgliedschaft"
 
 #: templates/subscription.php:38
 msgid "Upgrade or change your subscription"
-msgstr ""
+msgstr "Upgrade oder ändere dein Abo"
 
 #: templates/subscription.php:42
 msgid "Cancel your subscription"
@@ -4022,8 +3997,8 @@ msgstr ""
 
 #, fuzzy
 #~ msgid ""
-#~ "Allow non active users to view the excerpt? If left unchecked, the "
-#~ "message defined in settings will be used."
+#~ "Allow non active users to view the excerpt? If left unchecked, the message "
+#~ "defined in settings will be used."
 #~ msgstr ""
 #~ "Sollen inaktive User den Auszug sehen? Wenn leer gelassen, wird Nachricht "
 #~ "aus Einstellungen verwendet"
@@ -4038,14 +4013,13 @@ msgstr ""
 #~ "Choose the access level required see this content. The access level is "
 #~ "determined by the subscription the member is subscribed to."
 #~ msgstr ""
-#~ "Wählen Sie die erforderliche Zugriffsstufe um diesen Inhalt anzusehen. "
-#~ "Die Zugriffsstufe wird durch die Mitglieds Stufe festgelegt die das "
-#~ "Mitglied abonniert hatt."
+#~ "Wählen Sie die erforderliche Zugriffsstufe um diesen Inhalt anzusehen. Die "
+#~ "Zugriffsstufe wird durch die Mitglieds Stufe festgelegt die das Mitglied "
+#~ "abonniert hatt."
 
 #~ msgid "Choose the subscription levels allowed to view this content."
 #~ msgstr ""
-#~ "Wählen Sie die erlaubten Mitgliedschafts-Stufen, um diesen Inhalt "
-#~ "anzusehen."
+#~ "Wählen Sie die erlaubten Mitgliedschafts-Stufen, um diesen Inhalt anzusehen."
 
 #~ msgid "User Level"
 #~ msgstr "Benutzer Ebene"
@@ -4054,9 +4028,9 @@ msgstr ""
 #~ "Choose the user level that can see this post / page's content. Users of "
 #~ "this level and higher will be the only ones able to view the content."
 #~ msgstr ""
-#~ "Wählen Sie die Benutzer-Ebene, die den Inhalt dieses Beitrag / Seite, "
-#~ "sehen können. Die Benutzer dieser Stufe oder höher, werden die einzigen "
-#~ "sein, die in der Lage sind den Inhalt anzusehen."
+#~ "Wählen Sie die Benutzer-Ebene, die den Inhalt dieses Beitrag / Seite, sehen "
+#~ "können. Die Benutzer dieser Stufe oder höher, werden die einzigen sein, die "
+#~ "in der Lage sind den Inhalt anzusehen."
 
 #~ msgid "Note 1"
 #~ msgstr "Hinweis 1"
@@ -4065,9 +4039,9 @@ msgstr ""
 #~ "To hide this content from logged-out users, but allow free and paid, set "
 #~ "the User Level to \"Subscriber\"."
 #~ msgstr ""
-#~ "Um diese Inhalte von abgemeldeten Nutzern zu verstecken, ihn jedoch "
-#~ "gratis und bezahlten Mitgliedschaften zu erlauben, stellen Sie die "
-#~ "Benutzerebene auf \"Mitglied\"."
+#~ "Um diese Inhalte von abgemeldeten Nutzern zu verstecken, ihn jedoch gratis "
+#~ "und bezahlten Mitgliedschaften zu erlauben, stellen Sie die Benutzerebene "
+#~ "auf \"Mitglied\"."
 
 #~ msgid "Note 2"
 #~ msgstr "Hinweis 2"
@@ -4076,8 +4050,8 @@ msgstr ""
 #~ "Access level, subscription level, and user level can all be combined to "
 #~ "require the user meet all three specifications."
 #~ msgstr ""
-#~ "Zugriffsebene, Bezugsebene und Benutzerebene können miteinander "
-#~ "kombiniert werden, um dem Benutzer alle drei Rechte zu vergeben."
+#~ "Zugriffsebene, Bezugsebene und Benutzerebene können miteinander kombiniert "
+#~ "werden, um dem Benutzer alle drei Rechte zu vergeben."
 
 #~ msgid "Download Invoice"
 #~ msgstr "Rechnung downloaden"
@@ -4103,13 +4077,13 @@ msgstr ""
 #~ msgstr "Zeichen nicht korrekt angezeigt?"
 
 #~ msgid ""
-#~ "Check to enable the Free Sans/Free Serif font replacing Open Sans/"
-#~ "Helvetica/Times. Only do this if you have characters which do not display "
-#~ "correctly (e.g. Greek characters)"
+#~ "Check to enable the Free Sans/Free Serif font replacing Open Sans/Helvetica/"
+#~ "Times. Only do this if you have characters which do not display correctly "
+#~ "(e.g. Greek characters)"
 #~ msgstr ""
 #~ "Aktivieren Sie die Funktion \"Free Sans/Free Serif font ersetzen mit Open "
-#~ "Sans/Helvetica/Times\". Tun Sie dies nur, wenn Sie Zeichen haben, die "
-#~ "nicht richtig angezeigt werden (zBsp. griechische Buchstaben)."
+#~ "Sans/Helvetica/Times\". Tun Sie dies nur, wenn Sie Zeichen haben, die nicht "
+#~ "richtig angezeigt werden (zBsp. griechische Buchstaben)."
 
 #~ msgid "Invoice Date"
 #~ msgstr "Rechnungs Datum"
@@ -4128,12 +4102,12 @@ msgstr ""
 
 #~ msgid ""
 #~ "Optional signup fee to charge subscribers for the first billing cycle. "
-#~ "Enter a negative number to give a discount on the first payment. This "
-#~ "only applies to recurring subscriptions."
+#~ "Enter a negative number to give a discount on the first payment. This only "
+#~ "applies to recurring subscriptions."
 #~ msgstr ""
 #~ "Den Mitgliedern eine optionale Anmeldegebühr für den ersten "
-#~ "Abrechnungszeitraum in Rechnung stellen. Um einen Rabatt auf diese "
-#~ "Zahlung zu gewähren, geben Sie eine negative Zahl ein. Dies gilt nur für "
+#~ "Abrechnungszeitraum in Rechnung stellen. Um einen Rabatt auf diese Zahlung "
+#~ "zu gewähren, geben Sie eine negative Zahl ein. Dies gilt nur für "
 #~ "wiederkehrende Anmeldungen."
 
 #~ msgid "Euros (&euro;)"
@@ -4200,11 +4174,9 @@ msgstr ""
 #~ msgstr "reCaptcha öffentlicher Key"
 
 #~ msgid "This your own personal reCaptcha Public key. Go to"
-#~ msgstr ""
-#~ "Dies ist Ihr persönlicher, öffentlicher reCaptcha-Schlüssel. Gehe zu"
+#~ msgstr "Dies ist Ihr persönlicher, öffentlicher reCaptcha-Schlüssel. Gehe zu"
 
-#~ msgid ""
-#~ "then click on your domain (or add a new one) to find your public key."
+#~ msgid "then click on your domain (or add a new one) to find your public key."
 #~ msgstr ""
 #~ "um Ihren öffentlichen Schlüssel zu finden und klicken Sie auf Ihre Domain "
 #~ "(oder fügen Sie eine neue hinzu)."
@@ -4221,8 +4193,8 @@ msgstr ""
 
 #~ msgid "The words/numbers you entered did not match the reCaptcha"
 #~ msgstr ""
-#~ "Die Worte / Nummern die Du eingegeben hast, stimmen nicht mit dem "
-#~ "reCaptcha überein"
+#~ "Die Worte / Nummern die Du eingegeben hast, stimmen nicht mit dem reCaptcha "
+#~ "überein"
 
 #~ msgid "Logout"
 #~ msgstr "abmelden"
@@ -4288,19 +4260,18 @@ msgstr ""
 #~ msgstr "Anmelde Formular"
 
 #~ msgid ""
-#~ "Use PayPal in Sandbox mode. This allows you to test the plugin with the "
-#~ "<a href=\"http://developer.paypal.com\">PayPal test account</a>"
+#~ "Use PayPal in Sandbox mode. This allows you to test the plugin with the <a "
+#~ "href=\"http://developer.paypal.com\">PayPal test account</a>"
 #~ msgstr ""
-#~ "Verwenden Sie PayPal im Sandbox-Modus. So können Sie das Plugin mit dem "
-#~ "<a href=\"http://developer.paypal.com\">PayPal Testkonto</a> testen."
+#~ "Verwenden Sie PayPal im Sandbox-Modus. So können Sie das Plugin mit dem <a "
+#~ "href=\"http://developer.paypal.com\">PayPal Testkonto</a> testen."
 
 #~ msgid "jQuery Validation"
 #~ msgstr "jQuery Validierung"
 
 #~ msgid ""
-#~ "Check this to enable live, front end form validation. If this is "
-#~ "disabled, all validation will be done server side and will require a page "
-#~ "reload."
+#~ "Check this to enable live, front end form validation. If this is disabled, "
+#~ "all validation will be done server side and will require a page reload."
 #~ msgstr ""
 #~ "Aktivieren Sie diese Option um live, Front-End Formularvalidierung zu "
 #~ "ermöglichen. Ist diese Option deaktiviert, werden alle Validierungen "
@@ -4310,16 +4281,16 @@ msgstr ""
 #~ msgstr "SSL"
 
 #~ msgid ""
-#~ "Check this option if your registration page is using the https:// "
-#~ "protocol. This will be the case if you have an SSL certificate installed."
+#~ "Check this option if your registration page is using the https:// protocol. "
+#~ "This will be the case if you have an SSL certificate installed."
 #~ msgstr "Überprüfen"
 
 #~ msgid ""
 #~ "The subscription key in an IPN request did not match the subscription key "
 #~ "recorded for the user. Payment data: %s"
 #~ msgstr ""
-#~ "Der Mitgliedschaftsschlüssel einer IPN Anfrage stimmt nicht mit dem für "
-#~ "den Benutzer aufgezeichnet Abonnementschlüssel überein. Zahlungsdaten: %s"
+#~ "Der Mitgliedschaftsschlüssel einer IPN Anfrage stimmt nicht mit dem für den "
+#~ "Benutzer aufgezeichnet Abonnementschlüssel überein. Zahlungsdaten: %s"
 
 #~ msgid "View Details"
 #~ msgstr "Details zeigen"

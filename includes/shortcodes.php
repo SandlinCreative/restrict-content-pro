@@ -36,9 +36,9 @@ function rcp_restrict_shortcode( $atts, $content = null ) {
 	if ( strlen( $atts['message'] ) > 0 ) {
 		$teaser = $atts['message'];
 	} elseif ( $atts['paid'] ) {
-		$teaser = $rcp_options['paid_message'];
+		$teaser = ! empty( $rcp_options['paid_message'] ) ? $rcp_options['paid_message'] : __( 'This content is restricted to subscribers', 'rcp' );
 	} else {
-		$teaser = $rcp_options['free_message'];
+		$teaser = ! empty( $rcp_options['free_message'] ) ? $rcp_options['free_message'] : __( 'This content is restricted to subscribers', 'rcp' );
 	}
 
 	$subscription = array_map( 'trim', explode( ',', $atts['subscription'] ) );
@@ -512,12 +512,12 @@ add_shortcode( 'rcp_profile_editor', 'rcp_profile_editor_shortcode' );
 function rcp_update_billing_card_shortcode( $atts, $content = null ) {
 	global $rcp_load_css, $rcp_load_scripts;
 
-	$rcp_load_css = true;
-	$rcp_load_scripts = true;
-
 	ob_start();
 
 	if( rcp_member_can_update_billing_card() ) {
+
+		$rcp_load_css = true;
+		$rcp_load_scripts = true;
 
 		do_action( 'rcp_before_update_billing_card_form' );
 

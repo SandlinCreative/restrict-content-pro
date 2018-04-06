@@ -101,7 +101,7 @@ function rcp_process_edit_payment() {
 		$data = array(
 			'amount'           => empty( $_POST['amount'] ) ? 0.00 : sanitize_text_field( $_POST['amount'] ),
 			'user_id'          => $user->ID,
-			'date'             => empty( $_POST['date'] ) ? date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ) : date( 'Y-m-d', strtotime( $_POST['date'], current_time( 'timestamp' ) ) ) . ' ' . date( 'H:i:s', current_time( 'timestamp' ) ),
+			'date'             => empty( $_POST['date'] ) ? date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ) : date( 'Y-m-d H:i:s', strtotime( $_POST['date'], current_time( 'timestamp' ) ) ),
 			'subscription'     => ! empty( $pending_subscription ) ? $pending_subscription : $member->get_subscription_name(),
 			'subscription_key' => ! empty( $pending_subscription_key ) ? $pending_subscription_key : $member->get_subscription_key(),
 			'transaction_id'   => sanitize_text_field( $_POST['transaction-id'] ),

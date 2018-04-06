@@ -232,7 +232,7 @@ function rcp_members_page() {
 								<td data-colname="<?php _e( 'Status', 'rcp' ); ?>"><?php echo rcp_print_status($member->ID, false); ?></td>
 								<td data-colname="<?php _e( 'Recurring', 'rcp' ); ?>"><?php echo rcp_is_recurring($member->ID) ? __('yes', 'rcp') : __('no', 'rcp'); ?></td>
 								<td data-colname="<?php _e( 'Expiration', 'rcp' ); ?>"><?php echo $expiration; ?></td>
-								<td data-colname="<?php _e( 'User Role', 'rcp' ); ?>"><?php echo rcp_get_user_role($member->ID); ?></td>
+								<td data-colname="<?php _e( 'User Role', 'rcp' ); ?>"><?php echo translate_user_role( rcp_get_user_role_name( $member->ID ) ); ?></td>
 								<?php do_action('rcp_members_page_table_column', $member->ID); ?>
 							</tr>
 						<?php $i++;

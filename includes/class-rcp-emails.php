@@ -329,6 +329,23 @@ class RCP_Emails {
 	}
 
 	/**
+	 * Generate preview by setting up email tags and inserting message inside email template.
+	 *
+	 * @param string $message
+	 *
+	 * @return string
+	 */
+	public function generate_preview( $message = '' ) {
+
+		$this->setup_email_tags();
+
+		$message = $this->build_email( $message );
+
+		return $message;
+
+	}
+
+	/**
 	 * Add filters/actions before the email is sent
 	 *
 	 * @since 2.7
@@ -362,6 +379,7 @@ class RCP_Emails {
 	public function text_to_html( $message ) {
 		if ( 'text/html' === $this->content_type || true === $this->html ) {
 			$message = wpautop( make_clickable( $message ) );
+			$message = str_replace( '&#038;', '&amp;', $message );
 		}
 
 		return $message;

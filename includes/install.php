@@ -296,15 +296,15 @@ function rcp_create_tables() {
 	$sub_meta_table_name = rcp_get_payment_meta_db_name();
 	$sql = "CREATE TABLE {$sub_meta_table_name} (
 		meta_id bigint(20) NOT NULL AUTO_INCREMENT,
-		payment_id bigint(20) NOT NULL DEFAULT '0',
+		rcp_payment_id bigint(20) NOT NULL DEFAULT '0',
 		meta_key varchar(255) DEFAULT NULL,
 		meta_value longtext,
 		PRIMARY KEY meta_id (meta_id),
-		KEY payment_id (payment_id),
+		KEY rcp_payment_id (rcp_payment_id),
 		KEY meta_key (meta_key)
 		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
 
 	@dbDelta( $sql );
-	
+
 	do_action( 'rcp_create_tables' );
 }

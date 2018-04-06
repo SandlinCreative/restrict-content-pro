@@ -47,6 +47,13 @@ class RCP_Payment_Gateway_Stripe extends RCP_Payment_Gateway {
 			require_once RCP_PLUGIN_DIR . 'includes/libraries/stripe/init.php';
 		}
 
+		\Stripe\Stripe::setApiKey( $this->secret_key );
+
+		\Stripe\Stripe::setApiVersion( '2018-02-06' );
+
+		if ( method_exists( '\Stripe\Stripe', 'setAppInfo' ) ) {
+			\Stripe\Stripe::setAppInfo( 'Restrict Content Pro', RCP_PLUGIN_VERSION, esc_url( site_url() ) );
+		}
 	}
 
 	/**
@@ -64,12 +71,6 @@ class RCP_Payment_Gateway_Stripe extends RCP_Payment_Gateway {
 		 * @var RCP_Payments $rcp_payments_db
 		 */
 		global $rcp_payments_db;
-
-		\Stripe\Stripe::setApiKey( $this->secret_key );
-
-		if ( method_exists( '\Stripe\Stripe', 'setAppInfo' ) ) {
-			\Stripe\Stripe::setAppInfo( 'Restrict Content Pro', RCP_PLUGIN_VERSION, esc_url( site_url() ) );
-		}
 
 		$paid   = false;
 		$member = new RCP_Member( $this->user_id );
@@ -111,14 +112,17 @@ class RCP_Payment_Gateway_Stripe extends RCP_Payment_Gateway {
 			try {
 
 				$customer_args = array(
-					'card'  => $_POST['stripeToken'],
 					'email' => $this->email
 				);
 
 				$customer = \Stripe\Customer::create( apply_filters( 'rcp_stripe_customer_create_args', $customer_args, $this ) );
 
-				// A temporary invoice is created to force the customer's currency to be set to the store currency. See https://github.com/restrictcontentpro/restrict-content-pro/issues/549
-				if ( ! empty( $this->signup_fee ) ) {
+				/*
+				 * A temporary invoice is created to force the customer's currency to be set to the store currency.
+				 * See https://github.com/restrictcontentpro/restrict-content-pro/issues/549
+				 * See https://github.com/restrictcontentpro/restrict-content-pro/issues/382
+				 */
+				if ( ! empty( $this->signup_fee ) || ! empty( $this->discount_code ) ) {
 
 					\Stripe\InvoiceItem::create( array(
 						'customer'    => $customer->id,
@@ -141,16 +145,58 @@ class RCP_Payment_Gateway_Stripe extends RCP_Payment_Gateway {
 
 			}
 
-		} else {
+		}
 
-			$customer->source = $_POST['stripeToken'];
+		// Set up array of subscriptions we cancel below so we don't try to cancel the same one twice.
+		$cancelled_subscriptions = array();
 
-			try {
-				$customer->save();
-			} catch( Exception $e ) {
-				$this->handle_processing_error( $e );
+		// clean up any past due or unpaid subscriptions before upgrading/downgrading
+		foreach( $customer->subscriptions->all()->data as $subscription ) {
+
+			// Cancel subscriptions with the RCP metadata present and matching member ID.
+			// @todo When we add multiple subscriptions we need to update this to only cancel subscriptions where $this->subscription_id matches the rcp_subscription_level_id in the metadata.
+			if ( ! empty( $subscription->metadata ) && ! empty( $subscription->metadata['rcp_subscription_level_id'] ) && $this->user_id == $subscription->metadata['rcp_member_id'] ) {
+				$subscription->cancel();
+				$cancelled_subscriptions[] = $subscription->id;
+				rcp_log( sprintf( 'Cancelled Stripe subscription %s.', $subscription->id ) );
+				continue;
 			}
 
+			/*
+			 * This handles subscriptions from before metadata was added. We check the plan name against the
+			 * RCP subscription level database. If the Stripe plan name matches a sub level name then we cancel it.
+			 * @todo When we add multiple subscriptions we need to update this to only cancel if the plan name != $member->get_pending_subscription_name()
+			 */
+			if ( ! empty( $subscription->plan->name ) ) {
+
+				/**
+				 * @var RCP_Levels $rcp_levels_db
+				 */
+				global $rcp_levels_db;
+
+				$level = $rcp_levels_db->get_level_by( 'name', $subscription->plan->name );
+
+				// Cancel if this plan name matches an RCP subscription level.
+				if ( ! empty( $level ) ) {
+					$subscription->cancel();
+					$cancelled_subscriptions[] = $subscription->id;
+					rcp_log( sprintf( 'Cancelled Stripe subscription %s.', $subscription->id ) );
+				}
+
+			}
+		}
+
+		// If the customer has an existing subscription, we need to cancel it (if we haven't already above).
+		if( $member->just_upgraded() && $member->can_cancel() && ! in_array( $member->get_merchant_subscription_id(), $cancelled_subscriptions ) ) {
+			$cancelled = $member->cancel_payment_profile( false );
+		}
+
+		// Now save card details. This has to be done after the above cancellations. See https://github.com/restrictcontentpro/restrict-content-pro/issues/1570
+		$customer->source = $_POST['stripeToken'];
+		try {
+			$customer->save();
+		} catch( Exception $e ) {
+			$this->handle_processing_error( $e );
 		}
 
 		if ( $this->auto_renew ) {
@@ -190,48 +236,6 @@ class RCP_Payment_Gateway_Stripe extends RCP_Payment_Gateway {
 					$invoice->closed = true;
 					$invoice->save();
 					unset( $temp_invoice, $invoice );
-				}
-
-				// Set up array of subscriptions we cancel below so we don't try to cancel the same one twice.
-				$cancelled_subscriptions = array();
-
-				// clean up any past due or unpaid subscriptions before upgrading/downgrading
-				foreach( $customer->subscriptions->all()->data as $subscription ) {
-
-					// Cancel subscriptions with the RCP metadata present and matching member ID.
-					// @todo When we add multiple subscriptions we need to update this to only cancel subscriptions where $this->subscription_id matches the rcp_subscription_level_id in the metadata.
-					if ( ! empty( $subscription->metadata ) && ! empty( $subscription->metadata['rcp_subscription_level_id'] ) && $this->user_id == $subscription->metadata['rcp_member_id'] ) {
-						$subscription->cancel();
-						$cancelled_subscriptions[] = $subscription->id;
-						continue;
-					}
-
-					/*
-					 * This handles subscriptions from before metadata was added. We check the plan name against the
-					 * RCP subscription level database. If the Stripe plan name matches a sub level name then we cancel it.
-					 * @todo When we add multiple subscriptions we need to update this to only cancel if the plan name != $member->get_pending_subscription_name()
-					 */
-					if ( ! empty( $subscription->plan->name ) ) {
-
-						/**
-						 * @var RCP_Levels $rcp_levels_db
-						 */
-						global $rcp_levels_db;
-
-						$level = $rcp_levels_db->get_level_by( 'name', $subscription->plan->name );
-
-						// Cancel if this plan name matches an RCP subscription level.
-						if ( ! empty( $level ) ) {
-							$subscription->cancel();
-							$cancelled_subscriptions[] = $subscription->id;
-						}
-
-					}
-				}
-
-				// If the customer has an existing subscription, we need to cancel it (if we haven't already above).
-				if( $member->just_upgraded() && $member->can_cancel() && ! in_array( $member->get_merchant_subscription_id(), $cancelled_subscriptions ) ) {
-					$cancelled = $member->cancel_payment_profile( false );
 				}
 
 				$sub_args = array(
@@ -430,11 +434,6 @@ class RCP_Payment_Gateway_Stripe extends RCP_Payment_Gateway {
 				$this->handle_processing_error( $e );
 			}
 
-			// If this is a one-time signup and the customer has an existing subscription, we need to cancel it
-			if( ! $this->auto_renew && $member->just_upgraded() && $member->can_cancel() ) {
-				$cancelled = $member->cancel_payment_profile( false );
-			}
-
 			$member->set_recurring( $this->auto_renew );
 
 			if ( ! is_user_logged_in() ) {
@@ -526,8 +525,6 @@ class RCP_Payment_Gateway_Stripe extends RCP_Payment_Gateway {
 		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
 			define( 'DONOTCACHEPAGE', true );
 		}
-
-		\Stripe\Stripe::setApiKey( $this->secret_key );
 
 		// retrieve the request's body and parse it as JSON
 		$body          = @file_get_contents( 'php://input' );
@@ -702,8 +699,10 @@ class RCP_Payment_Gateway_Stripe extends RCP_Payment_Gateway {
 						$this->webhook_event_id = $event->id;
 
 						// Make sure this invoice is tied to a subscription and is the user's current subscription.
-						if ( ! empty( $event->object->subscription ) && $event->object->subscription == $member->get_merchant_subscription_id() ) {
+						if ( ! empty( $event->data->object->subscription ) && $event->data->object->subscription == $member->get_merchant_subscription_id() ) {
 							do_action( 'rcp_recurring_payment_failed', $member, $this );
+						} else {
+							rcp_log( sprintf( 'Stripe subscription ID %s doesn\'t match user\'s merchant subscription ID %s. Skipping rcp_recurring_payment_failed hook.', $event->data->object->subscription, $member->get_merchant_subscription_id() ) );
 						}
 
 						do_action( 'rcp_stripe_charge_failed', $payment_event, $event, $member );
@@ -717,14 +716,27 @@ class RCP_Payment_Gateway_Stripe extends RCP_Payment_Gateway {
 
 						rcp_log( 'Processing Stripe customer.subscription.deleted webhook.' );
 
-						if( $payment_event->id == $member->get_merchant_subscription_id() ) {
+						/**
+						 * Only cancel the subscription if this isn't a new signup or manual renewal.
+						 * If the member went through the registration form they'll have the meta flag `_rcp_new_subscription`
+						 * and the cancellation will have been done as part of the signup process to cancel old
+						 * subscriptions. We don't need to trigger a status change for that.
+						 * @see https://github.com/restrictcontentpro/restrict-content-pro/issues/1626
+						 */
+						if( $payment_event->id == $member->get_merchant_subscription_id() && ! get_user_meta( $member->ID, '_rcp_new_subscription', true ) ) {
 
-							$member->cancel();
+							if ( $member->is_active() ) {
+								$member->cancel();
+							} else {
+								rcp_log( sprintf( 'Member #%d is not active - not cancelling account.', $member->ID ) );
+							}
 
 							do_action( 'rcp_webhook_cancel', $member, $this );
 
 							die( 'member cancelled successfully' );
 
+						} else {
+							rcp_log( sprintf( 'Payment event ID (%s) doesn\'t match member\'s merchant subscription ID (%s).', $payment_event->id, $member->get_merchant_subscription_id() ) );
 						}
 
 					}
@@ -913,17 +925,20 @@ class RCP_Payment_Gateway_Stripe extends RCP_Payment_Gateway {
 		$plan_id        = sprintf( '%s-%s-%s', strtolower( str_replace( ' ', '', $plan->name ) ), $plan->price, $plan->duration . $plan->duration_unit );
 		$currency       = strtolower( rcp_get_currency() );
 
-		\Stripe\Stripe::setApiKey( $this->secret_key );
-
 		try {
+
+			$product = \Stripe\Product::create( array(
+				'name' => $name,
+				'type' => 'service'
+			) );
 
 			$plan = \Stripe\Plan::create( array(
 				"amount"         => $price,
 				"interval"       => $interval,
 				"interval_count" => $interval_count,
-				"name"           => $name,
 				"currency"       => $currency,
-				"id"             => $plan_id
+				"id"             => $plan_id,
+				"product"        => $product->id
 			) );
 
 			// plann successfully created
@@ -945,8 +960,6 @@ class RCP_Payment_Gateway_Stripe extends RCP_Payment_Gateway {
 	 * @return bool|string false if the plan doesn't exist, plan id if it does
 	 */
 	private function plan_exists( $plan ) {
-
-		\Stripe\Stripe::setApiKey( $this->secret_key );
 
 		if ( ! $plan = rcp_get_subscription_details( $plan ) ) {
 			return false;

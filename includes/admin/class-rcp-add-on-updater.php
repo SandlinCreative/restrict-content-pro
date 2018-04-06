@@ -9,9 +9,9 @@
  */
 
 //set_site_transient( 'update_plugins', null );
-	
+
 class RCP_Add_On_Updater {
-	
+
 	private $api_url    = '';
 	private $api_data   = array();
 	private $addon_id   = '';
@@ -248,7 +248,10 @@ class RCP_Add_On_Updater {
 			'url'           => home_url()
 		);
 
-		$request = wp_remote_post( $this->api_url, array( 'timeout' => 15, 'sslverify' => false, 'body' => $api_params ) );
+		$request = wp_remote_post( $this->api_url, array(
+			'timeout' => 15,
+			'body'    => $api_params
+		) );
 
 		if ( ! is_wp_error( $request ) ) {
 			$request = json_decode( wp_remote_retrieve_body( $request ) );

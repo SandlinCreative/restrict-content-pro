@@ -8,11 +8,13 @@ namespace Stripe;
  * @property string $id
  * @property string $object
  * @property int $amount
- * @property mixed $balance_transaction
+ * @property string $balance_transaction
  * @property string $charge
  * @property int $created
  * @property string $currency
- * @property mixed $metadata
+ * @property string $failure_balance_transaction
+ * @property string failure_reason
+ * @property AttachedObject $metadata
  * @property mixed $reason
  * @property mixed $receipt_number
  * @property string $status
@@ -23,7 +25,8 @@ class Refund extends ApiResource
 {
 
     /**
-     * @param string $id The ID of the refund to retrieve.
+     * @param array|string $id The ID of the refund to retrieve, or an options
+     *     array containing an `id` key.
      * @param array|string|null $options
      *
      * @return Refund

@@ -55,9 +55,14 @@ final class RCP_Reminders {
 			'-3months' => __( 'Three months after expiration', 'rcp' )
 		);
 
-		return $periods;
-
-		//return apply_filters( 'rcp_reminder_notice_periods', $periods );
+		/**
+		 * Filters the available notice periods.
+		 *
+		 * @param array $periods
+		 *
+		 * @since 2.9.8
+		 */
+		return apply_filters( 'rcp_reminder_notice_periods', $periods );
 
 	}
 
@@ -236,39 +241,55 @@ Your subscription for %subscription_name% will renew on %expiration%.';
 
 			foreach ( $notices as $notice_id => $notice ) {
 
+				rcp_log( sprintf( 'Processing %s reminder. ID: %d; Period: %s.', $type, $notice_id, $notice['send_period'] ) );
+
 				// Skip if this reminder isn't enabled.
 				if ( empty( $notice['enabled'] ) ) {
+					rcp_log( 'Reminder is not enabled - exiting.' );
+
 					continue;
 				}
 
 				// Skip if subject or message isn't filled out.
 				if ( empty( $notice['subject'] ) || empty( $notice['message'] ) ) {
+					rcp_log( 'Empty subject or message - exiting.' );
+
 					continue;
 				}
 
 				$members = $this->get_reminder_subscriptions( $notice['send_period'], $type );
 
 				if ( ! $members ) {
+					rcp_log( 'No members found for reminder - exiting.' );
+
 					continue;
 				}
 
 				foreach ( $members as $user ) {
 
+					rcp_log( sprintf( 'Processing %s reminder for member #%d.', $type, $user ) );
+
 					$member = new RCP_Member( $user );
 
 					// Ensure an expiration notice isn't sent to an auto-renew subscription
 					if ( $type == 'expiration' && $member->is_recurring() && $member->is_active() ) {
+						rcp_log( sprintf( 'Skipping member #%d - expiration reminder but user is recurring and active.', $member->ID ) );
+
 						continue;
 					}
 
 					// Ensure an expiration notice isn't sent to a still-trialling subscription
 					if ( $type == 'expiration' && $member->is_trialing() ) {
+						rcp_log( sprintf( 'Skipping member #%d - expiration reminder but user is still trialing.', $member->ID ) );
+
 						continue;
 					}
 
 					$sent_time = get_user_meta( $member->ID, sanitize_key( '_rcp_reminder_sent_' . $member->get_subscription_id() . '_' . $notice_id ), true );
 
 					if ( $sent_time ) {
+						rcp_log( sprintf( 'Skipping member #%d - reminder #%d has already been sent.', $member->ID, $notice_id ) );
+
 						continue;
 					}
 

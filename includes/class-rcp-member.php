@@ -23,7 +23,7 @@ class RCP_Member extends WP_User {
 		$status = get_user_meta( $this->ID, 'rcp_status', true );
 
 		// double check that the status and expiration match. Update if needed
-		if( $status == 'active' && $this->is_expired() ) {
+		if( in_array( $status, array( 'active', 'cancelled' ) ) && $this->is_expired() ) {
 
 			rcp_log( sprintf( 'Expiring member %d via get_status() method. Expiration Date: %s; Subscription Level: %s', $this->ID, $this->get_expiration_date(), $this->get_subscription_name() ) );
 
@@ -53,7 +53,7 @@ class RCP_Member extends WP_User {
 
 		$ret        = false;
 		$old_status = get_user_meta( $this->ID, 'rcp_status', true );
-		
+
 		/**
 		 * Filters the value of the status set on the member.
 		 *

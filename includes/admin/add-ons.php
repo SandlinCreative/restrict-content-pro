@@ -89,7 +89,7 @@ function rcp_add_ons_get_feed( $tab = 'pro' ) {
 			$url = add_query_arg( array( 'display' => $tab ), $url );
 		}
 
-		$feed = wp_remote_get( esc_url_raw( $url ), array( 'sslverify' => false ) );
+		$feed = wp_remote_get( esc_url_raw( $url ) );
 
 		if ( ! is_wp_error( $feed ) ) {
 

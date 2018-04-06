@@ -41,26 +41,6 @@ function rcp_get_login_url( $redirect = '' ) {
 }
 
 /**
- * Log a user in
- *
- * @param int    $user_id    ID of the user to login.
- * @param string $user_login Login name of the user.
- * @param bool   $remember   Whether or not to remember the user.
- *
- * @since  1.0
- * @return void
- */
-function rcp_login_user_in( $user_id, $user_login, $remember = false ) {
-	$user = get_userdata( $user_id );
-	if( ! $user )
-		return;
-	wp_set_auth_cookie( $user_id, $remember );
-	wp_set_current_user( $user_id, $user_login );
-	do_action( 'wp_login', $user_login, $user );
-}
-
-
-/**
  * Process the login form
  *
  * @uses rcp_login_user_in()
@@ -89,54 +69,54 @@ function rcp_process_login_form() {
 
 	}
 
+	/**
+	 * Executes before error checks are performed.
+	 *
+	 * @param array $_POST Posted data.
+	 */
 	do_action( 'rcp_before_form_errors', $_POST );
 
-	if( !$user ) {
-		// if the user name doesn't exist
-		rcp_errors()->add( 'empty_username', __( 'Invalid username or email', 'rcp' ), 'login' );
-	}
-
-	if( !isset( $_POST['rcp_user_pass'] ) || $_POST['rcp_user_pass'] == '') {
-		// if no password was entered
-		rcp_errors()->add( 'empty_password', __( 'Please enter a password', 'rcp' ), 'login' );
-	}
-
-	if( $user ) {
-		// check the user's login with their password
-		if( ! wp_check_password( $_POST['rcp_user_pass'], $user->user_pass, $user->ID ) ) {
-			// if the password is incorrect for the specified user
-			rcp_errors()->add( 'empty_password', __( 'Incorrect password', 'rcp' ), 'login' );
-		}
-	}
-
-	if( function_exists( 'is_limit_login_ok' ) && ! is_limit_login_ok() ) {
-
-		rcp_errors()->add( 'limit_login_failed', limit_login_error_msg(), 'login' );
-
-	}
-
+	/**
+	 * Third party plugins can use this action to add additional error checks and messages.
+	 *
+	 * @param array $_POST Posted data.
+	 */
 	do_action( 'rcp_login_form_errors', $_POST );
 
-	// retrieve all error messages
+	// Retrieve all error messages. At this point these are only the errors added via the above hook.
 	$errors = rcp_errors()->get_error_messages();
 
-	// only log the user in if there are no errors
+	// Exit early if we have errors from third party plugins.
+	if ( ! empty( $errors ) ) {
+		return;
+	}
+
+	// Now we can attempt the login.
+	$user = wp_signon( array(
+		'user_login'    => $user->user_login,
+		'user_password' => $_POST['rcp_user_pass'],
+		'remember'      => isset( $_POST['rcp_user_remember'] )
+	) );
+
+	// Add error message if the login failed.
+	if ( is_wp_error( $user ) ) {
+		rcp_errors()->add( $user->get_error_code(), $user->get_error_message(), 'login' );
+	}
+
+	// Refresh error messages.
+	$errors = rcp_errors()->get_error_messages();
+
+	// Redirect if the login was successful.
 	if( empty( $errors ) ) {
 
-		$remember = isset( $_POST['rcp_user_remember'] );
-
 		$redirect = ! empty( $_POST['rcp_redirect'] ) ? $_POST['rcp_redirect'] : home_url();
-
-		rcp_login_user_in( $user->ID, $_POST['rcp_user_login'], $remember );
 
 		// redirect the user back to the page they were previously on
 		wp_safe_redirect( apply_filters( 'rcp_login_redirect_url', esc_url_raw( $redirect ), $user ) ); exit;
 
 	} else {
 
-		if( function_exists( 'limit_login_failed' ) ) {
-			limit_login_failed( $_POST['rcp_user_login'] );
-		}
+		// Page will refresh with errors shown.
 
 	}
 }

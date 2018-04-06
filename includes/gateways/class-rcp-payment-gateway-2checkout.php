@@ -302,7 +302,12 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 
 					if( ! $member->just_upgraded() ) {
 
-						$member->cancel();
+						if ( $member->is_active() ) {
+							$member->cancel();
+						} else {
+							rcp_log( sprintf( 'Member #%d is not active - not cancelling account.', $member->ID ) );
+						}
+
 						$member->add_note( __( 'Subscription cancelled in 2Checkout', 'rcp' ) );
 
 						do_action( 'rcp_webhook_cancel', $member, $this );

@@ -56,6 +56,8 @@ add_action('wp', 'rcp_setup_cron_jobs');
  */
 function rcp_check_for_expired_users() {
 
+	rcp_log( 'Starting rcp_check_for_expired_users() cron job.' );
+
 	global $wpdb;
 
 	$current_time = date( 'Y-m-d H:i:s', strtotime( '-1 day', current_time( 'timestamp' ) ) );
@@ -69,7 +71,7 @@ function rcp_check_for_expired_users() {
 			AND  (mt1.meta_key = 'rcp_expiration'
 				AND CAST(mt1.meta_value AS CHAR) != 'none')
 			AND  (mt2.meta_key = 'rcp_status'
-				AND CAST(mt2.meta_value AS CHAR) = 'active') )
+				AND CAST(mt2.meta_value AS CHAR) IN('active', 'cancelled')) )
 		ORDER BY user_login ASC LIMIT 9999";
 
 	$query = apply_filters( 'rcp_check_for_expired_users_query_filter', $query );
@@ -83,9 +85,12 @@ function rcp_check_for_expired_users() {
 
 			$expiration_date = rcp_get_expiration_timestamp( $member_id );
 			if( $expiration_date && strtotime( '-2 days', current_time( 'timestamp' ) ) > $expiration_date ) {
+				rcp_log( sprintf( 'Expiring user #%d via cron job.', $member_id ) );
 				rcp_set_status( $member_id, 'expired' );
 			}
 		}
+	} else {
+		rcp_log( 'No expired users found.' );
 	}
 }
 //add_action( 'admin_init', 'rcp_check_for_expired_users' );
@@ -104,6 +109,8 @@ add_action( 'rcp_expired_users_check', 'rcp_check_for_expired_users' );
  */
 function rcp_check_for_soon_to_expire_users() {
 
+	rcp_log( 'Starting rcp_check_for_soon_to_expire_users() cron job.' );
+
 	$reminders = new RCP_Reminders();
 	$reminders->send_reminders();
 
@@ -120,6 +127,8 @@ add_action( 'rcp_send_expiring_soon_notice', 'rcp_check_for_soon_to_expire_users
  * @return void
  */
 function rcp_check_member_counts() {
+
+	rcp_log( 'Starting rcp_check_member_counts() cron job.' );
 
 	global $rcp_levels_db;
 	$levels = $rcp_levels_db->get_levels();
@@ -151,6 +160,8 @@ add_action( 'rcp_check_member_counts', 'rcp_check_member_counts' );
  * @return void
  */
 function rcp_mark_abandoned_payments() {
+
+	rcp_log( 'Starting rcp_mark_abandoned_payments() cron job.' );
 
 	/**
 	 * @var RCP_Payments $rcp_payments_db
