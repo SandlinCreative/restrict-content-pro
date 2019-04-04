@@ -53,7 +53,7 @@ $subscription = rcp_get_subscription_details( $payment->object_id );
 		</tr>
 		<tr valign="top">
 			<th scope="row" valign="top">
-				<label for="rcp-subscription-level"><?php _e( 'Subscription Level', 'rcp' ); ?></label>
+				<label for="rcp-subscription-level"><?php _e( 'Membership Level', 'rcp' ); ?></label>
 			</th>
 			<td>
 				<?php
@@ -61,7 +61,7 @@ $subscription = rcp_get_subscription_details( $payment->object_id );
 					echo '<a href="' . esc_url( admin_url( 'admin.php?page=rcp-member-levels&edit_subscription=' . absint( $subscription->id ) ) ) . '">' . esc_html( $subscription->name ) . '</a>';
 				}
 				?>
-				<p class="description"><?php _e( 'Subscription level this payment was for', 'rcp' ); ?></p>
+				<p class="description"><?php _e( 'Membership level this payment was for', 'rcp' ); ?></p>
 			</td>
 		</tr>
 		<tr valign="top">
@@ -78,7 +78,7 @@ $subscription = rcp_get_subscription_details( $payment->object_id );
 				<label for="rcp-date"><?php _e( 'Payment Date', 'rcp' ); ?></label>
 			</th>
 			<td>
-				<input name="date" id="rcp-date" type="text" class="rcp-datepicker" value="<?php echo esc_attr( date( 'Y-m-d', strtotime( $payment->date, current_time( 'timestamp' ) ) ) ); ?>"/>
+				<input name="date" id="rcp-date" type="text" class="rcp-datepicker" value="<?php echo esc_attr( date( 'Y-m-d H:i:s', strtotime( $payment->date, current_time( 'timestamp' ) ) ) ); ?>"/>
 				<p class="description"><?php _e( 'The date for this payment in the format of yyyy-mm-dd', 'rcp' ); ?></p>
 			</td>
 		</tr>

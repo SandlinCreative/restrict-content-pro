@@ -2,7 +2,18 @@
 
 class RCP_Discount_Tests extends WP_UnitTestCase {
 
+	/**
+	 * Database query class.
+	 *
+	 * @var RCP_Discounts
+	 */
 	protected $db;
+
+	/**
+	 * ID of the discount code.
+	 *
+	 * @var int
+	 */
 	protected $discount_id;
 
 	public function setUp() {
@@ -112,6 +123,26 @@ class RCP_Discount_Tests extends WP_UnitTestCase {
 
 	function test_has_subscription_id() {
 		$this->assertFalse( $this->db->has_subscription_id( $this->discount_id ) );
+	}
+
+	/**
+	 * A new discount code should not have any membership level ids assigned by default.
+	 *
+	 * @covers RCP_Discounts::get_membership_level_ids()
+	 * @since 3.0
+	 */
+	function test_get_membership_level_ids() {
+		$this->assertEmpty( $this->db->get_membership_level_ids( $this->discount_id ) );
+	}
+
+	/**
+	 * A new discount code should not have any membership level ids assigned by default.
+	 *
+	 * @covers RCP_Discounts::has_membership_level_ids()
+	 * @since 3.0
+	 */
+	function test_has_membership_level_ids() {
+		$this->assertFalse( $this->db->has_membership_level_ids( $this->discount_id ) );
 	}
 
 	function test_get_expiration() {

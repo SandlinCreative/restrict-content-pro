@@ -807,7 +807,7 @@ function rcp_reports_graph_controls() {
 
 				<?php if( 'earnings' == $active_tab ) : $levels = rcp_get_subscription_levels(); ?>
 					<select id="rcp-graphs-subscriptions" name="subscription">
-						<option value="0"><?php _e( 'All Subscription Levels', 'rcp' ); ?></option>
+						<option value="0"><?php _e( 'All Membership Levels', 'rcp' ); ?></option>
 						<?php foreach( $levels as $level ) : ?>
 							<option value="<?php echo $level->id; ?>"<?php selected( $selected_level, $level->id ); ?>><?php echo $level->name; ?></option>
 						<?php endforeach; ?>

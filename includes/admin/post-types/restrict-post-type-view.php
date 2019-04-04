@@ -31,13 +31,13 @@ $role_set_display  = '' != $user_role ? '' : ' style="display:none;"';
 		<p><strong><?php _e( 'Member access options', 'rcp' ); ?></strong></p>
 		<p>
 			<?php _e( 'Select who should have access to this content.', 'rcp' ); ?>
-			<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php _e( '<strong>Subscription level</strong>: a subscription level refers to a membership option. For example, you might have a Gold, Silver, and Bronze membership level. <br/><br/><strong>Access Level</strong>: refers to a tiered system where a member\'s ability to view content is determined by the access level assigned to their account. A member with an access level of 5 can view content assigned to access levels of 5 and lower.', 'rcp' ); ?>"></span>
+			<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php _e( '<strong>Membership level</strong>: a membership level refers to a membership option. For example, you might have a Gold, Silver, and Bronze membership level. <br/><br/><strong>Access Level</strong>: refers to a tiered system where a member\'s ability to view content is determined by the access level assigned to their account. A member with an access level of 5 can view content assigned to access levels of 5 and lower.', 'rcp' ); ?>"></span>
 		</p>
 		<p>
 			<label for="rcp-restrict-by" class="screen-reader-text"><?php _e( 'Select who should have access to this content', 'rcp' ); ?></label>
 			<select id="rcp-restrict-by" name="rcp_restrict_by">
 				<option value="unrestricted" <?php selected( true, ( empty( $sub_levels ) && empty( $access_level ) && empty( $is_paid ) ) ); ?>><?php _e( 'Everyone (or configure posts individually)', 'rcp' ); ?></option>
-				<option value="subscription-level"<?php selected( true, ! empty( $sub_levels ) || ! empty( $is_paid ) ); ?>><?php _e( 'Members of subscription level(s)', 'rcp' ); ?></option>
+				<option value="subscription-level"<?php selected( true, ! empty( $sub_levels ) || ! empty( $is_paid ) ); ?>><?php _e( 'Members of membership level(s)', 'rcp' ); ?></option>
 				<option value="access-level"<?php selected( true, is_numeric( $access_level ) ); ?>><?php _e( 'Members with an access level', 'rcp' ); ?></option>
 				<option value="registered-users"<?php selected( true, empty( $sub_levels ) && ! is_numeric( $access_level ) && ! empty( $user_role ) && 'All' !== $user_role ); ?>><?php _e( 'Members with a certain role', 'rcp' ); ?></option>
 			</select>
@@ -46,15 +46,15 @@ $role_set_display  = '' != $user_role ? '' : ' style="display:none;"';
 	<div id="rcp-metabox-field-levels" class="rcp-metabox-field"<?php echo $level_set_display; ?>>
 		<label for="rcp_subscription_level_any">
 			<input type="radio" name="rcp_subscription_level_any_set" id="rcp_subscription_level_any" value="any"<?php checked( 'any', $set_level ); ?>/>
-			&nbsp;<?php _e( 'Members of any subscription level(s)', 'rcp' ); ?><br/>
+			&nbsp;<?php _e( 'Members of any membership level(s)', 'rcp' ); ?><br/>
 		</label>
 		<label for="rcp_subscription_level_any_paid">
 			<input type="radio" name="rcp_subscription_level_any_set" id="rcp_subscription_level_any_paid" value="any-paid"<?php checked( true, $set_level == 'any-paid' || ( ! empty( $is_paid ) && 'any' !== $sub_levels ) ); ?>/>
-			&nbsp;<?php _e( 'Members of any paid subscription level(s)', 'rcp' ); ?><br/>
+			&nbsp;<?php _e( 'Members of any paid membership level(s)', 'rcp' ); ?><br/>
 		</label>
 		<label for="rcp_subscription_level_specific">
 			<input type="radio" name="rcp_subscription_level_any_set" id="rcp_subscription_level_specific" value="specific"<?php checked( true, is_array( $sub_levels ) ); ?>/>
-			&nbsp;<?php _e( 'Members of specific subscription levels', 'rcp' ); ?><br/>
+			&nbsp;<?php _e( 'Members of specific membership levels', 'rcp' ); ?><br/>
 		</label>
 		<p class="rcp-subscription-levels"<?php echo $levels_display; ?>>
 			<?php foreach ( rcp_get_subscription_levels() as $level ) : ?>
@@ -77,17 +77,19 @@ $role_set_display  = '' != $user_role ? '' : ' style="display:none;"';
 	</div>
 	<div id="rcp-metabox-field-role" class="rcp-metabox-field"<?php echo $role_set_display; ?>>
 		<p>
-			<label for="rcp-user-level-field"><?php _e( 'Require member to have capabilities from this user role or higher.', 'rcp' ); ?></label>
+			<label for="rcp-user-level-field"><?php _e( 'Require member to have capabilities from this user role.', 'rcp' ); ?></label>
 		</p>
 		<p>
-			<select name="rcp_user_level" id="rcp-user-level-field">
-				<?php
-				$roles = get_editable_roles();
-				$roles = array_merge( array( 'all' => array( 'name' => 'All' ) ), $roles );
-				foreach(  $roles as $key => $role ) : ?>
-					<option value="<?php echo esc_attr( $key ); ?>"<?php selected( $key, strtolower( $user_role ) ); ?>><?php echo translate_user_role( $role['name'] ); ?></option>
-				<?php endforeach; ?>
-			</select>
+			<?php
+			$roles          = get_editable_roles();
+			$roles          = array_merge( array( 'all' => array( 'name' => 'Any' ) ), $roles );
+			$selected_roles = is_array( $user_role ) ? $user_role : array( strtolower( $user_role ) );
+			foreach(  $roles as $key => $role ) : ?>
+				<label for="rcp_user_level_<?php echo esc_attr( $key ); ?>">
+					<input type="checkbox" name="rcp_user_level[]" id="rcp_user_level_<?php echo esc_attr( $key ); ?>" class="rcp-user-role" value="<?php echo esc_attr( $key ); ?>"<?php checked( true, in_array( $key, $selected_roles ) ); ?>>
+					&nbsp;<?php echo translate_user_role( $role['name'] ); ?><br/>
+				</label>
+			<?php endforeach; ?>
 		</p>
 	</div>
 

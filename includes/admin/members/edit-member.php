@@ -90,7 +90,7 @@ if ( 'pending' == $current_status ) {
 					<p id="rcp-revoke-access-wrap">
 						<input type="checkbox" id="rcp-revoke-access" name="rcp-revoke-access" value="1">
 						<label for="rcp-revoke-access"><?php _e( 'Revoke access now', 'rcp' ); ?></label>
-						<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php esc_attr_e( 'If not enabled, the member will retain access until the end of their current term. If checked, access will be revoked immediately.', 'rcp' ); ?>"></span>
+						<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php esc_attr_e( 'If not enabled, the member will retain access until the end of their current term. If checked, the member\'s status will be changed to "expired" and access will be revoked immediately.', 'rcp' ); ?>"></span>
 					</p>
 				</td>
 			</tr>
@@ -180,6 +180,7 @@ if ( 'pending' == $current_status ) {
 					<select name="signup_method" id="rcp-signup-method">
 						<option value="live" <?php selected( $method, 'live' ); ?>><?php _e( 'User Signup', 'rcp' ); ?>
 						<option value="manual" <?php selected( $method, 'manual' ); ?>><?php _e( 'Added by admin manually', 'rcp' ); ?>
+						<option value="imported" <?php selected( $method, 'imported' ); ?>><?php _e( 'Imported', 'rcp' ); ?>
 					</select>
 					<p class="description"><?php _e( 'Was this a real signup or a membership given to the user', 'rcp' ); ?></p>
 				</td>
@@ -193,6 +194,44 @@ if ( 'pending' == $current_status ) {
 					<p class="description"><?php _e( 'Use this area to record notes about this user if needed', 'rcp' ); ?></p>
 				</td>
 			</tr>
+			<?php if ( ! empty( $rcp_options['enable_terms'] ) ) : ?>
+			<tr valign="top">
+				<th scope="row" valign="top">
+					<label for="rcp-terms-agreed"><?php _e( 'Agreed to Terms', 'rcp' ); ?></label>
+				</th>
+				<td>
+					<?php
+					$terms_agreed = get_user_meta( $member->ID, 'rcp_terms_agreed', true );
+					if ( ! empty( $terms_agreed ) && is_array( $terms_agreed ) ) {
+						foreach ( $terms_agreed as $terms_agreed_date ) {
+							echo date_i18n( get_option( 'date_format' ) . ' H:i:s', $terms_agreed_date ) . '<br />';
+						}
+					} else {
+						_e( 'None', 'rcp' );
+					}
+					?>
+				</td>
+			</tr>
+			<?php endif; ?>
+			<?php if ( ! empty( $rcp_options['enable_privacy_policy'] ) ) : ?>
+				<tr valign="top">
+					<th scope="row" valign="top">
+						<label for="rcp-privacy-policy-agreed"><?php _e( 'Agreed to Privacy Policy', 'rcp' ); ?></label>
+					</th>
+					<td>
+						<?php
+						$privacy_policy_agreed = get_user_meta( $member->ID, 'rcp_privacy_policy_agreed', true );
+						if ( ! empty( $privacy_policy_agreed ) && is_array( $privacy_policy_agreed ) ) {
+							foreach ( $privacy_policy_agreed as $privacy_policy_agreed_date ) {
+								echo date_i18n( get_option( 'date_format' ) . ' H:i:s', $privacy_policy_agreed_date ) . '<br />';
+							}
+						} else {
+							_e( 'None', 'rcp' );
+						}
+						?>
+					</td>
+				</tr>
+			<?php endif; ?>
 			<tr class="form-field">
 				<th scope="row" valign="top">
 					<?php _e( 'Discount codes used', 'rcp' ); ?>

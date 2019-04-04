@@ -133,6 +133,7 @@ function rcp_payments_page() {
 					<th scope="col" class="rcp-payments-date-col"><?php _e( 'Date', 'rcp' ); ?></th>
 					<th scope="col" class="rcp-payments-amount-col"><?php _e( 'Amount', 'rcp' ); ?></th>
 					<th scope="col" class="rcp-payments-type-col"><?php _e( 'Type', 'rcp' ); ?></th>
+					<th scope="col" class="rcp-payments-gateway-col"><?php _e( 'Gateway', 'rcp' ); ?></th>
 					<th scope="col" class="rcp-payments-txnid-col"><?php _e( 'Transaction ID', 'rcp' ); ?></th>
 					<th scope="col" class="rcp-payments-status-col"><?php _e( 'Status', 'rcp' ); ?></th>
 					<?php do_action('rcp_payments_page_table_header'); ?>
@@ -142,7 +143,8 @@ function rcp_payments_page() {
 				<?php if( $payments ) :
 					$i = 0; $total_earnings = 0;
 					foreach( $payments as $payment ) :
-						$user = get_userdata( $payment->user_id );
+						$user    = get_userdata( $payment->user_id );
+						$gateway = ! empty( $payment->gateway ) ? $payment->gateway : '';
 						?>
 						<tr class="rcp_payment <?php if( rcp_is_odd( $i ) ) echo 'alternate'; ?>">
 							<td class="column-primary has-row-actions" data-colname="<?php _e( 'User', 'rcp' ); ?>">
@@ -177,7 +179,29 @@ function rcp_payments_page() {
 							</td>
 							<td data-colname="<?php _e( 'Date', 'rcp' ); ?>"><?php echo esc_html( $payment->date ); ?></td>
 							<td data-colname="<?php _e( 'Amount', 'rcp' ); ?>"><?php echo rcp_currency_filter( $payment->amount ); ?></td>
-							<td data-colname="<?php _e( 'Type', 'rcp' ); ?>"><?php echo esc_html( $payment->payment_type ); ?></td>
+							<td data-colname="<?php _e( 'Type', 'rcp' ); ?>">
+								<?php
+								if ( ! empty( $payment->transaction_type ) ) {
+									echo esc_html( rcp_get_status_label( $payment->transaction_type ) );
+								} elseif ( 'manual' != $gateway ) {
+									// Prevent "manual" from duplicating twice (here and gateway column).
+									echo esc_html( $payment->payment_type );
+								}
+								?>
+							</td>
+							<td data-colname="<?php esc_attr_e( 'Gateway', 'rcp' ); ?>">
+								<?php
+								if ( ! empty( $gateway ) ) {
+									if ( 'free' == $gateway ) {
+										_e( 'None', 'rcp' );
+									} else {
+										echo rcp_get_payment_gateway_details( $gateway, 'admin_label' );
+									}
+								} else {
+									_e( 'Unknown', 'rcp' );
+								}
+								?>
+							</td>
 							<td data-colname="<?php _e( 'Transaction ID', 'rcp' ); ?>"><?php echo rcp_get_merchant_transaction_id_link( $payment ); ?></td>
 							<td data-colname="<?php _e( 'Status', 'rcp' ); ?>"><?php echo rcp_get_payment_status_label( $payment ); ?></td>
 							<?php do_action( 'rcp_payments_page_table_column', $payment->id ); ?>
@@ -209,6 +233,7 @@ function rcp_payments_page() {
 						<th scope="col"><?php _e( 'Date', 'rcp' ); ?></th>
 						<th scope="col"><?php _e( 'Amount', 'rcp' ); ?></th>
 						<th scope="col"><?php _e( 'Type', 'rcp' ); ?></th>
+						<th scope="col"><?php _e( 'Gateway', 'rcp' ); ?></th>
 						<th scope="col"><?php _e( 'Transaction ID', 'rcp' ); ?></th>
 						<th scope="col"><?php _e( 'Status', 'rcp' ); ?></th>
 						<?php do_action( 'rcp_payments_page_table_footer' ); ?>

@@ -23,9 +23,11 @@ class RCP_Google_Authenticator {
 			return;
 		}
 
+		$google_auth = new GoogleAuthenticator;
+
 		add_action( 'rcp_login_form_fields_before_submit', array( $this, 'auth_code_input' ) );
-		add_action( 'rcp_after_login_form_fields', array( 'GoogleAuthenticator', 'loginfooter' ) );
-		add_action( 'rcp_before_form_errors', array( $this, 'check_code' ) );
+		add_action( 'rcp_after_login_form_fields', array( $google_auth, 'loginfooter' ) );
+		add_action( 'rcp_login_form_errors', array( $this, 'check_code' ) );
 	}
 
 	/**

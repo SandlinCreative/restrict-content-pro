@@ -3,7 +3,7 @@
  * Registration Form - Single
  *
  * This template is used to display the registration form for a single
- * subscription level with [register_form id="3"]
+ * membership level with [register_form id="3"]
  * @link http://docs.restrictcontentpro.com/article/1597-registerform
  *
  * For modifying this template, please see: http://docs.restrictcontentpro.com/article/1738-template-files
@@ -41,7 +41,7 @@ rcp_show_error_messages( 'register' ); ?>
 	<?php if( ! is_user_logged_in() ) { ?>
 
 	<div class="rcp_login_link">
-		<p><?php printf( __( '<a href="%s">Log in</a> if you wish to renew an existing subscription.', 'rcp' ), esc_url( rcp_get_login_url( rcp_get_current_url() ) ) ); ?></p>
+		<p><?php printf( __( '<a href="%s">Log in</a> to renew or change an existing membership.', 'rcp' ), esc_url( rcp_get_login_url( rcp_get_current_url() ) ) ); ?></p>
 	</div>
 
 	<?php do_action( 'rcp_before_register_form_fields' ); ?>
@@ -131,11 +131,61 @@ rcp_show_error_messages( 'register' ); ?>
 
 	<?php endif; ?>
 
+	<?php if ( ! empty( $rcp_options['enable_terms'] ) ) : ?>
+		<fieldset class="rcp_agree_to_terms_fieldset">
+			<p id="rcp_agree_to_terms_wrap">
+				<input type="checkbox" id="rcp_agree_to_terms" name="rcp_agree_to_terms" value="1">
+				<label for="rcp_agree_to_terms">
+					<?php
+					if ( ! empty( $rcp_options['terms_link'] ) ) {
+						echo '<a href="' . esc_url( $rcp_options['terms_link'] ) . '" target="_blank">';
+					}
+
+					if ( ! empty( $rcp_options['terms_label'] ) ) {
+						echo $rcp_options['terms_label'];
+					} else {
+						_e( 'I agree to the terms and conditions', 'rcp' );
+					}
+
+					if ( ! empty( $rcp_options['terms_link'] ) ) {
+						echo '</a>';
+					}
+					?>
+				</label>
+			</p>
+		</fieldset>
+	<?php endif; ?>
+
+	<?php if ( ! empty( $rcp_options['enable_privacy_policy'] ) ) : ?>
+		<fieldset class="rcp_agree_to_privacy_policy_fieldset">
+			<p id="rcp_agree_to_privacy_policy_wrap">
+				<input type="checkbox" id="rcp_agree_to_privacy_policy" name="rcp_agree_to_privacy_policy" value="1">
+				<label for="rcp_agree_to_privacy_policy">
+					<?php
+					if ( ! empty( $rcp_options['privacy_policy_link'] ) ) {
+						echo '<a href="' . esc_url( $rcp_options['privacy_policy_link'] ) . '" target="_blank">';
+					}
+
+					if ( ! empty( $rcp_options['privacy_policy_label'] ) ) {
+						echo $rcp_options['privacy_policy_label'];
+					} else {
+						_e( 'I agree to the privacy policy', 'rcp' );
+					}
+
+					if ( ! empty( $rcp_options['privacy_policy_link'] ) ) {
+						echo '</a>';
+					}
+					?>
+				</label>
+			</p>
+		</fieldset>
+	<?php endif; ?>
+
 	<?php do_action( 'rcp_before_registration_submit_field' ); ?>
 
 	<p id="rcp_submit_wrap">
 		<input type="hidden" name="rcp_level" class="rcp_level" value="<?php echo absint( $rcp_level ); ?>" rel="<?php echo esc_attr( $level->price ); ?>" <?php if ( ! empty( $has_trial ) ) { echo 'data-has-trial="true"'; } ?> />
 		<input type="hidden" name="rcp_register_nonce" value="<?php echo wp_create_nonce('rcp-register-nonce' ); ?>"/>
-		<input type="submit" name="rcp_submit_registration" id="rcp_submit" value="<?php esc_attr_e( apply_filters ( 'rcp_registration_register_button', __( 'Register', 'rcp' ) ) ); ?>"/>
+		<input type="submit" name="rcp_submit_registration" id="rcp_submit" class="rcp-button" value="<?php esc_attr_e( apply_filters ( 'rcp_registration_register_button', __( 'Register', 'rcp' ) ) ); ?>"/>
 	</p>
 </form>

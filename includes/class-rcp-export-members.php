@@ -34,18 +34,22 @@ class RCP_Members_Export extends RCP_Export {
 	 */
 	public function csv_cols() {
 		$cols = array(
-			'user_id'          => __( 'User ID', 'rcp' ),
-			'user_login'       => __( 'User Login', 'rcp' ),
-			'user_email'       => __( 'User Email', 'rcp' ),
-			'first_name'       => __( 'First Name', 'rcp' ),
-			'last_name'        => __( 'Last Name', 'rcp' ),
-			'subscription'     => __( 'Subscription', 'rcp' ),
-			'subscription_key' => __( 'Subscription Key', 'rcp' ),
-			'expiration'       => __( 'Expiration', 'rcp' ),
-			'status'           => __( 'Status', 'rcp' ),
-			'discount_codes'   => __( 'Discount Codes', 'rcp' ),
-			'profile_id'       => __( 'Payment Profile ID', 'rcp' ),
-			'is_recurring'     => __( 'Recurring', 'rcp' )
+			'id'                  => __( 'Membership ID', 'rcp' ),
+			'user_id'             => __( 'User ID', 'rcp' ),
+			'user_login'          => __( 'User Login', 'rcp' ),
+			'user_email'          => __( 'User Email', 'rcp' ),
+			'first_name'          => __( 'First Name', 'rcp' ),
+			'last_name'           => __( 'Last Name', 'rcp' ),
+			'subscription'        => __( 'Membership', 'rcp' ),
+			'subscription_key'    => __( 'Subscription Key', 'rcp' ),
+			'created_date'        => __( 'Created Date', 'rcp' ),
+			'expiration'          => __( 'Expiration', 'rcp' ),
+			'status'              => __( 'Status', 'rcp' ),
+			'discount_codes'      => __( 'Discount Codes', 'rcp' ),
+			'gateway'             => __( 'Gateway', 'rcp' ),
+			'gateway_customer_id' => __( 'Gateway Customer ID', 'rcp' ),
+			'profile_id'          => __( 'Gateway Subscription ID', 'rcp' ),
+			'is_recurring'        => __( 'Recurring', 'rcp' )
 		);
 		return $cols;
 	}
@@ -67,14 +71,28 @@ class RCP_Members_Export extends RCP_Export {
 		$offset       = isset( $_POST['rcp-offset'] )       ? absint( $_POST['rcp-offset'] )              : null;
 		$number       = isset( $_POST['rcp-number'] )       ? absint( $_POST['rcp-number'] )              : null;
 
-		$members      = rcp_get_members( $status, $subscription, $offset, $number );
+		$args = array(
+			'status' => $status,
+			'number' => $number,
+			'offset' => $offset
+		);
 
-		if( $members ) :
-			foreach ( $members as $member ) {
+		if ( ! empty( $subscription ) ) {
+			$args['object_id'] = $subscription;
+		}
 
-				$member = new RCP_Member( $member->ID );
+		$memberships  = rcp_get_memberships( $args );
 
-				$discounts = get_user_meta( $member->ID, 'rcp_user_discounts', true );
+		if( $memberships ) :
+			foreach ( $memberships as $membership ) {
+
+				/**
+				 * @var RCP_Membership $membership
+				 */
+
+				$member = new RCP_Member( $membership->get_customer()->get_user_id() ); // for backwards compatibility
+
+				$discounts = get_user_meta( $membership->get_customer()->get_user_id(), 'rcp_user_discounts', true );
 				if( ! empty( $discounts ) && is_array( $discounts ) && ! $discounts instanceof stdClass ) {
 					foreach( $discounts as $key => $code ) {
 						if( ! is_string( $code ) ) {
@@ -84,20 +102,39 @@ class RCP_Members_Export extends RCP_Export {
 					$discounts = implode( ' ', $discounts );
 				}
 
-				$data[] = apply_filters( 'rcp_export_members_get_data_row', array(
-					'user_id'          => $member->ID,
-					'user_login'       => $member->user_login,
-					'user_email'       => $member->user_email,
-					'first_name'       => $member->first_name,
-					'last_name'        => $member->last_name,
-					'subscription'     => $member->get_subscription_id(),
-					'subscription_key' => $member->get_subscription_key(),
-					'expiration'       => $member->get_expiration_date(),
-					'status'           => $member->get_status(),
-					'discount_codes'   => $discounts,
-					'profile_id'       => $member->get_payment_profile_id(),
-					'is_recurring'     => $member->is_recurring()
-				), $member );
+				$membership_data = array(
+					'id'                  => $membership->get_id(),
+					'user_id'             => $membership->get_customer()->get_user_id(),
+					'user_login'          => $member->user_login,
+					'user_email'          => $member->user_email,
+					'first_name'          => $member->first_name,
+					'last_name'           => $member->last_name,
+					'subscription'        => $membership->get_object_id(),
+					'subscription_key'    => $membership->get_subscription_key(),
+					'created_date'        => $membership->get_created_date( false ),
+					'expiration'          => $membership->get_expiration_date( false ),
+					'status'              => $membership->get_status(),
+					'discount_codes'      => $discounts,
+					'gateway'             => $membership->get_gateway(),
+					'gateway_customer_id' => $membership->get_gateway_customer_id(),
+					'profile_id'          => $membership->get_gateway_subscription_id(),
+					'is_recurring'        => $membership->is_recurring()
+				);
+
+				/**
+				 * @deprecated 3.0 Use `rcp_export_memberships_get_data_row` instead.
+				 */
+				$membership_data = apply_filters( 'rcp_export_members_get_data_row', $membership_data, $member );
+
+				/**
+				 * Filters the data row.
+				 *
+				 * @param array          $membership_data Membership data for this row.
+				 * @param RCP_Membership $membership      Membership object.
+				 *
+				 * @since 3.0
+				 */
+				$data[] = apply_filters( 'rcp_export_memberships_get_data_row', $membership_data, $membership );
 
 			}
 		endif;

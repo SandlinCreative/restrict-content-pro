@@ -22,8 +22,8 @@ function rcp_export_page() {
 
 		<?php do_action( 'rcp_export_page_top' ); ?>
 
-		<h2><?php _e( 'Members Export', 'rcp' ); ?></h2>
-		<p><?php _e( 'Download member data as a CSV file. This is useful for tasks such as importing batch users into MailChimp, or other systems.', 'rcp' ); ?></p>
+		<h2><?php _e( 'Memberships Export', 'rcp' ); ?></h2>
+		<p><?php _e( 'Download membership data as a CSV file. This is useful for tasks such as importing batch users into MailChimp, or other systems.', 'rcp' ); ?></p>
 		<form id="rcp_export" action="<?php echo $current_page; ?>" method="post">
 			<p>
 				<select name="rcp-subscription" id="rcp-subscription">
@@ -37,23 +37,22 @@ function rcp_export_page() {
 						endforeach;
 					endif; ?>
 				</select>
-				<label for="rcp-subscription"><?php _e( 'Choose the subscription to export members from', 'rcp' ); ?></label><br/>
+				<label for="rcp-subscription"><?php _e( 'Choose the subscription to export memberships from', 'rcp' ); ?></label><br/>
 				<select name="rcp-status" id="rcp-status">
 					<option value="active"><?php _e( 'Active', 'rcp' ); ?></option>
 					<option value="pending"><?php _e( 'Pending', 'rcp' ); ?></option>
 					<option value="expired"><?php _e( 'Expired', 'rcp' ); ?></option>
 					<option value="cancelled"><?php _e( 'Cancelled', 'rcp' ); ?></option>
-					<option value="free"><?php _e( 'Free', 'rcp' ); ?></option>
 				</select>
 				<label for="rcp-status"><?php _e( 'Choose the status to export', 'rcp' ); ?></label><br/>
 				<input type="number" id="rcp-number" name="rcp-number" class="small-text" value="500" />
-				<label for="rcp-number"><?php _e( 'Maximum number of members to export', 'rcp' ); ?><br/>
+				<label for="rcp-number"><?php _e( 'Maximum number of memberships to export', 'rcp' ); ?><br/>
 				<input type="number" id="rcp-offset" name="rcp-offset" class="small-text" value="0" />
-				<label for="rcp-offset"><?php _e( 'The number of members to skip', 'rcp' ); ?>
+				<label for="rcp-offset"><?php _e( 'The number of memberships to skip', 'rcp' ); ?>
 			</p>
-			<p><?php _e( 'If you need to export a large number of members, export them in batches using the max and offset options', 'rcp' ); ?></p>
+			<p><?php _e( 'If you need to export a large number of memberships, export them in batches using the max and offset options', 'rcp' ); ?></p>
 			<input type="hidden" name="rcp-action" value="export-members"/>
-			<input type="submit" class="button-secondary" value="<?php _e( 'Download Member CSV', 'rcp' ); ?>"/>
+			<input type="submit" class="button-secondary" value="<?php _e( 'Download Memberships CSV', 'rcp' ); ?>"/>
 		</form>
 
 		<!-- payments export -->

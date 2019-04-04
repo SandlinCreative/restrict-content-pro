@@ -13,53 +13,76 @@
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU Public License
  */
 
-global $rcp_checkout_details; ?>
+global $rcp_checkout_details;
+
+$payments         = new RCP_Payments();
+$customer         = rcp_get_customer(); // current customer
+$payment_id       = ! empty( $customer ) ? $customer->get_pending_payment_id() : false;
+$payment          = $payments->get_payment( $payment_id );
+$membership_level = rcp_get_subscription_details( $payment->object_id );
+?>
 <div class="rcp-confirm-details" id="billing_info">
 	<h3><?php _e( 'Please confirm your payment', 'rcp' ); ?></h3>
-	<p><strong><?php echo $rcp_checkout_details['FIRSTNAME'] ?> <?php echo $rcp_checkout_details['LASTNAME'] ?></strong><br />
-	<?php _e( 'PayPal Status:', 'rcp' ); ?> <?php echo $rcp_checkout_details['PAYERSTATUS'] ?><br />
-	<?php _e( 'Email:', 'rcp' ); ?> <?php echo $rcp_checkout_details['EMAIL'] ?></p>
+	<p><strong><?php echo isset( $rcp_checkout_details['FIRSTNAME'] ) ? esc_html( $rcp_checkout_details['FIRSTNAME'] ) : ''; ?> <?php echo isset( $rcp_checkout_details['LASTNAME'] ) ? esc_html( $rcp_checkout_details['LASTNAME'] ) : ''; ?></strong><br />
+	<?php _e( 'PayPal Status:', 'rcp' ); ?> <?php echo isset( $rcp_checkout_details['PAYERSTATUS'] ) ? esc_html( $rcp_checkout_details['PAYERSTATUS'] ) : ''; ?><br />
+	<?php _e( 'Email:', 'rcp' ); ?> <?php echo isset( $rcp_checkout_details['EMAIL'] ) ? esc_html( $rcp_checkout_details['EMAIL'] ) : ''; ?></p>
 </div>
 <table id="order_summary" class="rcp-table">
 	<thead>
 		<tr>
-			<th><?php _e( 'Subscription', 'rcp' ); ?></th>
-			<?php if( ! empty( $_GET['rcp-recurring'] ) ) : ?>
-				<th><?php _e( 'Recurs', 'rcp' ); ?></th>
-			<?php endif; ?>
-			<?php if( ! empty( $_GET['rcp-recurring'] ) && ! empty( $rcp_checkout_details['subscription']['fee'] ) ) : ?>
-				<th><?php _e( 'Signup Fee', 'rcp' ); ?></th>
-			<?php endif; ?>
-			<th><?php _e( 'Subscription Cost', 'rcp' ); ?></th>
+			<th><?php _e( 'Description', 'rcp' ); ?></th>
+			<th><?php _e( 'Amount', 'rcp' ); ?></th>
 		</tr>
 	</thead>
 	<tbody>
 		<tr>
-			<td data-th="<?php esc_attr_e( 'Subscription', 'rcp' ); ?>"><?php echo $rcp_checkout_details['DESC']; ?></td>
-			<?php if( ! empty( $_GET['rcp-recurring'] ) ) : ?>
-				<td data-th="<?php esc_attr_e( 'Recurs', 'rcp' ); ?>">
-					<?php
-					printf( __( 'Every %d %s', 'rcp' ),
-					    esc_html( $rcp_checkout_details['subscription']['duration'] ),
-					    rcp_filter_duration_unit( esc_html( $rcp_checkout_details['subscription']['duration_unit'] ), esc_html( $rcp_checkout_details['subscription']['duration'] ) )
-					);
-					?>
-				</td>
-			<?php endif; ?>
-			<?php if( ! empty( $_GET['rcp-recurring'] ) && ! empty( $rcp_checkout_details['subscription']['fee'] ) ) : ?>
-				<td data-th="<?php esc_attr_e( 'Signup Fee', 'rcp' ); ?>">
-					<?php echo rcp_currency_filter( $rcp_checkout_details['subscription']['fee'] ); ?>
-				</td>
-			<?php endif; ?>
-			<td data-th="<?php esc_attr_e( 'Subscription Cost', 'rcp' ); ?>"><?php echo rcp_currency_filter( $rcp_checkout_details['PAYMENTREQUEST_0_AMT' ] ); ?></td>
+			<td data-th="<?php esc_attr_e( 'Subscription', 'rcp' ); ?>" class="rcp-ppe-confirm-name"><?php echo isset( $rcp_checkout_details['DESC'] ) ? esc_html( $rcp_checkout_details['DESC'] ) : esc_html( $payment->subscription ); ?></td>
+			<td data-th="<?php esc_attr_e( 'Subtotal', 'rcp' ); ?>" class="rcp-ppe-confirm-price"><?php echo rcp_currency_filter( $membership_level->price ); ?></td>
 		</tr>
 	</tbody>
+	<tfoot>
+		<?php if ( ! empty( $payment->discount_amount ) ) : ?>
+			<tr>
+				<th scope="row" class="rcp-ppe-confirm-name"><?php _e( 'Discount:', 'rcp' ); ?></th>
+				<td data-th="<?php esc_attr_e( 'Discount', 'rcp' ); ?>" class="rcp-ppe-confirm-price"><?php echo rcp_currency_filter( -1 * abs( $payment->discount_amount ) ); ?></td>
+			</tr>
+		<?php endif; ?>
+		<?php if ( ! empty( $payment->fees ) ) : ?>
+			<tr>
+				<th scope="row" class="rcp-ppe-confirm-name"><?php _e( 'Fees:', 'rcp' ); ?></th>
+				<td data-th="<?php esc_attr_e( 'Fees', 'rcp' ); ?>" class="rcp-ppe-confirm-price"><?php echo rcp_currency_filter( $payment->fees ); ?></td>
+			</tr>
+		<?php endif; ?>
+		<?php if ( ! empty( $payment->fees ) ) : ?>
+			<tr>
+				<th scope="row" class="rcp-ppe-confirm-name"><?php _e( 'Credits:', 'rcp' ); ?></th>
+				<td data-th="<?php esc_attr_e( 'Credits', 'rcp' ); ?>" class="rcp-ppe-confirm-price"><?php echo rcp_currency_filter( -1 * abs( $payment->credits ) ); ?></td>
+			</tr>
+		<?php endif; ?>
+		<tr>
+			<th scope="row" class="rcp-ppe-confirm-name"><?php _e( 'Total Today:', 'rcp' ); ?></th>
+			<td data-th="<?php esc_attr_e( 'Total Today', 'rcp' ); ?>" class="rcp-ppe-confirm-price"><?php echo rcp_currency_filter( $payment->amount ); ?></td>
+		</tr>
+		<?php if ( ! empty( $_GET['rcp-recurring'] ) ) : ?>
+			<?php
+			if ( $membership_level->duration == 1 ) {
+				$recurring_heading = sprintf( __( 'Total Recurring Per %s:', 'rcp' ), rcp_filter_duration_unit( $membership_level->duration_unit, 1 ) );
+			} else {
+				$recurring_heading = sprintf( __( 'Total Recurring Every %s %s:', 'rcp' ), $membership_level->duration, rcp_filter_duration_unit( $membership_level->duration_unit, $membership_level->duration ) );
+			}
+			?>
+			<tr>
+				<th scope="row" class="rcp-ppe-confirm-name"><?php echo $recurring_heading; ?></th>
+				<td data-th="<?php echo esc_attr( $recurring_heading ); ?>" class="rcp-ppe-confirm-price"><?php echo rcp_currency_filter( $rcp_checkout_details['PAYMENTREQUEST_0_AMT'] ); // @todo ?></td>
+			</tr>
+		<?php endif; ?>
+	</tfoot>
 </table>
 
-<form action="<?php echo esc_url( add_query_arg( 'rcp-confirm', 'paypal_express' ) ); ?>" method="post">
+<form id="rcp-paypal-express-confirm-form" action="<?php echo esc_url( add_query_arg( 'rcp-confirm', 'paypal_express' ) ); ?>" method="post">
 	<input type="hidden" name="confirmation" value="yes" />
 	<input type="hidden" name="token" value="<?php echo esc_attr( $_GET['token'] ); ?>" />
 	<input type="hidden" name="payer_id" value="<?php echo esc_attr( $_GET['PayerID'] ); ?>" />
 	<input type="hidden" name="rcp_ppe_confirm_nonce" value="<?php echo wp_create_nonce( 'rcp-ppe-confirm-nonce' ); ?>"/>
-	<input type="submit" value="<?php esc_attr_e( 'Confirm', 'rcp' ); ?>" />
+	<input type="submit" class="rcp-button" value="<?php esc_attr_e( 'Confirm', 'rcp' ); ?>" />
 </form>

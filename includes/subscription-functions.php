@@ -1,8 +1,8 @@
 <?php
 /**
- * Subscription Functions
+ * Membership Level Functions
  *
- * Functions for getting non-member specific info about subscription levels.
+ * Functions for getting non-member specific info about membership levels.
  *
  * @package     Restrict Content Pro
  * @subpackage  Subscription Functions
@@ -11,9 +11,9 @@
  */
 
 /**
- * Gets an array of all available subscription levels
+ * Gets an array of all available membership levels
  *
- * @param string $status The status of subscription levels we want to retrieve: active, inactive, or all
+ * @param string $status The status of membership levels we want to retrieve: active, inactive, or all
  *
  * @return array|false Array of objects if levels exist, false otherwise
  */
@@ -31,9 +31,9 @@ function rcp_get_subscription_levels( $status = 'all' ) {
 }
 
 /**
- * Gets all details of a specified subscription level
+ * Gets all details of a specified membership level
  *
- * @param int $id The ID of the subscription level to retrieve.
+ * @param int $id The ID of the membership level to retrieve.
  *
  * @return object|false Object on success, false otherwise.
  */
@@ -46,9 +46,9 @@ function rcp_get_subscription_details( $id ) {
 }
 
 /**
- * Gets all details of a specific subscription level
+ * Gets all details of a specific membership level
  *
- * @param string $name The name of the subscription level to retrieve.
+ * @param string $name The name of the membership level to retrieve.
  *
  * @return object|false Object on success, false otherwise.
  */
@@ -61,11 +61,11 @@ function rcp_get_subscription_details_by_name( $name ) {
 }
 
 /**
- * Gets the name of a specified subscription level
+ * Gets the name of a specified membership level
  *
- * @param int $id The ID of the subscription level to retrieve
+ * @param int $id The ID of the membership level to retrieve
  *
- * @return string Name of subscription, or error message on failure
+ * @return string Name of membership level, or error message on failure
  */
 function rcp_get_subscription_name( $id ) {
 
@@ -74,11 +74,11 @@ function rcp_get_subscription_name( $id ) {
 }
 
 /**
- * Gets the duration of a subscription
+ * Gets the duration of a membership
  *
- * @param int $id The ID of the subscription level to retrieve
+ * @param int $id The ID of the membership level to retrieve
  *
- * @return object|false Length an unit (m/d/y) of subscription, or false on failure.
+ * @return object|false Length an unit (m/d/y) of membership, or false on failure.
  */
 function rcp_get_subscription_length( $id ) {
 	global $wpdb, $rcp_db_name;
@@ -89,23 +89,30 @@ function rcp_get_subscription_length( $id ) {
 }
 
 /**
- * Gets the day of expiration of a subscription from the current day
+ * Gets the day of expiration of a membership from the current day
  *
- * @param int $id The ID of the subscription level to retrieve
+ * @param int  $id        The ID of the membership level to retrieve
+ * @param bool $set_trial Whether or not to use the trial duration for calculations.
  *
- * @return string Nicely formatted date of expiration.
+ * @return string MySQL formatted date of expiration.
  */
-function rcp_calculate_subscription_expiration( $id ) {
-	$length          = rcp_get_subscription_length( $id );
-	$expiration_date = 'none';
+function rcp_calculate_subscription_expiration( $id, $set_trial = false ) {
+	$membership_level = rcp_get_subscription_details( $id );
+	$expiration_date  = 'none';
 
-	if( $length->duration > 0 ) {
+	if( $membership_level->duration > 0 ) {
 
 		$current_time       = current_time( 'timestamp' );
 		$last_day           = cal_days_in_month( CAL_GREGORIAN, date( 'n', $current_time ), date( 'Y', $current_time ) );
 
-		$expiration_unit    = $length->duration_unit;
-		$expiration_length  = $length->duration;
+		if ( $set_trial && ! empty( $membership_level->trial_duration ) ) {
+			$expiration_unit   = $membership_level->trial_duration_unit;
+			$expiration_length = $membership_level->trial_duration;
+		} else {
+			$expiration_unit   = $membership_level->duration_unit;
+			$expiration_length = $membership_level->duration;
+		}
+
 		$expiration_date    = date( 'Y-m-d H:i:s', strtotime( '+' . $expiration_length . ' ' . $expiration_unit . ' 23:59:59', current_time( 'timestamp' ) ) );
 
 		if( date( 'j', $current_time ) == $last_day && 'day' != $expiration_unit ) {
@@ -114,15 +121,26 @@ function rcp_calculate_subscription_expiration( $id ) {
 
 	}
 
+	/**
+	 * Filters the calculate expiration date for a membership level.
+	 *
+	 * @param string $expiration_date  Calculated date in MySQL format, or `none` if no expiration.
+	 * @param object $membership_level Membership level object.
+	 * @param bool   $set_trial        Whether or not to set a trial.
+	 *
+	 * @since 3.0
+	 */
+	$expiration_date = apply_filters( 'rcp_calculate_membership_level_expiration', $expiration_date, $membership_level, $set_trial );
+
 	return $expiration_date;
 }
 
 /**
- * Gets the price of a subscription level
+ * Gets the price of a membership level
  *
- * @param int $id The ID of the subscription level to retrieve
+ * @param int $id The ID of the membership level to retrieve
  *
- * @return int|float|false Price of subscription level, false on failure
+ * @return int|float|false Price of membership level, false on failure
  */
 function rcp_get_subscription_price( $id ) {
 	$levels = new RCP_Levels();
@@ -133,9 +151,9 @@ function rcp_get_subscription_price( $id ) {
 }
 
 /**
- * Gets the signup fee of a subscription level
+ * Gets the signup fee of a membership level
  *
- * @param int $id The ID of the subscription level to retrieve
+ * @param int $id The ID of the membership level to retrieve
  *
  * @return int|float|false Signup fee if any, false otherwise
  */
@@ -148,9 +166,9 @@ function rcp_get_subscription_fee( $id ) {
 }
 
 /**
- * Gets the description of a subscription level
+ * Gets the description of a membership level
  *
- * @param int $id The ID of the subscription level to retrieve
+ * @param int $id The ID of the membership level to retrieve
  *
  * @return string Level description.
  */
@@ -161,11 +179,11 @@ function rcp_get_subscription_description( $id ) {
 }
 
 /**
- * Gets the access level of a subscription package
+ * Gets the access level of a membership package
  *
- * @param int $id The ID of the subscription level to retrieve
+ * @param int $id The ID of the membership level to retrieve
  *
- * @return int|false The numerical access level the subscription gives, or false if none.
+ * @return int|false The numerical access level the membership gives, or false if none.
  */
 function rcp_get_subscription_access_level( $id ) {
 	$levels = new RCP_Levels();
@@ -176,9 +194,43 @@ function rcp_get_subscription_access_level( $id ) {
 }
 
 /**
- * Retrieve the number of active subscribers on a subscription level
+ * Get the number of days in a billing cycle.
  *
- * @param int    $id     ID of the subscription level to check.
+ * Taken from WooCommerce.
+ *
+ * @param string $duration_unit Unit: day, month, or year.
+ * @param int    $duration      Cycle duration.
+ *
+ * @since 3.0.4
+ * @return int The number of days in a billing cycle.
+ */
+function rcp_get_days_in_cycle( $duration_unit, $duration ) {
+
+	$days_in_cycle = 0;
+
+	switch ( $duration_unit ) {
+		case 'day' :
+			$days_in_cycle = $duration;
+			break;
+		case 'week' :
+			$days_in_cycle = $duration * 7;
+			break;
+		case 'month' :
+			$days_in_cycle = $duration * 30.4375; // Average days per month over 4 year period
+			break;
+		case 'year' :
+			$days_in_cycle = $duration * 365.25; // Average days per year over 4 year period
+			break;
+	}
+
+	return $days_in_cycle;
+
+}
+
+/**
+ * Retrieve the number of active subscribers on a membership level
+ *
+ * @param int    $id     ID of the membership level to check.
  * @param string $status Membership status to check. Default is 'active'.
  *
  * @since       2.6
@@ -187,14 +239,25 @@ function rcp_get_subscription_access_level( $id ) {
 */
 function rcp_get_subscription_member_count( $id, $status = 'active' ) {
 
+	/**
+	 * @var RCP_Levels $rcp_levels_db
+	 */
 	global $rcp_levels_db;
 
 	$key   = $id . '_' . $status . '_member_count';
 	$count = $rcp_levels_db->get_meta( $id, $key, true );
 
 	if( '' === $count ) {
+		if ( in_array( $status, array( 'active', 'free' ) ) ) {
+			// If "active" or "free", use deprecated method to ensure paid vs free separation.
+			$count = rcp_count_members( $id, $status );
+		} else {
+			$count = rcp_count_memberships( array(
+				'object_id' => $id,
+				'status'    => $status
+			) );
+		}
 
-		$count = rcp_count_members( $id, $status );
 		$rcp_levels_db->update_meta( $id, $key, (int) $count );
 
 	}
@@ -205,9 +268,9 @@ function rcp_get_subscription_member_count( $id, $status = 'active' ) {
 }
 
 /**
- * Increments the number of active subscribers on a subscription level
+ * Increments the number of active subscribers on a membership level
  *
- * @param int    $id     ID of the subscription level to increment the count of.
+ * @param int    $id     ID of the membership level to increment the count of.
  * @param string $status Membership status to increment count for. Default is 'active'.
  *
  * @since       2.6
@@ -228,9 +291,9 @@ function rcp_increment_subscription_member_count( $id, $status = 'active' ) {
 }
 
 /**
- * Decrements the number of active subscribers on a subscription level
+ * Decrements the number of active subscribers on a membership level
  *
- * @param int    $id     ID of the subscription level to decrement the count of.
+ * @param int    $id     ID of the membership level to decrement the count of.
  * @param string $status Membership status to decrement count for. Default is 'active'.
  *
  * @since       2.6
@@ -252,10 +315,10 @@ function rcp_decrement_subscription_member_count( $id, $status = 'active' ) {
 }
 
 /**
- * Get a formatted duration unit name for subscription lengths
+ * Get a formatted duration unit name for membership lengths
  *
  * @param string $unit   The duration unit to return a formatted string for.
- * @param int    $length The duration of the subscription level.
+ * @param int    $length The duration of the membership level.
  *
  * @return string A formatted unit display. Example "days" becomes "Days". Return is localized.
  */
@@ -285,7 +348,7 @@ function rcp_filter_duration_unit( $unit, $length ) {
 }
 
 /**
- * Checks to see if there are any paid subscription levels created
+ * Checks to see if there are any paid membership levels created
  *
  * @since 1.1.0
  * @return bool True if paid levels exist, false if only free.
@@ -348,9 +411,9 @@ function rcp_generate_subscription_key() {
 }
 
 /**
- * Determines if a subscription level should be shown
+ * Determines if a membership level should be shown
  *
- * @param int $level_id ID of the subscription level to check.
+ * @param int $level_id ID of the membership level to check.
  * @param int $user_id  ID of the user, or 0 to use currently logged in user.
  *
  * @since 1.3.2.3
@@ -366,11 +429,13 @@ function rcp_show_subscription_level( $level_id = 0, $user_id = 0 ) {
 
 	$ret = true;
 
-	$user_level = rcp_get_subscription_id( $user_id );
-	$sub_length = rcp_get_subscription_length( $level_id );
-	$sub_price 	= rcp_get_subscription_price( $level_id );
-	$used_trial = rcp_has_used_trial( $user_id );
-	$trial_duration = $rcp_levels_db->trial_duration( $level_id );
+	$customer         = rcp_get_customer_by_user_id( $user_id );
+	$membership       = is_object( $customer ) ? rcp_get_customer_single_membership( $customer->get_id() ) : false;
+	$membership_level = ! empty( $membership ) ? $membership->get_object_id() : false;
+	$sub_length       = rcp_get_subscription_length( $level_id );
+	$sub_price 	      = rcp_get_subscription_price( $level_id );
+	$used_trial       = is_object( $customer ) ? $customer->has_trialed() : false;
+	$trial_duration   = $rcp_levels_db->trial_duration( $level_id );
 
 	// Don't show free trial if user has already used it. Don't show if sub is free and user already has it. Don't show if sub is unlimited and user already has it.
 	if (
@@ -378,11 +443,11 @@ function rcp_show_subscription_level( $level_id = 0, $user_id = 0 ) {
 		&&
 		( $sub_price == '0' && $sub_length->duration > 0 && $used_trial )
 		||
-		( $sub_price == '0' && $user_level == $level_id )
+		( $sub_price == '0' && $membership_level == $level_id )
 		||
-		( empty( $sub_length->duration ) && $user_level == $level_id )
+		( empty( $sub_length->duration ) && $membership_level == $level_id )
 		||
-		( ! empty( $trial_duration ) && $used_trial && ( $user_level == $level_id && ! rcp_is_expired( $user_id ) ) )
+		( ! empty( $trial_duration ) && $used_trial && ( $membership_level == $level_id && ! $membership->is_expired() ) )
 	) {
 		$ret = false;
 	}
@@ -403,7 +468,7 @@ function rcp_show_subscription_level( $level_id = 0, $user_id = 0 ) {
 
 
 /**
- * Retrieve the subscription levels a post/page is restricted to
+ * Retrieve the membership levels a post/page is restricted to
  *
  * @param int $post_id The ID of the post to retrieve levels for
  *
@@ -457,10 +522,10 @@ function rcp_get_term_restrictions( $term_id ) {
 }
 
 /**
- * Gets the IDs of subscription levels with trial periods.
+ * Gets the IDs of membership levels with trial periods.
  *
  * @since 2.7
- * @return array An array of numeric subscription level IDs. An empty array if none are found.
+ * @return array An array of numeric membership level IDs. An empty array if none are found.
  */
 function rcp_get_trial_level_ids() {
 

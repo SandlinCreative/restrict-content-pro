@@ -1,12 +1,12 @@
 <?php
 /**
- * RCP Subscription Levels class
+ * RCP Membership Levels class
  *
- * This class handles querying, inserting, updating, and removing subscription levels
- * Also includes other subscription level helper functions
+ * This class handles querying, inserting, updating, and removing membership levels
+ * Also includes other membership level helper functions
  *
  * @package     Restrict Content Pro
- * @subpackage  Classes/Subscription Levels
+ * @subpackage  Classes/Membership Levels
  * @copyright   Copyright (c) 2017, Restrict Content Pro
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU Public License
  * @since       1.5
@@ -56,7 +56,7 @@ class RCP_Levels {
 
 
 	/**
-	 * Retrieve a specific subscription level from the database
+	 * Retrieve a specific membership level from the database
 	 *
 	 * @param   int $level_id ID of the level to retrieve.
 	 *
@@ -82,7 +82,7 @@ class RCP_Levels {
 	}
 
 	/**
-	 * Retrieve a specific subscription level from the database
+	 * Retrieve a specific membership level from the database
 	 *
 	 * @param   string $field Name of the field to check against.
 	 * @param   mixed  $value Value of the field.
@@ -111,7 +111,7 @@ class RCP_Levels {
 
 
 	/**
-	 * Retrieve all subscription levels from the database
+	 * Retrieve all membership levels from the database
 	 *
 	 * @param  array $args Query arguments to override the defaults.
 	 *
@@ -139,11 +139,11 @@ class RCP_Levels {
 		}
 
 		if( ! empty( $args['limit'] ) )
-			$limit = " LIMIT={$args['limit']}";
+			$limit = " LIMIT {$args['limit']}";
 		else
 			$limit = '';
 
-		$cache_key = md5( implode( '|', $args ) . $where );
+		$cache_key = md5( implode( '|', $args ) );
 
 		$levels = wp_cache_get( $cache_key, 'rcp' );
 
@@ -165,7 +165,7 @@ class RCP_Levels {
 	}
 
 	/**
-	 * Count the total number of subscription levels in the database
+	 * Count the total number of membership levels in the database
 	 *
 	 * @param array $args Query arguments to override the defaults.
 	 *
@@ -205,7 +205,7 @@ class RCP_Levels {
 
 
 	/**
-	 * Retrieve a field for a subscription level
+	 * Retrieve a field for a membership level
 	 *
 	 * @param   int    $level_id ID of the level.
 	 * @param   string $field    Name of the field to retrieve the value for.
@@ -237,13 +237,13 @@ class RCP_Levels {
 
 
 	/**
-	 * Insert a subscription level into the database
+	 * Insert a membership level into the database
 	 *
 	 * @param   array $args Arguments to override the defaults.
 	 *
 	 * @access  public
 	 * @since   1.5
-	 * @return  int|false ID of the newly created level or false on failure.
+	 * @return  int|WP_Error ID of the newly created level or WP_Error on failure.
 	 */
 	public function insert( $args = array() ) {
 
@@ -258,6 +258,8 @@ class RCP_Levels {
 			'trial_duration_unit' => 'day',
 			'price'               => '0',
 			'fee'                 => '0',
+			'maximum_renewals'    => '0',
+			'after_final_payment' => '',
 			'list_order'          => '0',
 			'level'               => '0',
 			'status'              => 'inactive',
@@ -277,18 +279,25 @@ class RCP_Levels {
 			$args[$key] = str_replace( ',', '', $args[$key] );
 		}
 
+		// Validate payment plan.
+		if ( empty( $args['maximum_renewals'] ) ) {
+			// If maximum renewals is "0" then no payment plan.
+			$args['maximum_renewals']    = 0;
+			$args['after_final_payment'] = '';
+		}
+
 		// Validate price value
 		if ( false === $this->valid_amount( $args['price'] ) || $args['price'] < 0 ) {
-			rcp_log( sprintf( 'Failed inserting subscription level: invalid price ( %s ).', $args['price'] ) );
+			rcp_log( sprintf( 'Failed inserting membership level: invalid price ( %s ).', $args['price'] ), true );
 
-			return false;
+			return new WP_Error( 'invalid_level_price', __( 'Invalid price: the membership level price must be a valid positive number.', 'rcp' ) );
 		}
 
 		// Validate fee value
 		if ( false === $this->valid_amount( $args['fee'] ) ) {
-			rcp_log( sprintf( 'Failed inserting subscription level: invalid fee ( %s ).', $args['fee'] ) );
+			rcp_log( sprintf( 'Failed inserting membership level: invalid fee ( %s ).', $args['fee'] ), true );
 
-			return false;
+			return new WP_Error( 'invalid_level_fee', __( 'Invalid fee: the membership level fee must be a valid number.', 'rcp' ) );
 		}
 
 		/**
@@ -297,9 +306,9 @@ class RCP_Levels {
 		 */
 		if ( $args['trial_duration'] > 0 ) {
 			if ( $args['price'] <= 0 || $args['duration'] <= 0 ) {
-				rcp_log( sprintf( 'Failed inserting subscription level: invalid settings for free trial. Price: %f; Duration: %d', $args['price'], $args['duration'] ) );
+				rcp_log( sprintf( 'Failed inserting membership level: invalid settings for free trial. Price: %f; Duration: %d', $args['price'], $args['duration'] ), true );
 
-				return false;
+				return new WP_Error( 'invalid_level_trial', __( 'Invalid trial: a membership level with a trial must have a price and duration greater than zero.', 'rcp' ) );
 			}
 		}
 
@@ -314,7 +323,9 @@ class RCP_Levels {
 					`trial_duration_unit` = '%s',
 					`price`               = '%s',
 					`fee`                 = '%s',
-					`list_order`          = '0',
+					`maximum_renewals`    = '%d',
+					`after_final_payment` = '%s',
+					`list_order`          = '%d',
 					`level`               = '%d',
 					`status`              = '%s',
 					`role`                = '%s'
@@ -327,6 +338,9 @@ class RCP_Levels {
 				in_array( $args['trial_duration_unit'], array( 'day', 'month', 'year' ) ) ? $args['trial_duration_unit'] : 'day',
 				sanitize_text_field( $args['price'] ),
 				sanitize_text_field( $args['fee'] ),
+				absint( $args['maximum_renewals'] ),
+				sanitize_text_field( $args['after_final_payment'] ),
+				absint( $args['list_order'] ),
 				absint( $args['level'] ),
 				sanitize_text_field( $args['status'] ),
 				sanitize_text_field( $args['role'] )
@@ -337,6 +351,7 @@ class RCP_Levels {
 
 			$level_id = $wpdb->insert_id;
 
+			// Delete caches for both "all" statuses and "active" statuses.
 			$cache_args = array(
 				'status'  => 'all',
 				'limit'   => null,
@@ -346,32 +361,38 @@ class RCP_Levels {
 			$cache_key = md5( implode( '|', $cache_args ) );
 
 			wp_cache_delete( $cache_key, 'rcp' );
+
+			$cache_args['status'] = 'active';
+			$cache_key            = md5( implode( '|', $cache_args ) );
+			wp_cache_delete( $cache_key, 'rcp' );
+
+			// Delete transients for level counts.
 			delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'all' ) ) ) );
 			delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => $args['status'] ) ) ) );
 
 			do_action( 'rcp_add_subscription', $level_id, $args );
 
-			rcp_log( sprintf( 'Successfully added new subscription level #%d. Args: %s', $level_id, var_export( $args, true ) ) );
+			rcp_log( sprintf( 'Successfully added new membership level #%d. Args: %s', $level_id, var_export( $args, true ) ) );
 
 			return $level_id;
 		} else {
-			rcp_log( sprintf( 'Failed inserting new subscription level into database. Args: %s', var_export( $args, true ) ) );
+			rcp_log( sprintf( 'Failed inserting new membership level into database. Args: %s', var_export( $args, true ) ), true );
 		}
 
-		return false;
+		return new WP_Error( 'level_not_added', __( 'An unexpected error occurred while trying to add the membership level.', 'rcp' ) );
 
 	}
 
 
 	/**
-	 * Update an existing subscription level
+	 * Update an existing membership level
 	 *
 	 * @param   int   $level_id ID of the level to update.
 	 * @param   array $args     Fields and values to update.
 	 *
 	 * @access  public
 	 * @since   1.5
-	 * @return  bool Whether or not the update was successful.
+	 * @return  true|WP_Error True if the update was successful, WP_Error on failure.
 	 */
 	public function update( $level_id = 0, $args = array() ) {
 
@@ -391,18 +412,25 @@ class RCP_Levels {
 			$args[$key] = str_replace( ',', '', $args[$key] );
 		}
 
+		// Validate payment plan.
+		if ( empty( $args['maximum_renewals'] ) ) {
+			// If maximum renewals is "0" then no payment plan.
+			$args['maximum_renewals']    = 0;
+			$args['after_final_payment'] = '';
+		}
+
 		// Validate price value
 		if ( false === $this->valid_amount( $args['price'] ) || $args['price'] < 0 ) {
-			rcp_log( sprintf( 'Failed updating subscription level #%d: invalid price ( %s ).', $level_id, $args['price'] ) );
+			rcp_log( sprintf( 'Failed updating membership level #%d: invalid price ( %s ).', $level_id, $args['price'] ), true );
 
-			return false;
+			return new WP_Error( 'invalid_level_price', __( 'Invalid price: the membership level price must be a valid positive number.', 'rcp' ) );
 		}
 
 		// Validate fee value
 		if ( false === $this->valid_amount( $args['fee'] ) ) {
-			rcp_log( sprintf( 'Failed updating subscription level #%d: invalid fee ( %s ).', $level_id, $args['fee'] ) );
+			rcp_log( sprintf( 'Failed updating membership level #%d: invalid fee ( %s ).', $level_id, $args['fee'] ), true );
 
-			return false;
+			return new WP_Error( 'invalid_level_fee', __( 'Invalid fee: the membership level fee must be a valid number.', 'rcp' ) );
 		}
 
 		/**
@@ -411,9 +439,9 @@ class RCP_Levels {
 		 */
 		if ( $args['trial_duration'] > 0 ) {
 			if ( $args['price'] <= 0 || $args['duration'] <= 0 ) {
-				rcp_log( sprintf( 'Failed updating subscription level #%d: invalid settings for free trial. Price: %f; Duration: %d', $level_id, $args['price'], $args['duration'] ) );
+				rcp_log( sprintf( 'Failed updating membership level #%d: invalid settings for free trial. Price: %f; Duration: %d', $level_id, $args['price'], $args['duration'] ), true );
 
-				return false;
+				return new WP_Error( 'invalid_level_trial', __( 'Invalid trial: a membership level with a trial must have a price and duration greater than zero.', 'rcp' ) );
 			}
 		}
 
@@ -428,6 +456,9 @@ class RCP_Levels {
 					`trial_duration_unit` = '%s',
 					`price`               = '%s',
 					`fee`                 = '%s',
+					`maximum_renewals`    = '%d',
+					`after_final_payment` = '%s',
+					`list_order`          = '%d',
 					`level`               = '%d',
 					`status`              = '%s',
 					`role`                = '%s'
@@ -441,6 +472,9 @@ class RCP_Levels {
 				in_array( $args['trial_duration_unit'], array( 'day', 'month', 'year' ) ) ? $args['trial_duration_unit'] : 'day',
 				sanitize_text_field( $args['price'] ),
 				sanitize_text_field( $args['fee'] ),
+				absint( $args['maximum_renewals'] ),
+				sanitize_text_field( $args['after_final_payment'] ),
+				absint( $args['list_order'] ),
 				absint( $args['level'] ),
 				sanitize_text_field( $args['status'] ),
 				sanitize_text_field( $args['role'] ),
@@ -448,6 +482,7 @@ class RCP_Levels {
 			)
 		);
 
+		// Delete caches for both "all" statuses and "active" statuses.
 		$cache_args = array(
 			'status'  => 'all',
 			'limit'   => null,
@@ -457,7 +492,14 @@ class RCP_Levels {
 		$cache_key = md5( implode( '|', $cache_args ) );
 
 		wp_cache_delete( $cache_key, 'rcp' );
+
+		$cache_args['status'] = 'active';
+		$cache_key            = md5( implode( '|', $cache_args ) );
+		wp_cache_delete( $cache_key, 'rcp' );
+
 		wp_cache_delete( 'level_' . $level_id, 'rcp' );
+
+		// Delete transients for level counts.
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'all' ) ) ) );
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'active' ) ) ) );
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'inactive' ) ) ) );
@@ -465,20 +507,20 @@ class RCP_Levels {
 		do_action( 'rcp_edit_subscription_level', absint( $args['id'] ), $args );
 
 		if( $update !== false ) {
-			rcp_log( sprintf( 'Successfully updated subscription level #%d. Args: %s', absint( $level_id ), var_export( $args, true ) ) );
+			rcp_log( sprintf( 'Successfully updated membership level #%d. Args: %s', absint( $level_id ), var_export( $args, true ) ) );
 
 			return true;
 		}
 
-		rcp_log( sprintf( 'Failed updating subscription level #%d. Args: %s', absint( $level_id ), var_export( $args, true ) ) );
+		rcp_log( sprintf( 'Failed updating membership level #%d. Args: %s', absint( $level_id ), var_export( $args, true ) ), true );
 
-		return false;
+		return new WP_Error( 'level_not_added', __( 'An unexpected error occurred while trying to update the membership level.', 'rcp' ) );
 
 	}
 
 
 	/**
-	 * Delete a subscription level
+	 * Delete a membership level
 	 *
 	 * @param   int $level_id ID of the level to delete.
 	 *
@@ -492,6 +534,7 @@ class RCP_Levels {
 
 		$remove = $wpdb->query( $wpdb->prepare( "DELETE FROM " . $this->db_name . " WHERE `id`='%d';", absint( $level_id ) ) );
 
+		// Delete caches for both "all" statuses and "active" statuses.
 		$args = array(
 			'status'  => 'all',
 			'limit'   => null,
@@ -501,20 +544,26 @@ class RCP_Levels {
 		$cache_key = md5( implode( '|', $args ) );
 
 		wp_cache_delete( $cache_key, 'rcp' );
+
+		$cache_args['status'] = 'active';
+		$cache_key            = md5( implode( '|', $cache_args ) );
+		wp_cache_delete( $cache_key, 'rcp' );
+
+		// Delete transients for level counts.
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'all' ) ) ) );
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'active' ) ) ) );
 		delete_transient( md5( 'rcp_levels_count_' . serialize( array( 'status' => 'inactive' ) ) ) );
 
 		do_action( 'rcp_remove_level', absint( $level_id ) );
 
-		rcp_log( sprintf( 'Deleted subscription ID #%d.', $level_id ) );
+		rcp_log( sprintf( 'Deleted membership level ID #%d.', $level_id ) );
 
 	}
 
 	/**
-	 * Retrieve level meta field for a subscription level.
+	 * Retrieve level meta field for a membership level.
 	 *
-	 * @param   int    $level_id      Subscription level ID.
+	 * @param   int    $level_id      Membership level ID.
 	 * @param   string $meta_key      The meta key to retrieve.
 	 * @param   bool   $single        Whether to return a single value.
 	 *
@@ -527,9 +576,9 @@ class RCP_Levels {
 	}
 
 	/**
-	 * Add meta data field to a subscription level.
+	 * Add meta data field to a membership level.
 	 *
-	 * @param   int    $level_id      Subscription level ID.
+	 * @param   int    $level_id      Membership level ID.
 	 * @param   string $meta_key      Metadata name.
 	 * @param   mixed  $meta_value    Metadata value.
 	 * @param   bool   $unique        Optional, default is false. Whether the same key should not be added.
@@ -543,14 +592,14 @@ class RCP_Levels {
 	}
 
 	/**
-	 * Update level meta field based on Subscription level ID.
+	 * Update level meta field based on membership level ID.
 	 *
 	 * Use the $prev_value parameter to differentiate between meta fields with the
-	 * same key and Subscription level ID.
+	 * same key and membership level ID.
 	 *
-	 * If the meta field for the subscription level does not exist, it will be added.
+	 * If the meta field for the membership level does not exist, it will be added.
 	 *
-	 * @param   int    $level_id      Subscription level ID.
+	 * @param   int    $level_id      Membership level ID.
 	 * @param   string $meta_key      Metadata key.
 	 * @param   mixed  $meta_value    Metadata value.
 	 * @param   mixed  $prev_value    Optional. Previous value to check before removing.
@@ -564,13 +613,13 @@ class RCP_Levels {
 	}
 
 	/**
-	 * Remove metadata matching criteria from a subscription level.
+	 * Remove metadata matching criteria from a membership level.
 	 *
 	 * You can match based on the key, or key and value. Removing based on key and
 	 * value, will keep from removing duplicate metadata with the same key. It also
 	 * allows removing all metadata matching key, if needed.
 	 *
-	 * @param   int    $level_id      Subscription level ID.
+	 * @param   int    $level_id      Membership level ID.
 	 * @param   string $meta_key      Metadata name.
 	 * @param   mixed  $meta_value    Optional. Metadata value.
 	 *
@@ -583,13 +632,13 @@ class RCP_Levels {
 	}
 
 	/**
-	 * Removes all metadata for the specified subscription level.
+	 * Removes all metadata for the specified membership level.
 	 *
 	 * @since 2.6.6
 	 * @uses wpdb::query()
 	 * @uses wpdb::prepare()
 	 *
-	 * @param  int $level_id Subscription level ID.
+	 * @param  int $level_id membership level ID.
 	 * @return int|false Number of rows affected/selected or false on error.
 	 */
 	public function remove_all_meta_for_level_id( $level_id = 0 ) {
@@ -617,12 +666,12 @@ class RCP_Levels {
 	}
 
 	/**
-	 * Determines if the specified subscription level has a trial option.
+	 * Determines if the specified membership level has a trial option.
 	 *
 	 * @access public
 	 * @since 2.7
 	 *
-	 * @param int $level_id The subscription level ID.
+	 * @param int $level_id The membership level ID.
 	 * @return boolean true if the level has a trial option, false if not.
 	 */
 	public function has_trial( $level_id = 0 ) {
@@ -639,12 +688,12 @@ class RCP_Levels {
 	}
 
 	/**
-	 * Retrieves the trial duration for the specified subscription level.
+	 * Retrieves the trial duration for the specified membership level.
 	 *
 	 * @access public
 	 * @since 2.7
 	 *
-	 * @param int $level_id The subscription level ID.
+	 * @param int $level_id The membership level ID.
 	 * @return int The duration of the trial. 0 if there is no trial.
 	 */
 	public function trial_duration( $level_id = 0 ) {
@@ -662,12 +711,12 @@ class RCP_Levels {
 	}
 
 	/**
-	 * Retrieves the trial duration unit for the specified subscription level.
+	 * Retrieves the trial duration unit for the specified membership level.
 	 *
 	 * @access public
 	 * @since 2.7
 	 *
-	 * @param int $level_id The subscription level ID.
+	 * @param int $level_id The membership level ID.
 	 * @return string The duration unit of the trial.
 	 */
 	public function trial_duration_unit( $level_id = 0 ) {

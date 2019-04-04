@@ -12,6 +12,9 @@
 /**
  * Determines if a member is a Braintree customer.
  *
+ * @deprecated 3.0 Use `rcp_is_braintree_membership()` instead.
+ * @see rcp_is_braintree_membership()
+ *
  * @since  2.8
  * @param  int  $member_id The ID of the user to check
  * @return bool True if the member is a Braintree customer, false if not.
@@ -24,15 +27,55 @@ function rcp_is_braintree_subscriber( $member_id = 0 ) {
 
 	$ret = false;
 
-	$member = new RCP_Member( $member_id );
+	$customer = rcp_get_customer_by_user_id( $member_id );
 
-	$profile_id = $member->get_payment_profile_id();
+	if ( ! empty( $customer ) ) {
+		$membership = rcp_get_customer_single_membership( $customer->get_id() );
 
-	if ( false !== strpos( $profile_id, 'bt_' ) ) {
-		$ret = true;
+		if ( ! empty( $membership ) ) {
+			$ret = rcp_is_braintree_membership( $membership );
+		}
 	}
 
 	return (bool) apply_filters( 'rcp_is_braintree_subscriber', $ret, $member_id );
+}
+
+/**
+ * Determines if a membership is Braintree subscription.
+ *
+ * @param int|RCP_Membership $membership_object_or_id Membership ID or object.
+ *
+ * @since 3.0
+ * @return bool
+ */
+function rcp_is_braintree_membership( $membership_object_or_id ) {
+
+	if ( ! is_object( $membership_object_or_id ) ) {
+		$membership = rcp_get_membership( $membership_object_or_id );
+	} else {
+		$membership = $membership_object_or_id;
+	}
+
+	$is_braintree = false;
+
+	if ( ! empty( $membership ) && $membership->get_id() > 0 ) {
+		$subscription_id = $membership->get_gateway_customer_id();
+
+		if ( false !== strpos( $subscription_id, 'bt_' ) ) {
+			$is_braintree = true;
+		}
+	}
+
+	/**
+	 * Filters whether or not the membership is a Braintree subscription.
+	 *
+	 * @param bool           $is_braintree
+	 * @param RCP_Membership $membership
+	 *
+	 * @since 3.0
+	 */
+	return (bool) apply_filters( 'rcp_is_braintree_membership', $is_braintree, $membership );
+
 }
 
 /**
@@ -67,11 +110,36 @@ function rcp_has_braintree_api_access() {
 /**
  * Cancels a Braintree subscriber.
  *
+ * @deprecated 3.0 Use `rcp_braintree_cancel_membership()` instead.
+ * @see rcp_braintree_cancel_membership()
+ *
  * @since 2.8
  * @param int $member_id The member ID to cancel.
  * @return bool|WP_Error
  */
 function rcp_braintree_cancel_member( $member_id = 0 ) {
+
+	$customer = rcp_get_customer_by_user_id( $member_id );
+
+	if ( empty( $customer ) ) {
+		return new WP_Error( 'rcp_braintree_error', __( 'Unable to find customer from member ID.', 'rcp' ) );
+	}
+
+	$membership = rcp_get_customer_single_membership( $customer->get_id() );
+
+	return rcp_braintree_cancel_membership( $membership->get_gateway_subscription_id() );
+
+}
+
+/**
+ * Cancel a Braintree membership by subscription ID.
+ *
+ * @param string $subscription_id Braintree subscription ID.
+ *
+ * @since 3.0
+ * @return true|WP_Error True on success, WP_Error on failure.
+ */
+function rcp_braintree_cancel_membership( $subscription_id ) {
 
 	global $rcp_options;
 
@@ -99,10 +167,8 @@ function rcp_braintree_cancel_member( $member_id = 0 ) {
 	Braintree_Configuration::publicKey( $public_key );
 	Braintree_Configuration::privateKey( $private_key );
 
-	$member = new RCP_Member( $member_id );
-
 	try {
-		$result = Braintree_Subscription::cancel( $member->get_merchant_subscription_id() );
+		$result = Braintree_Subscription::cancel( $subscription_id );
 
 		if ( ! $result->success ) {
 
@@ -121,6 +187,7 @@ function rcp_braintree_cancel_member( $member_id = 0 ) {
 	}
 
 	return $ret;
+
 }
 
 /**

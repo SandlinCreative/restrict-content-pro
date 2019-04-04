@@ -15,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Edit a member
  *
+ * @deprecated 3.0 In favour of `rcp_process_edit_customer()`.
+ * @see rcp_process_edit_customer()
+ *
  * @since 2.9
  * @return void
  */
@@ -51,10 +54,17 @@ function rcp_process_edit_member() {
 		update_user_meta( $user_id, 'rcp_notes', wp_kses( $_POST['notes'], array() ) );
 	}
 
+	if ( isset( $_POST['cancel_subscription'] ) && $member->can_cancel() ) {
+		rcp_log( sprintf( 'Cancelling payment profile for member #%d.', $user_id ) );
+		$cancelled = $member->cancel_payment_profile( false );
+	}
+
 	if( ! empty( $_POST['expiration'] ) && ( 'cancelled' != $status || ! $revoke_access ) ) {
 		$member->set_expiration_date( $expiration );
-	} elseif( 'cancelled' == $status && $revoke_access && ! $member->is_expired() ) {
+	} elseif( $revoke_access && ! $member->is_expired() ) {
 		$member->set_expiration_date( date( 'Y-m-d H:i:s', strtotime( '-1 day', current_time( 'timestamp' ) ) ) );
+		// Set status to 'expired' later.
+		$status = 'expired';
 	}
 
 	if ( isset( $_POST['level'] ) ) {
@@ -65,7 +75,7 @@ function rcp_process_edit_member() {
 
 		if ( $current_id != $level_id ) {
 
-			rcp_log( sprintf( 'Changed member #%d subscription level from %d to %d.', $user_id, $current_id, $level_id ) );
+			rcp_log( sprintf( 'Changed member #%d membership level from %d to %d.', $user_id, $current_id, $level_id ) );
 
 			$member->set_subscription_id( $level_id );
 
@@ -99,11 +109,6 @@ function rcp_process_edit_member() {
 		update_user_meta( $user_id, 'rcp_signup_method', $_POST['signup_method'] );
 	}
 
-	if ( isset( $_POST['cancel_subscription'] ) && $member->can_cancel() ) {
-		rcp_log( sprintf( 'Cancelling payment profile for member #%d.', $user_id ) );
-		$member->cancel_payment_profile();
-	}
-
 	if ( $status !== $member->get_status() ) {
 		$member->set_status( $status );
 	}
@@ -121,7 +126,15 @@ function rcp_process_edit_member() {
 
 	rcp_log( sprintf( '%s finished editing member #%d.', $current_user->user_login, $user_id ) );
 
-	wp_safe_redirect( admin_url( 'admin.php?page=rcp-members&edit_member=' . $user_id . '&rcp_message=user_updated' ) );
+	$redirect = admin_url( 'admin.php?page=rcp-members&edit_member=' . $user_id );
+
+	if ( isset( $cancelled ) && is_wp_error( $cancelled ) ) {
+		$redirect = add_query_arg( 'rcp_message', 'member_cancelled_error', $redirect );
+	} else {
+		$redirect = add_query_arg( 'rcp_message', 'user_updated', $redirect );
+	}
+
+	wp_safe_redirect( $redirect );
 	exit;
 
 }
@@ -129,6 +142,9 @@ add_action( 'rcp_action_edit-member', 'rcp_process_edit_member' );
 
 /**
  * Add a subscription to an existing member
+ *
+ * @deprecated 3.0 In favour of `rcp_process_add_membership()`.
+ * @see rcp_process_add_membership()
  *
  * @since 2.9
  * @return void
@@ -149,7 +165,7 @@ function rcp_process_add_member_subscription() {
 
 	// Don't add if chosen expiration date is in the past.
 	if ( isset( $_POST['expiration'] ) && strtotime( 'NOW', current_time( 'timestamp' ) ) > strtotime( $_POST['expiration'], current_time( 'timestamp' ) ) && 'none' !== $_POST['expiration'] ) {
-		rcp_log( sprintf( 'Failed adding subscription to an existing user: chosen expiration date ( %s ) is in the past.', $_POST['expiration'] ) );
+		rcp_log( sprintf( 'Failed adding subscription to an existing user: chosen expiration date ( %s ) is in the past.', $_POST['expiration'] ), true );
 		wp_safe_redirect( admin_url( 'admin.php?page=rcp-members&rcp_message=user_not_added' ) );
 		exit;
 	}
@@ -167,7 +183,7 @@ function rcp_process_add_member_subscription() {
 	$subscription = $levels->get_level( $level_id );
 
 	if ( ! $subscription ) {
-		wp_die( __( 'Please supply a valid subscription level.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 400 ) );
+		wp_die( __( 'Please supply a valid membership level.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 400 ) );
 	}
 
 	$member->set_expiration_date( $expiration );
@@ -210,6 +226,8 @@ add_action( 'rcp_action_add-subscription', 'rcp_process_add_member_subscription'
 /**
  * Process bulk edit members
  *
+ * @deprecated 3.0
+ *
  * @since 2.9
  * @return void
  */
@@ -235,7 +253,7 @@ function rcp_process_bulk_edit_members() {
 		$member = new RCP_Member( $member_id );
 
 		if ( ! empty( $_POST['expiration'] ) && 'delete' !== $action ) {
-			$member->set_expiration_date( date( 'Y-m-d H:i:s', strtotime( $_POST['expiration'], current_time( 'timestamp' ) ) ) );
+			$member->set_expiration_date( date( 'Y-m-d 23:59:59', strtotime( $_POST['expiration'], current_time( 'timestamp' ) ) ) );
 		}
 
 		if ( $action ) {
@@ -279,6 +297,9 @@ add_action( 'rcp_action_bulk_edit_members', 'rcp_process_bulk_edit_members' );
 /**
  * Cancel a member from the Members table
  *
+ * @deprecated 3.0 In favour of `rcp_process_cancel_membership()`.
+ * @see rcp_process_cancel_membership()
+ *
  * @since 2.9
  * @return void
  */
@@ -319,16 +340,36 @@ function rcp_process_resend_verification() {
 		wp_die( __( 'You do not have permission to perform this action.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 403 ) );
 	}
 
-	if ( ! isset( $_GET['member_id'] ) ) {
-		wp_die( __( 'Please select a member.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 400 ) );
+	if ( ! isset( $_GET['member_id'] ) && ! isset( $_GET['customer_id'] ) ) {
+		wp_die( __( 'Please select a customer.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 400 ) );
+	}
+
+	$customer_id  = ! empty( $_GET['customer_id'] ) ? absint( $_GET['customer_id'] ) : false;
+
+	if ( empty( $customer_id ) ) {
+		$customer = rcp_get_customer_by_user_id( absint( $_GET['member_id'] ) );
+
+		if ( ! empty( $customer ) ) {
+			$customer_id = $customer->get_id();
+		}
 	}
 
 	$current_user = wp_get_current_user();
 
-	rcp_log( sprintf( '%s re-sending email verification to member #%d.', $current_user->user_login, absint( $_GET['member_id'] ) ) );
+	rcp_log( sprintf( '%s re-sending email verification to customer #%d.', $current_user->user_login, $customer_id ) );
 
 	rcp_send_email_verification( urldecode( absint( $_GET['member_id'] ) ) );
-	wp_safe_redirect( admin_url( add_query_arg( 'rcp_message', 'verification_sent', 'admin.php?page=rcp-members' ) ) );
+
+	$page_args = array(
+		'rcp_message' => 'verification_sent'
+	);
+
+	if ( ! empty( $customer_id ) ) {
+		$page_args['customer_id'] = $customer_id;
+		$page_args['view']        = 'edit';
+	}
+
+	wp_safe_redirect( rcp_get_customers_admin_page( $page_args ) );
 	exit;
 
 }
@@ -350,22 +391,45 @@ function rcp_process_manually_verify_email() {
 		wp_die( __( 'You do not have permission to perform this action.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 403 ) );
 	}
 
-	if ( ! isset( $_GET['member_id'] ) ) {
-		wp_die( __( 'Please select a member.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 400 ) );
+	if ( ! isset( $_GET['member_id'] ) && ! isset( $_GET['customer_id'] ) ) {
+		wp_die( __( 'Please select a customer.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 400 ) );
 	}
 
 	$current_user = wp_get_current_user();
-	$member       = new RCP_Member( absint( $_GET['member_id'] ) );
 
-	rcp_log( sprintf( '%s manually verifying email of member #%d.', $current_user->user_login, $member->ID ) );
+	if ( ! empty( $_GET['customer_id'] ) ) {
+		/*
+		 * New: Verify by customer ID.
+		 */
+		$customer = rcp_get_customer( absint( $_GET['customer_id'] ) );
 
-	$member->verify_email();
-	$member->add_note( sprintf( __( 'Email manually verified by %s.', 'rcp' ), $current_user->user_login ) );
+		if ( empty( $customer ) ) {
+			wp_die( __( 'Invalid customer ID.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 400 ) );
+		}
+
+		rcp_log( sprintf( '%s manually verifying email of customer #%d.', $current_user->user_login, $customer->get_id() ) );
+
+		$customer->verify_email();
+		$customer->add_note( sprintf( __( 'Email manually verified by %s.', 'rcp' ), $current_user->user_login ) );
+	} else {
+		/*
+		 * Backwards Compatibility
+		 * Verify by user ID.
+		 */
+		$member = new RCP_Member( absint( $_GET['member_id'] ) );
+
+		rcp_log( sprintf( '%s manually verifying email of member #%d.', $current_user->user_login, $member->ID ) );
+
+		$member->verify_email();
+		$member->add_note( sprintf( __( 'Email manually verified by %s.', 'rcp' ), $current_user->user_login ) );
+	}
 
 	$redirect_url = wp_get_referer();
 
 	if ( empty( $redirect_url ) ) {
-		$redirect_url = admin_url( 'admin.php?page=rcp-members' );
+		$redirect_url = rcp_get_customers_admin_page();
+	} else {
+		$redirect_url = remove_query_arg( 'rcp_message', $redirect_url );
 	}
 
 	wp_safe_redirect( add_query_arg( 'rcp_message', 'email_verified', $redirect_url ) );
@@ -373,3 +437,36 @@ function rcp_process_manually_verify_email() {
 
 }
 add_action( 'rcp_action_verify_email', 'rcp_process_manually_verify_email' );
+
+/**
+ * If someone visits ?page=rcp-members&edit_member=123 we need to redirect them to the new customer edit page for
+ * this corresponding user account.
+ *
+ * @since 3.0
+ * @return void
+ */
+function rcp_redirect_edit_member_url() {
+
+	if ( empty( $_GET['page'] ) || 'rcp-members' != $_GET['page'] ) {
+		return;
+	}
+
+	if ( empty( $_GET['edit_member'] ) ) {
+		return;
+	}
+
+	$user_id  = absint( $_GET['edit_member'] );
+	$customer = rcp_get_customer_by( 'user_id', $user_id );
+
+	if ( empty( $customer ) ) {
+		return;
+	}
+
+	wp_safe_redirect( rcp_get_customers_admin_page( array(
+		'customer_id' => $customer->get_id(),
+		'view'        => 'edit'
+	) ) );
+	exit;
+
+}
+add_action( 'admin_init', 'rcp_redirect_edit_member_url' );

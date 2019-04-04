@@ -9,7 +9,7 @@
  */
 
 /**
- * Retrieves the expiration date of a subscription level
+ * Retrieves the expiration date of a membership level
  *
  * @uses rcp_calculate_subscription_expiration()
  *
@@ -85,3 +85,43 @@ function rcp_search_users() {
 	die();
 }
 add_action( 'wp_ajax_rcp_search_users', 'rcp_search_users' );
+
+/**
+ * Retrieve the initial and recurring amounts for a membership level.
+ *
+ * @since 3.0
+ * @return void
+ */
+function rcp_get_membership_billing_cycle_ajax() {
+
+	check_ajax_referer( 'rcp_member_nonce', 'rcp_nonce' );
+
+	$object_id = $_POST['object_id'];
+
+	if ( empty( $object_id ) ) {
+		wp_send_json_error();
+	}
+
+	$cycle = array(
+		'initial_amount'   => 0.00,
+		'recurring_amount' => 0.00
+	);
+
+	$membership_level = rcp_get_subscription_details( $object_id );
+
+	if ( empty( $membership_level ) ) {
+		wp_send_json_error();
+	}
+
+	if ( empty( $membership_level->price ) ) {
+		$cycle = 'free';
+	} else {
+		$cycle['initial_amount']   = $membership_level->price + $membership_level->fee;
+		$cycle['recurring_amount'] = empty( $membership_level->duration ) ? 0 : $membership_level->price;
+	}
+
+	wp_send_json_success( $cycle );
+	exit;
+
+}
+add_action( 'wp_ajax_rcp_get_membership_billing_cycle', 'rcp_get_membership_billing_cycle_ajax' );

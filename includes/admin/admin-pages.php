@@ -15,14 +15,15 @@
  */
 function rcp_settings_menu() {
 
-	global $rcp_members_page, $rcp_subscriptions_page, $rcp_discounts_page, $rcp_payments_page,
+	global $rcp_members_page, $rcp_customers_page, $rcp_subscriptions_page, $rcp_discounts_page, $rcp_payments_page,
 	$rcp_reports_page, $rcp_settings_page, $rcp_export_page, $rcp_help_page,
 	$rcp_tools_page, $rcp_add_ons_page, $rcp_reminders_page;
 
 	// add settings page
 	add_menu_page( __( 'Restrict Content Pro Settings', 'rcp' ), __( 'Restrict', 'rcp' ), 'rcp_view_members', 'rcp-members', 'rcp_members_page', 'dashicons-lock' );
-	$rcp_members_page       = add_submenu_page( 'rcp-members', __( 'Members', 'rcp' ), __( 'Members', 'rcp' ), 'rcp_view_members', 'rcp-members', 'rcp_members_page' );
-	$rcp_subscriptions_page = add_submenu_page( 'rcp-members', __( 'Subscription Levels', 'rcp' ), __( 'Subscription Levels', 'rcp' ), 'rcp_view_levels', 'rcp-member-levels', 'rcp_member_levels_page' );
+	$rcp_members_page       = add_submenu_page( 'rcp-members', __( 'Memberships', 'rcp' ), __( 'Memberships', 'rcp' ), 'rcp_view_members', 'rcp-members', 'rcp_members_page' );
+	$rcp_customers_page     = add_submenu_page( 'rcp-members', __( 'Customers', 'rcp' ), __( 'Customers', 'rcp' ), 'rcp_view_members', 'rcp-customers', 'rcp_customers_page' );
+	$rcp_subscriptions_page = add_submenu_page( 'rcp-members', __( 'Membership Levels', 'rcp' ), __( 'Membership Levels', 'rcp' ), 'rcp_view_levels', 'rcp-member-levels', 'rcp_member_levels_page' );
 	$rcp_discounts_page     = add_submenu_page( 'rcp-members', __( 'Discounts', 'rcp' ), __( 'Discount Codes', 'rcp' ), 'rcp_view_discounts', 'rcp-discounts', 'rcp_discounts_page' );
 	$rcp_payments_page      = add_submenu_page( 'rcp-members', __( 'Payments', 'rcp' ), __( 'Payments', 'rcp' ), 'rcp_view_payments', 'rcp-payments', 'rcp_payments_page' );
 	$rcp_reports_page       = add_submenu_page( 'rcp-members', __( 'Reports', 'rcp'), __( 'Reports', 'rcp' ),'rcp_view_payments', 'rcp-reports', 'rcp_reports_page' );
@@ -48,6 +49,7 @@ function rcp_settings_menu() {
 	if ( get_bloginfo('version') >= 3.3 ) {
 		// load each of the help tabs
 		add_action( "load-$rcp_members_page", "rcp_help_tabs" );
+		add_action( "load-$rcp_customers_page", "rcp_help_tabs" );
 		add_action( "load-$rcp_subscriptions_page", "rcp_help_tabs" );
 		add_action( "load-$rcp_discounts_page", "rcp_help_tabs" );
 		add_action( "load-$rcp_reports_page", "rcp_help_tabs" );
@@ -55,6 +57,7 @@ function rcp_settings_menu() {
 		add_action( "load-$rcp_export_page", "rcp_help_tabs" );
 	}
 	add_action( "load-$rcp_members_page", "rcp_screen_options" );
+	add_action( "load-$rcp_customers_page", "rcp_screen_options" );
 	add_action( "load-$rcp_subscriptions_page", "rcp_screen_options" );
 	add_action( "load-$rcp_discounts_page", "rcp_screen_options" );
 	add_action( "load-$rcp_payments_page", "rcp_screen_options" );
@@ -64,3 +67,52 @@ function rcp_settings_menu() {
 	add_action( "load-$rcp_tools_page", "rcp_screen_options" );
 }
 add_action( 'admin_menu', 'rcp_settings_menu' );
+
+/**
+ * Returns the URL to the memberships page.
+ *
+ * @param array $args Query args to add.
+ *
+ * @since 3.0
+ * @return string
+ */
+function rcp_get_memberships_admin_page( $args = array() ) {
+
+	$args = wp_parse_args( $args, array(
+		'page' => 'rcp-members'
+	) );
+
+	$sanitized_args = array();
+
+	foreach ($args as $key => $value) {
+		$sanitized_key   = urlencode( $key );
+		$sanitized_value = urlencode( $value );
+
+		$sanitized_args[ $sanitized_key ] = $sanitized_value;
+	}
+
+	$memberships_page = add_query_arg( $sanitized_args, admin_url(  'admin.php'  ) );
+
+	return $memberships_page;
+
+}
+
+/**
+ * Returns the URL to the customers page.
+ *
+ * @param array $args Query args to add.
+ *
+ * @since 3.0
+ * @return string
+ */
+function rcp_get_customers_admin_page( $args = array() ) {
+
+	$args = wp_parse_args( $args, array(
+		'page' => 'rcp-customers'
+	) );
+
+	$customers_page = add_query_arg( $args, admin_url(  'admin.php'  ) );
+
+	return $customers_page;
+
+}

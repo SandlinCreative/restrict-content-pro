@@ -3,7 +3,7 @@
  * Registration Form - Total Details
  *
  * This template is loaded into register.php and register-single.php to display the total
- * subscription cost, fees, and any recurring costs.
+ * membership cost, fees, and any recurring costs.
  * @link http://docs.restrictcontentpro.com/article/1597-registerform
  *
  * For modifying this template, please see: http://docs.restrictcontentpro.com/article/1738-template-files
@@ -25,7 +25,7 @@ if ( ! rcp_is_registration() ) {
 	<thead>
 
 		<tr>
-			<th scope="col"><?php _e( 'Subscription', 'rcp' ); ?></th>
+			<th scope="col"><?php _e( 'Membership', 'rcp' ); ?></th>
 			<th scope="col"><?php _e( 'Amount', 'rcp' ); ?></th>
 		</tr>
 
@@ -34,11 +34,11 @@ if ( ! rcp_is_registration() ) {
 	<tbody style="vertical-align: top;">
 
 		<tr>
-			<td data-th="<?php esc_attr_e( 'Subscription', 'rcp' ); ?>"><?php echo rcp_get_subscription_name( rcp_get_registration()->get_subscription() ); ?></td>
-			<td data-th="<?php esc_attr_e( 'Amount', 'rcp' ); ?>"><?php echo ( rcp_get_subscription_price( rcp_get_registration()->get_subscription() ) > 0 ) ? rcp_currency_filter( rcp_get_subscription_price( rcp_get_registration()->get_subscription() ) ) : __( 'free', 'rcp' ); ?></td>
+			<td data-th="<?php esc_attr_e( 'Membership', 'rcp' ); ?>"><?php echo rcp_get_subscription_name( rcp_get_registration()->get_membership_level_id() ); ?></td>
+			<td data-th="<?php esc_attr_e( 'Amount', 'rcp' ); ?>"><?php echo ( rcp_get_subscription_price( rcp_get_registration()->get_membership_level_id() ) > 0 ) ? rcp_currency_filter( rcp_get_subscription_price( rcp_get_registration()->get_membership_level_id() ) ) : __( 'free', 'rcp' ); ?></td>
 		</tr>
 
-		<?php if ( rcp_get_subscription_price( rcp_get_registration()->get_subscription() ) ) : ?>
+		<?php if ( rcp_get_subscription_price( rcp_get_registration()->get_membership_level_id() ) ) : ?>
 			<?php if ( rcp_get_registration()->get_fees() || rcp_get_registration()->get_discounts() ) : ?>
 				<tr>
 					<th colspan="2"><?php _e( 'Discounts and Fees', 'rcp' ); ?></th>
@@ -78,12 +78,16 @@ if ( ! rcp_is_registration() ) {
 
 		<?php if ( rcp_registration_is_recurring() ) : ?>
 			<?php
-			$subscription = rcp_get_subscription_details( rcp_get_registration()->get_subscription() );
+			$subscription = rcp_get_subscription_details( rcp_get_registration()->get_membership_level_id() );
 
 			if ( $subscription->duration == 1 ) {
 				$label = sprintf( __( 'Total Recurring Per %s', 'rcp' ), rcp_filter_duration_unit( $subscription->duration_unit, 1 ) );
 			} else {
 				$label = sprintf( __( 'Total Recurring Every %s %s', 'rcp' ), $subscription->duration, rcp_filter_duration_unit( $subscription->duration_unit, $subscription->duration ) );
+			}
+
+			if ( ! empty( $subscription->maximum_renewals ) ) {
+				$label = sprintf( __( '%d Additional Payments Every %s %s', 'rcp' ), $subscription->maximum_renewals, $subscription->duration, rcp_filter_duration_unit( $subscription->duration_unit, $subscription->duration ) );
 			}
 			?>
 			<tr class="rcp-recurring-total">

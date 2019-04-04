@@ -13,6 +13,7 @@
  */
 function rcp_help_tabs() {
 	global $rcp_members_page;
+	global $rcp_customers_page;
 	global $rcp_subscriptions_page;
 	global $rcp_discounts_page;
 	global $rcp_payments_page;
@@ -37,22 +38,46 @@ function rcp_help_tabs() {
 			$screen->add_help_tab(
 				array(
 					'id' => 'adding_subs',
-					'title' => __( 'Adding Subscriptions', 'rcp' ),
+					'title' => __( 'Adding Memberships', 'rcp' ),
 					'content' => rcp_render_members_tab_content( 'adding_subs' )
 				)
 			);
 			$screen->add_help_tab(
 				array(
 					'id' => 'member_details',
-					'title' => __( 'Member Details', 'rcp' ),
+					'title' => __( 'Membership Details', 'rcp' ),
 					'content' => rcp_render_members_tab_content( 'member_details' )
 				)
 			);
 			$screen->add_help_tab(
 				array(
 					'id' => 'editing_member',
-					'title' => __( 'Editing Members', 'rcp' ),
+					'title' => __( 'Editing Memberships', 'rcp' ),
 					'content' => rcp_render_members_tab_content( 'editing_member' )
+				)
+			);
+		break;
+
+		case $rcp_customers_page :
+			$screen->add_help_tab(
+				array(
+					'id' => 'general',
+					'title' => __( 'General', 'rcp' ),
+					'content' => rcp_render_customers_tab_content( 'general' )
+				)
+			);
+			$screen->add_help_tab(
+				array(
+					'id' => 'customer_details',
+					'title' => __( 'Customer Details', 'rcp' ),
+					'content' => rcp_render_customers_tab_content( 'customer_details' )
+				)
+			);
+			$screen->add_help_tab(
+				array(
+					'id' => 'editing_customers',
+					'title' => __( 'Editing Customers', 'rcp' ),
+					'content' => rcp_render_customers_tab_content( 'editing_customers' )
 				)
 			);
 		break;
@@ -68,21 +93,21 @@ function rcp_help_tabs() {
 			$screen->add_help_tab(
 				array(
 					'id' => 'adding_subscriptions',
-					'title' => __( 'Adding Subscriptions', 'rcp' ),
+					'title' => __( 'Adding Levels', 'rcp' ),
 					'content' => rcp_render_subscriptions_tab_content( 'adding_subscriptions' )
 				)
 			);
 			$screen->add_help_tab(
 				array(
 					'id' => 'editing_subscriptions',
-					'title' => __( 'Editing Subscriptions', 'rcp' ),
+					'title' => __( 'Editing Levels', 'rcp' ),
 					'content' => rcp_render_subscriptions_tab_content( 'editing_subscriptions' )
 				)
 			);
 			$screen->add_help_tab(
 				array(
 					'id' => 'deleting_subscriptions',
-					'title' => __( 'Deleting Subscriptions', 'rcp' ),
+					'title' => __( 'Deleting Levels', 'rcp' ),
 					'content' => rcp_render_subscriptions_tab_content( 'deleting_subscriptions' )
 				)
 			);

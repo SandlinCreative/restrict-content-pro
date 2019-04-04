@@ -300,21 +300,6 @@ class RCP_Plugin_Updater {
 	}
 
 	/**
-	 * Disable SSL verification in order to prevent download update failures
-	 *
-	 * @param array   $args
-	 * @param string  $url
-	 * @return object $array
-	 */
-	public function http_request_args( $args, $url ) {
-		// If it is an https request and we are performing a package download, disable ssl verification
-		if ( strpos( $url, 'https://' ) !== false && strpos( $url, 'edd_action=package_download' ) ) {
-			$args['sslverify'] = false;
-		}
-		return $args;
-	}
-
-	/**
 	 * Calls the API and, if successfull, returns the object delivered by the API.
 	 *
 	 * @uses get_bloginfo()
@@ -351,7 +336,10 @@ class RCP_Plugin_Updater {
 			'beta'       => ! empty( $data['beta'] ),
 		);
 
-		$request = wp_remote_post( $this->api_url, array( 'timeout' => 15, 'sslverify' => false, 'body' => $api_params ) );
+		$request = wp_remote_post( $this->api_url, array(
+			'timeout' => 15,
+			'body'    => $api_params
+		) );
 
 		if ( ! is_wp_error( $request ) ) {
 			$request = json_decode( wp_remote_retrieve_body( $request ) );
@@ -413,7 +401,10 @@ class RCP_Plugin_Updater {
 				'beta'       => ! empty( $data['beta'] )
 			);
 
-			$request = wp_remote_post( $this->api_url, array( 'timeout' => 15, 'sslverify' => false, 'body' => $api_params ) );
+			$request = wp_remote_post( $this->api_url, array(
+				'timeout' => 15,
+				'body'    => $api_params
+			) );
 
 			if ( ! is_wp_error( $request ) ) {
 				$version_info = json_decode( wp_remote_retrieve_body( $request ) );

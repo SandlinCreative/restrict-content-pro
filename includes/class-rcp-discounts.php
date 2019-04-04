@@ -42,7 +42,7 @@ class RCP_Discounts {
 	function __construct() {
 
 		$this->db_name    = rcp_get_discounts_db_name();
-		$this->db_version = '1.2';
+		$this->db_version = '1.3';
 
 	}
 
@@ -244,7 +244,10 @@ class RCP_Discounts {
 
 
 	/**
-	 * Get the associated subscription level for a discount
+	 * Get the associated membership level for a discount
+	 *
+	 * @deprecated 3.0 Use `get_membership_level_ids()` instead.
+	 * @see RCP_Discounts::get_membership_level_ids()
 	 *
 	 * @param  int $discount_id ID of the discount.
 	 *
@@ -254,17 +257,50 @@ class RCP_Discounts {
 	 */
 	public function get_subscription_id( $discount_id = 0 ) {
 
-		$discount = $this->get_discount( $discount_id );
+		$ids = $this->get_membership_level_ids( $discount_id );
 
-		if( $discount )
-			return $discount->subscription_id;
-		return 0;
+		if ( empty( $ids ) || ! isset( $ids[0] ) ) {
+			return 0;
+		}
+
+		return $ids[0];
 
 	}
 
 
 	/**
-	 * Checks wether a discount code has a subscription associated
+	 * Get the associated membership level(s) for a discount.
+	 *
+	 * @param int $discount_id ID of the discount.
+	 *
+	 * @access public
+	 * @since 3.0
+	 * @return array
+	 */
+	public function get_membership_level_ids( $discount_id = 0 ) {
+
+		$discount = $this->get_discount( $discount_id );
+
+		if ( empty( $discount ) ) {
+			return array();
+		}
+
+		$ids = maybe_unserialize( $discount->membership_level_ids );
+
+		if ( empty( $ids ) || ! is_array( $ids ) ) {
+			return array();
+		}
+
+		return array_map( 'absint', $ids );
+
+	}
+
+
+	/**
+	 * Checks whether a discount code has a membership level associated
+	 *
+	 * @deprecated 3.0 Use `has_membership_level_ids()` instead.
+	 * @see RCP_Discounts::has_membership_level_ids()
 	 *
 	 * @param  int $discount_id ID of the discount.
 	 *
@@ -275,6 +311,24 @@ class RCP_Discounts {
 	public function has_subscription_id( $discount_id = 0 ) {
 
 		return $this->get_subscription_id( $discount_id ) > 0;
+
+	}
+
+
+	/**
+	 * Checks whether a discount code has at least one associated membership level.
+	 *
+	 * @param int $discount_id ID of the discount code.
+	 *
+	 * @access public
+	 * @since 3.0
+	 * @return bool
+	 */
+	public function has_membership_level_ids( $discount_id = 0 ) {
+
+		$membership_level_ids = $this->get_membership_level_ids( $discount_id );
+
+		return ( count( $membership_level_ids ) > 0 );
 
 	}
 
@@ -372,19 +426,27 @@ class RCP_Discounts {
 		global $wpdb;
 
 		$defaults = array(
-			'name'           => '',
-			'description'    => '',
-			'amount'         => '0.00',
-			'status'         => 'inactive',
-			'unit'           => '%',
-			'code'           => '',
-			'expiration'     => '',
-			'max_uses' 	     => 0,
-			'use_count'      => '0',
-			'subscription_id'=> 0
+			'name'                 => '',
+			'description'          => '',
+			'amount'               => '0.00',
+			'status'               => 'inactive',
+			'unit'                 => '%',
+			'code'                 => '',
+			'expiration'           => '',
+			'max_uses' 	           => 0,
+			'use_count'            => '0',
+			'membership_level_ids' => array()
 		);
 
 		$args = wp_parse_args( $args, $defaults );
+
+		if ( ! empty( $args['subscription_id'] ) && empty( $args['membership_level_ids'] ) ) {
+			$args['membership_level_ids'] = array( absint( $args['subscription_id'] ) );
+		}
+
+		if ( empty( $args['membership_level_ids'] ) ) {
+			$args['membership_level_ids'] = '';
+		}
 
 		$amount = $this->format_amount( $args['amount'], $args['unit'] );
 
@@ -405,16 +467,16 @@ class RCP_Discounts {
 		$add = $wpdb->query(
 			$wpdb->prepare(
 				"INSERT INTO {$this->db_name} SET
-					`name`           = '%s',
-					`description`    = '%s',
-					`amount`         = '%s',
-					`status`         = 'active',
-					`unit`           = '%s',
-					`code`           = '%s',
-					`expiration`     = '%s',
-					`max_uses`       = '%d',
-					`use_count`      = '0',
-					`subscription_id`= '%d'
+					`name`                 = '%s',
+					`description`          = '%s',
+					`amount`               = '%s',
+					`status`               = 'active',
+					`unit`                 = '%s',
+					`code`                 = '%s',
+					`expiration`           = '%s',
+					`max_uses`             = '%d',
+					`use_count`            = '0',
+					`membership_level_ids` = '%s'
 				;",
 				sanitize_text_field( $args['name'] ),
 				strip_tags( $args['description'] ),
@@ -423,7 +485,7 @@ class RCP_Discounts {
 				sanitize_text_field( $args['code'] ),
 				sanitize_text_field( $args['expiration'] ),
 				absint( $args['max_uses'] ),
-				absint( $args['subscription_id'] )
+				maybe_serialize( $args['membership_level_ids'] )
 			)
 		);
 
@@ -476,17 +538,17 @@ class RCP_Discounts {
 		$update = $wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$this->db_name} SET
-					`name`            = '%s',
-					`description`     = '%s',
-					`amount`          = '%s',
-					`unit`            = '%s',
-					`code`            = '%s',
-					`status`          = '%s',
-					`expiration`      = '%s',
-					`max_uses`        = '%d',
-					`use_count`       = '%d',
-					`subscription_id` = '%d'
-					WHERE `id`        = '%d'
+					`name`                 = '%s',
+					`description`          = '%s',
+					`amount`               = '%s',
+					`unit`                 = '%s',
+					`code`                 = '%s',
+					`status`               = '%s',
+					`expiration`           = '%s',
+					`max_uses`             = '%d',
+					`use_count`            = '%d',
+					`membership_level_ids` = '%s'
+					WHERE `id`             = '%d'
 				;",
 				sanitize_text_field( $args['name'] ),
 				strip_tags( $args['description'] ),
@@ -497,7 +559,7 @@ class RCP_Discounts {
 				sanitize_text_field( $args['expiration'] ),
 				absint( $args['max_uses'] ),
 				absint( $args['use_count'] ),
-				absint( $args['subscription_id'] ),
+				maybe_serialize( $args['membership_level_ids'] ),
 				absint( $discount_id )
 			)
 		);

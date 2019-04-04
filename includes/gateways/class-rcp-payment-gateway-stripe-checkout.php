@@ -74,7 +74,7 @@ class RCP_Payment_Gateway_Stripe_Checkout extends RCP_Payment_Gateway_Stripe {
 		$data = apply_filters( 'rcp_stripe_checkout_form_data', $data );
 
 		$subscriptions = array();
-		foreach ( rcp_get_subscription_levels( 'active' ) as $subscription ) {
+		foreach ( rcp_get_subscription_levels( 'all' ) as $subscription ) {
 			$subscriptions[ $subscription->id ] = array(
 				'description' => $subscription->description,
 				'name'        => $subscription->name,
@@ -116,6 +116,10 @@ class RCP_Payment_Gateway_Stripe_Checkout extends RCP_Payment_Gateway_Stripe {
 				var submission_form = jQuery('#'+form_id);
 
 				var $level = submission_form.find('input[name=rcp_level]:checked');
+
+				if ( ! $level.val() ) {
+					$level = submission_form.find('input[name=rcp_level]');
+				}
 
 				var $price = $level.parent().find('.rcp_price').attr('rel') * <?php echo rcp_stripe_get_currency_multiplier(); ?>;
 

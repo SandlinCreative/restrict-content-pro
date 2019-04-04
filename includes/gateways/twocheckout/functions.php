@@ -9,15 +9,14 @@
  */
 
 /**
- * Cancel a 2checkout subscriber
+ * Cancel a 2Checkout membership, given a gateway payment profile ID.
  *
- * @param int $member_id ID of the member to cancel.
+ * @param string $payment_profile_id Membership payment profile ID.
  *
- * @access      private
- * @since       2.4
- * @return      bool|WP_Error
+ * @since 3.0
+ * @return true|WP_Error True on success, WP_Error on failure.
  */
-function rcp_2checkout_cancel_member( $member_id = 0 ) {
+function rcp_2checkout_cancel_membership( $payment_profile_id ) {
 
 	global $rcp_options;
 
@@ -59,8 +58,7 @@ function rcp_2checkout_cancel_member( $member_id = 0 ) {
 		Twocheckout::password( TWOCHECKOUT_ADMIN_PASSWORD );
 		Twocheckout::sandbox( $test_mode );
 
-		$member    = new RCP_Member( $member_id );
-		$sale_id   = str_replace( '2co_', '', $member->get_payment_profile_id() );
+		$sale_id   = str_replace( '2co_', '', $payment_profile_id );
 		$cancelled = Twocheckout_Sale::stop( array( 'sale_id' => $sale_id ) );
 
 		if( $cancelled['response_code'] == 'OK' ) {
@@ -73,11 +71,52 @@ function rcp_2checkout_cancel_member( $member_id = 0 ) {
 
 	}
 
+	return new WP_Error( '2checkout_cancel_failed', __( 'Unexpected error cancelling 2Checkout payment profile.', 'rcp' ) );
+
+}
+
+/**
+ * Cancel a 2checkout subscriber
+ *
+ * @deprecated 3.0 Use `rcp_2checkout_cancel_membership()` instead.
+ * @see rcp_2checkout_cancel_membership()
+ *
+ * @param int $member_id ID of the member to cancel.
+ *
+ * @access      private
+ * @since       2.4
+ * @return      bool|WP_Error
+ */
+function rcp_2checkout_cancel_member( $member_id = 0 ) {
+
+	$customer = rcp_get_customer_by_user_id( $member_id );
+
+	if ( empty( $customer ) ) {
+		return new WP_Error( '2checkout_cancel_failed', __( 'Unable to find customer from member ID.', 'rcp' ) );
+	}
+
+	$membership = rcp_get_customer_single_membership( $customer->get_id() );
+
+	if ( empty( $membership ) ) {
+		return new WP_Error( '2checkout_cancel_failed', __( 'Invalid membership.', 'rcp' ) );
+	}
+
+	$payment_profile = $membership->get_gateway_subscription_id();
+
+	if ( empty( $payment_profile ) ) {
+		return new WP_Error( '2checkout_cancel_failed', __( 'Invalid membership.', 'rcp' ) );
+	}
+
+	return rcp_2checkout_cancel_membership( $payment_profile );
+
 }
 
 
 /**
  * Determine if a member is a 2Checkout Customer
+ *
+ * @deprecated 3.0 Use `rcp_is_2checkout_membership()` instead.
+ * @see rcp_is_2checkout_membership()
  *
  * @param int $user_id The ID of the user to check
  *
@@ -93,16 +132,53 @@ function rcp_is_2checkout_subscriber( $user_id = 0 ) {
 
 	$ret = false;
 
-	$member = new RCP_Member( $user_id );
+	$customer = rcp_get_customer_by_user_id( $user_id );
 
-	$profile_id = $member->get_payment_profile_id();
+	if ( ! empty( $customer ) ) {
+		$membership = rcp_get_customer_single_membership( $customer->get_id() );
 
-	// Check if the member is a Stripe customer
-	if( false !== strpos( $profile_id, '2co_' ) ) {
-
-		$ret = true;
-
+		if ( ! empty( $membership ) ) {
+			$ret = rcp_is_2checkout_membership( $membership );
+		}
 	}
 
 	return (bool) apply_filters( 'rcp_is_2checkout_subscriber', $ret, $user_id );
+}
+
+/**
+ * Determines if a membership is a 2Checkout subscription.
+ *
+ * @param int|RCP_Membership $membership_object_or_id Membership ID or object.
+ *
+ * @since 3.0
+ * @return bool
+ */
+function rcp_is_2checkout_membership( $membership_object_or_id ) {
+
+	if ( ! is_object( $membership_object_or_id ) ) {
+		$membership = rcp_get_membership( $membership_object_or_id );
+	} else {
+		$membership = $membership_object_or_id;
+	}
+
+	$is_2checkout = false;
+
+	if ( ! empty( $membership ) && $membership->get_id() > 0 ) {
+		$subscription_id = $membership->get_gateway_subscription_id();
+
+		if ( false !== strpos( $subscription_id, '2co_' ) ) {
+			$is_2checkout = true;
+		}
+	}
+
+	/**
+	 * Filters whether or not the membership is a 2Checkout subscription.
+	 *
+	 * @param bool           $is_2checkout
+	 * @param RCP_Membership $membership
+	 *
+	 * @since 3.0
+	 */
+	return (bool) apply_filters( 'rcp_is_2checkout_membership', $is_2checkout, $membership );
+
 }

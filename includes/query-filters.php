@@ -25,15 +25,37 @@ function rcp_hide_premium_posts( $query ) {
 
 	$suppress_filters = isset( $query->query_vars['suppress_filters'] );
 
-	if( isset( $rcp_options['hide_premium'] ) && ! is_singular() && false == $suppress_filters ) {
-		if( ! rcp_is_active( $user_ID ) ) {
-			$premium_ids              = rcp_get_restricted_post_ids();
-			$term_restricted_post_ids = rcp_get_post_ids_assigned_to_restricted_terms();
-			$post_ids                 = array_unique( array_merge( $premium_ids, $term_restricted_post_ids ) );
+	if ( ! isset( $rcp_options['hide_premium'] ) || is_singular() || $suppress_filters || user_can( $user_ID, 'manage_options' ) ) {
+		return;
+	}
 
-			if( $post_ids ) {
-				$query->set( 'post__not_in', $post_ids );
-			}
+	$hide_restricted_content = false;
+
+	$customer = rcp_get_customer(); // current customer
+
+	// If this isn't a valid customer - hide it.
+	if ( empty( $customer ) ) {
+		$hide_restricted_content = true;
+	} else {
+		$memberships = rcp_count_memberships( array(
+			'customer_id' => $customer->get_id(),
+			'status'      => array( 'active', 'cancelled' )
+		) );
+
+		if ( empty( $memberships ) ) {
+			$hide_restricted_content = true;
+		}
+	}
+
+	// If this customer doesn't have any active memberships - hide it.
+
+	if( $hide_restricted_content ) {
+		$premium_ids              = rcp_get_restricted_post_ids();
+		$term_restricted_post_ids = rcp_get_post_ids_assigned_to_restricted_terms();
+		$post_ids                 = array_unique( array_merge( $premium_ids, $term_restricted_post_ids ) );
+
+		if( $post_ids ) {
+			$query->set( 'post__not_in', $post_ids );
 		}
 	}
 }

@@ -62,6 +62,7 @@ function rcp_subscription_reminder_table( $type = 'expiration' ) {
 					<td><?php echo ! empty( $notice['enabled'] ) ? __( 'Enabled', 'rcp' ) : __( 'Disabled', 'rcp' ); ?></td>
 					<td>
 						<a href="<?php echo esc_url( admin_url( 'admin.php?page=rcp-reminder&rcp-action=edit_subscription_reminder&notice=' . $key ) ); ?>" class="rcp-edit-reminder-notice" data-key="<?php echo esc_attr( $key ); ?>"><?php _e( 'Edit', 'rcp' ); ?></a>&nbsp;|
+						<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => urlencode( $key ) ), home_url() ) ); ?>" class="rcp-preview-reminder-notice" target="_blank"><?php _e( 'Preview', 'rcp' ); ?></a> |
 						<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-reminder&rcp-action=send_test_reminder&notice-id=' . $key ), 'rcp_send_test_reminder' ) ); ?>" class="rcp-send-test-reminder-notice"><?php _e( 'Send Test Email', 'rcp' ); ?></a>&nbsp;|
 						<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-reminder&rcp-action=delete_subscription_reminder&notice-id=' . $key ), 'rcp_delete_reminder_notice' ) ); ?>" class="rcp-delete rcp-delete-reminder"><?php _e( 'Delete', 'rcp' ); ?></a>
 					</td>

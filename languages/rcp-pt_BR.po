@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: Restrict Content Pro\n"
 "Report-Msgid-Bugs-To: https://restrictcontentpro.com/support/\n"
 "POT-Creation-Date: 2016-10-06 09:34:23+00:00\n"
-"PO-Revision-Date: 2016-04-14 16:22-0500\n"
+"PO-Revision-Date: 2018-04-04 12:32-0300\n"
 "Last-Translator: Pippin Williamson <pippin@pippinsplugins.com>\n"
 "Language-Team: \n"
 "Language: pt\n"
@@ -12,7 +12,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Poedit-KeywordsList: __;_e\n"
 "X-Poedit-Basepath: ..\n"
-"X-Generator: Poedit 1.8.7\n"
+"X-Generator: Poedit 2.0.5\n"
 "X-Poedit-SearchPath-0: includes\n"
 
 #: RCP_Plugin_Updater.php:186
@@ -80,9 +80,8 @@ msgid "Error"
 msgstr "Erro"
 
 #: includes/admin/add-ons.php:24
-#, fuzzy
 msgid "Add-ons for Restrict Content Pro"
-msgstr "Restrict Content Pro"
+msgstr ""
 
 #: includes/admin/add-ons.php:26 includes/admin/add-ons.php:59
 msgid "Browse all add-ons"
@@ -458,7 +457,7 @@ msgstr "Tipo"
 #: includes/class-rcp-export-members.php:45 includes/user-page-columns.php:5
 #: templates/subscription.php:15
 msgid "Status"
-msgstr "Estado"
+msgstr "Status"
 
 #: includes/admin/discounts/discount-codes.php:24
 #: includes/admin/discounts/discount-codes.php:75
@@ -470,7 +469,7 @@ msgstr "Usos"
 #: includes/admin/discounts/discount-codes.php:76
 #: includes/admin/discounts/discount-codes.php:97
 msgid "Uses Left"
-msgstr "Usos esquerda"
+msgstr "Número de vezes restante para usar"
 
 #: includes/admin/discounts/discount-codes.php:26
 #: includes/admin/discounts/discount-codes.php:77
@@ -499,7 +498,7 @@ msgstr "Editar"
 #: includes/admin/discounts/discount-codes.php:44
 #: includes/admin/subscriptions/subscription-levels.php:40
 msgid "Deactivate"
-msgstr "Desactivar"
+msgstr "Desativar"
 
 #: includes/admin/discounts/discount-codes.php:46
 #: includes/admin/subscriptions/subscription-levels.php:42
@@ -511,14 +510,14 @@ msgstr "Activar"
 #: includes/admin/payments/payments-page.php:99
 #: includes/admin/subscriptions/subscription-levels.php:44
 msgid "Delete"
-msgstr "Apagar"
+msgstr "Excluir"
 
 #: includes/admin/discounts/discount-codes.php:51
 #: includes/admin/members/members-page.php:195
 #: includes/admin/payments/payments-page.php:102
 #: includes/admin/subscriptions/subscription-levels.php:47
 msgid "Show more details"
-msgstr ""
+msgstr "Mostrar mais detalhes"
 
 #: includes/admin/discounts/discount-codes.php:60
 #: includes/admin/discounts/discount-codes.php:166
@@ -530,11 +529,11 @@ msgstr "Nível de acesso"
 #: includes/admin/discounts/discount-codes.php:65
 #: includes/admin/discounts/discount-codes.php:142
 msgid "Percentage"
-msgstr "Percentagem"
+msgstr "Porcentagem"
 
 #: includes/admin/discounts/discount-codes.php:65
 msgid "Flat"
-msgstr "Plano"
+msgstr "Fixo"
 
 #: includes/admin/discounts/discount-codes.php:69
 #: includes/admin/settings/settings.php:69
@@ -543,11 +542,11 @@ msgstr "Activo"
 
 #: includes/admin/discounts/discount-codes.php:69
 msgid "disabled"
-msgstr "Inactivo"
+msgstr "Inativo"
 
 #: includes/admin/discounts/discount-codes.php:71
 msgid "expired"
-msgstr "Expirado"
+msgstr "Vencido"
 
 #: includes/admin/discounts/discount-codes.php:77
 #: includes/admin/subscriptions/subscription-levels.php:50
@@ -576,7 +575,7 @@ msgstr "Inserir um código para este desconto,  por exemplo 10%"
 
 #: includes/admin/discounts/discount-codes.php:143
 msgid "Flat amount"
-msgstr "Valor certo"
+msgstr "Valor fixo"
 
 #: includes/admin/discounts/discount-codes.php:145
 msgid "The kind of discount to apply for this discount."
@@ -660,9 +659,8 @@ msgid " Code"
 msgstr "Código"
 
 #: includes/admin/discounts/edit-discount.php:37
-#, fuzzy
 msgid " Enter a code for this discount, such as 10PERCENT"
-msgstr "Inserir um código para este desconto,  por exemplo 10%"
+msgstr "Inserir um código para este desconto,  por exemplo 10PORCENTO"
 
 #: includes/admin/discounts/edit-discount.php:42
 #, fuzzy
@@ -670,14 +668,12 @@ msgid " Type"
 msgstr "Tipo"
 
 #: includes/admin/discounts/edit-discount.php:46
-#, fuzzy
 msgid " Percentage"
-msgstr "Percentagem"
+msgstr "Porcentagem"
 
 #: includes/admin/discounts/edit-discount.php:47
-#, fuzzy
 msgid " Flat amount"
-msgstr "Valor certo"
+msgstr "Valor fixo"
 
 #: includes/admin/discounts/edit-discount.php:49
 #, fuzzy
@@ -709,29 +705,24 @@ msgstr ""
 "mm-dd. Deixe em branco para não expirar"
 
 #: includes/admin/discounts/edit-discount.php:92
-#, fuzzy
 msgid " Status"
-msgstr "Estado"
+msgstr "Status"
 
 #: includes/admin/discounts/edit-discount.php:96
-#, fuzzy
 msgid " Active"
-msgstr "Activo"
+msgstr "Ativo"
 
 #: includes/admin/discounts/edit-discount.php:97
-#, fuzzy
 msgid " Disabled"
-msgstr "Inactivo"
+msgstr "Inativo"
 
 #: includes/admin/discounts/edit-discount.php:99
-#, fuzzy
 msgid " The status of this discount code."
-msgstr "Estado deste código desconto"
+msgstr "Status deste código desconto"
 
 #: includes/admin/discounts/edit-discount.php:104
-#, fuzzy
 msgid " Max Uses"
-msgstr "Máximo de utilizações"
+msgstr "Máximo número de utilizações"
 
 #: includes/admin/discounts/edit-discount.php:108
 #, fuzzy
@@ -752,12 +743,11 @@ msgid "Members Export"
 msgstr "Exportar membros"
 
 #: includes/admin/export.php:13
-#, fuzzy
 msgid ""
 "Download member data as a CSV file. This is useful for tasks such as "
 "importing batch users into MailChimp, or other systems."
 msgstr ""
-"Download dados do membro em ficheiro CSV. É útil para tarefas como importar "
+"Download dados do membro em planilha CSV. É útil para tarefas como importar "
 "grupos de utilizadores para Mail Chimp ou outros sistemas."
 
 #: includes/admin/export.php:17
@@ -773,7 +763,7 @@ msgstr "Escolher a subscrição para exportar os dados dos membros de."
 #: includes/admin/subscriptions/subscription-levels.php:192
 #: includes/member-functions.php:445
 msgid "Active"
-msgstr "Activo"
+msgstr "Ativo"
 
 #: includes/admin/export.php:30 includes/admin/members/members-page.php:70
 #: includes/member-functions.php:451 includes/misc-functions.php:606
@@ -799,16 +789,15 @@ msgstr "Grátis"
 
 #: includes/admin/export.php:35
 msgid "Choose the status to export"
-msgstr "Escolher o estado para exportar"
+msgstr "Escolher o status para exportar"
 
 #: includes/admin/export.php:37
 msgid "Maximum number of members to export"
-msgstr ""
+msgstr "Número máximo de membros para exportar"
 
 #: includes/admin/export.php:39
-#, fuzzy
 msgid "The number of members to skip"
-msgstr "Nome do nível do membro"
+msgstr "Quantidade de membros para pular"
 
 #: includes/admin/export.php:41
 msgid ""
@@ -1212,12 +1201,12 @@ msgstr "Data expiração"
 #: includes/admin/members/members-page.php:129 templates/register-single.php:67
 #: templates/register.php:92
 msgid "Apply"
-msgstr ""
+msgstr "Aplicar"
 
 #: includes/admin/members/members-page.php:136
 #: includes/admin/members/members-page.php:213
 msgid "Select All"
-msgstr ""
+msgstr "Selecionar todos"
 
 #: includes/admin/members/members-page.php:144
 #: includes/admin/members/members-page.php:201
@@ -1235,12 +1224,11 @@ msgstr "Editar membro:"
 
 #: includes/admin/members/members-page.php:182
 msgid "View User's Profile"
-msgstr ""
+msgstr "Visualizar perfil desse usuário"
 
 #: includes/admin/members/members-page.php:182
-#, fuzzy
 msgid "Edit User Account"
-msgstr "Registe uma conta nova"
+msgstr "Editar conta do usuário"
 
 #: includes/admin/members/members-page.php:199
 msgid "yes"
@@ -2053,7 +2041,7 @@ msgstr ""
 
 #: includes/admin/settings/settings.php:574
 msgid "Active Subscription Email"
-msgstr "Activar email de subscrição"
+msgstr "Email de subscrição ativo"
 
 #: includes/admin/settings/settings.php:578
 #: includes/admin/settings/settings.php:610
@@ -2570,7 +2558,7 @@ msgstr ""
 
 #: includes/admin/settings/settings.php:1062
 msgid "Save Options"
-msgstr "Guardar opções"
+msgstr "Salvar opções"
 
 #: includes/admin/settings/settings.php:1169
 msgid "Your license key could not be activated. Error: %s"
@@ -2765,30 +2753,27 @@ msgstr ""
 
 #: includes/class-rcp-export-members.php:37
 #: includes/class-rcp-export-payments.php:40
-#, fuzzy
 msgid "User ID"
-msgstr "Utilizador"
+msgstr "Nome de usuário"
 
 #: includes/class-rcp-export-members.php:38
 #: includes/class-rcp-export-payments.php:41
-#, fuzzy
 msgid "User Login"
-msgstr "Início de sessão do utilizador"
+msgstr "Login do usuário"
 
 #: includes/class-rcp-export-members.php:39
-#, fuzzy
 msgid "User Email"
-msgstr "Email"
+msgstr "E-mail do usuário"
 
 #: includes/class-rcp-export-members.php:40 templates/profile-editor.php:25
 #: templates/register-single.php:37 templates/register.php:36
 msgid "First Name"
-msgstr "Primeiro Nome"
+msgstr "Nome"
 
 #: includes/class-rcp-export-members.php:41 templates/profile-editor.php:29
 #: templates/register-single.php:41 templates/register.php:40
 msgid "Last Name"
-msgstr "Último Nome"
+msgstr "Sobrenome"
 
 #: includes/class-rcp-export-payments.php:37 includes/class-rcp-export.php:67
 msgid "ID"
@@ -2834,7 +2819,7 @@ msgstr "Olá"
 #: includes/email-functions.php:49 includes/email-functions.php:119
 #: includes/email-functions.php:142
 msgid "is now subscribed to"
-msgstr "Está agora subscrito "
+msgstr "agora está subscrito a"
 
 #: includes/email-functions.php:49 includes/email-functions.php:119
 #: includes/email-functions.php:142
@@ -2849,11 +2834,11 @@ msgstr "Obrigado"
 
 #: includes/email-functions.php:52
 msgid "New subscription on "
-msgstr "Nova subscrição"
+msgstr "Nova subscrição em"
 
 #: includes/email-functions.php:69
 msgid "has cancelled their subscription to"
-msgstr "Cancelou a sua subscrição"
+msgstr "Cancelou a sua subscrição para"
 
 #: includes/email-functions.php:69
 msgid "Their subscription level was"
@@ -2966,7 +2951,7 @@ msgstr ""
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:290
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:126
 msgid "Error message:"
-msgstr ""
+msgstr "Mensagem de erro:"
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:128
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:221
@@ -2975,7 +2960,7 @@ msgstr ""
 #: includes/member-functions.php:979 includes/member-functions.php:996
 #: includes/member-functions.php:1012 includes/member-functions.php:1028
 msgid "Error code:"
-msgstr ""
+msgstr "Código de erro:"
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:142
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:244
@@ -2983,7 +2968,7 @@ msgstr ""
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:158
 #: includes/gateways/paypal/functions.php:190
 msgid "Something has gone wrong, please try again"
-msgstr ""
+msgstr "Algo deu errado, por favor tente novamente"
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:156
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:185
@@ -3009,22 +2994,22 @@ msgstr ""
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:189
 #: includes/gateways/class-rcp-payment-gateway-stripe.php:654
 msgid "The card number you have entered is invalid"
-msgstr ""
+msgstr "O número do cartão é inválido"
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:201
 #: includes/gateways/class-rcp-payment-gateway-stripe.php:666
 msgid "The card holder name you have entered is invalid"
-msgstr ""
+msgstr "O nome do dono do cartão está inválido"
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:205
 #: includes/gateways/class-rcp-payment-gateway-stripe.php:670
 msgid "The card expiration month you have entered is invalid"
-msgstr ""
+msgstr "O mês de expiração inserido está inválido"
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:209
 #: includes/gateways/class-rcp-payment-gateway-stripe.php:674
 msgid "The card expiration year you have entered is invalid"
-msgstr ""
+msgstr "O ano de expiração inserido está inválido"
 
 #: includes/gateways/class-rcp-payment-gateway-paypal.php:275
 msgid ""
@@ -3060,7 +3045,7 @@ msgstr "IPN Inválido"
 #: includes/gateways/class-rcp-payment-gateway-stripe-checkout.php:59
 #: includes/install.php:112 includes/scripts.php:129
 msgid "Register"
-msgstr "Registo"
+msgstr "Cadastrar"
 
 #: includes/gateways/class-rcp-payment-gateway-stripe.php:66
 msgid ""
@@ -3191,17 +3176,16 @@ msgid ""
 msgstr ""
 
 #: includes/install.php:150
-#, fuzzy
 msgid "Your Membership"
-msgstr "Membros"
+msgstr "Sua Conta"
 
 #: includes/install.php:177
 msgid "Edit Your Profile"
-msgstr ""
+msgstr "Editar o seu perfil"
 
 #: includes/install.php:204
 msgid "Update Billing Card"
-msgstr ""
+msgstr "Atualizar dados de pagamento"
 
 #: includes/integrations/class-rcp-google-authenticator.php:31
 msgid "Google Authenticator Code"
@@ -3234,7 +3218,7 @@ msgstr ""
 
 #: includes/integrations/class-rcp-wp-approve-user.php:124
 msgid "Your account is pending verification by a site administrator."
-msgstr ""
+msgstr "A aprovação de sua conta pelo administrador do site está pendent."
 
 #: includes/integrations/class-rcp-wp-approve-user.php:148
 msgid "Unapprove"
@@ -3269,102 +3253,98 @@ msgid "You do not have permission to download this invoice"
 msgstr ""
 
 #: includes/login-functions.php:88
-#, fuzzy
 msgid "Invalid username or email"
-msgstr "Nome inválido"
+msgstr "Nome de usuário ou e-mail inválido"
 
 #: includes/login-functions.php:93 includes/registration-functions.php:399
 msgid "Please enter a password"
-msgstr "Por favor introduza a password"
+msgstr "Favor inserir sua senha"
 
 #: includes/login-functions.php:100
 msgid "Incorrect password"
-msgstr "Password incorrecta"
+msgstr "Senha inválida"
 
 #: includes/login-functions.php:173
 msgid "Your password reset link has expired."
-msgstr ""
+msgstr "O link de alterar sua senha venceu."
 
 #: includes/login-functions.php:175
 msgid "Your password reset link appears to be invalid."
-msgstr ""
+msgstr "O link de alterar sua senha está inválido"
 
 #: includes/login-functions.php:219
-#, fuzzy
 msgid "Enter a username or e-mail address."
-msgstr "Inserir endereço de email do PayPal"
+msgstr "Inserir nome de usuário ou e-mail."
 
 #: includes/login-functions.php:223
 msgid "There is no user registered with that email address."
-msgstr ""
+msgstr "Não ha usuário cadastrado com esse e-mail."
 
 #: includes/login-functions.php:235
-#, fuzzy
 msgid "Invalid username or e-mail."
-msgstr "Nome inválido"
+msgstr "Nome de usuário ou e-mail inválido."
 
 #: includes/login-functions.php:246
 msgid "Password reset is not allowed for this user"
-msgstr ""
+msgstr "Alteração de senha não é permitido para esse usuário"
 
 #: includes/login-functions.php:269
 msgid "Someone requested that the password be reset for the following account:"
 msgstr ""
 
 #: includes/login-functions.php:271
-#, fuzzy
 msgid "Username: %s"
-msgstr "Nome"
+msgstr "Nome de usuário: %s"
 
 #: includes/login-functions.php:272
 msgid "If this was a mistake, just ignore this email and nothing will happen."
 msgstr ""
+"Se você recebeu esse e-mail por engano, favor ignorar que nada acontecerá."
 
 #: includes/login-functions.php:273
 msgid "To reset your password, visit the following address:"
-msgstr ""
+msgstr "Para alterar a sua senha, acesse a seguinte página:"
 
 #: includes/login-functions.php:288
 msgid "[%s] Password Reset"
-msgstr ""
+msgstr "[%s] Alterar Senha"
 
 #: includes/login-functions.php:293
 msgid "The e-mail could not be sent."
-msgstr ""
+msgstr "Esse e-mail não pôde ser enviado."
 
 #: includes/login-functions.php:293
 msgid "Possible reason: your host may have disabled the mail() function."
-msgstr ""
+msgstr "Possível motivos: seu servidor pode ter desabilitado a função mail()"
 
 #: includes/member-functions.php:559
 msgid "No payments recorded"
-msgstr "Sem pagamentos agendados"
+msgstr "Não ha pagamentos registrados"
 
 #: includes/member-functions.php:784
-#, fuzzy
 msgid "Please enter a valid email address"
-msgstr "Inserir endereço de email do PayPal"
+msgstr "Inserir e-mail válido"
 
 #: includes/member-functions.php:789
 msgid "The email you entered belongs to another user. Please use another."
 msgstr ""
+"O e-mail inserido foi cadastrado por outro usuário. Favor usar outro e-mail."
 
 #: includes/member-functions.php:795
-#, fuzzy
 msgid "The passwords you entered do not match. Please try again."
-msgstr "As letras/numeros que introduziu não coíncidem"
+msgstr "As senhas inseridas não coíncidem. Favor tentar novamente."
 
 #: includes/member-functions.php:817
 msgid "There was an error updating your profile. Please try again."
-msgstr ""
+msgstr "Occoreu um erro na atualização de seu perfil. Favor tentar novamente."
 
 #: includes/member-functions.php:850
 msgid "Please enter a password, and confirm it"
-msgstr "Por favor introduza uma password e confirme"
+msgstr "Favor inserir senha e confirmar"
 
 #: includes/member-functions.php:854 includes/registration-functions.php:403
 msgid "Passwords do not match"
-msgstr "Passwords não coíncidem"
+msgstr "As senhas não coíncidem"
 
 #: includes/member-functions.php:1104
 msgid ""
@@ -3495,28 +3475,27 @@ msgstr "Pagamentos por página"
 #: includes/process-data.php:535 includes/process-data.php:544
 #: includes/process-data.php:553
 msgid "You do not have permission to perform this action."
-msgstr ""
+msgstr "Você não tem permissão para executar essa ação."
 
 #: includes/process-data.php:84
 msgid "Please fill out all fields."
-msgstr ""
+msgstr "Favor preencher todos os campos."
 
 #: includes/process-data.php:99
 msgid "You entered a username that does not exist."
-msgstr ""
+msgstr "Você inseriu um nome de usuário que não existe."
 
 #: includes/process-data.php:111
-#, fuzzy
 msgid "Please supply a valid subscription level."
-msgstr "Por favor escolha uma Subscrição"
+msgstr "Por favor escolha um nível de subscrição válido."
 
 #: includes/process-data.php:162
 msgid "Please select at least one member to edit."
-msgstr ""
+msgstr "Favor selecrionar ao menos um membro para editar."
 
 #: includes/registration-functions.php:63
 msgid "Please choose a subscription level"
-msgstr "Por favor escolha uma Subscrição"
+msgstr "Favor escolher uma Subscrição"
 
 #: includes/registration-functions.php:68
 msgid "You may only sign up for a free trial once"
@@ -3532,15 +3511,15 @@ msgstr "O Desconto que introduziu não é válido"
 
 #: includes/registration-functions.php:379
 msgid "Username already taken"
-msgstr "Nome  já em uso"
+msgstr "Nome de usuário  já em uso"
 
 #: includes/registration-functions.php:383
 msgid "Invalid username"
-msgstr "Nome inválido"
+msgstr "Nome de usuário inválido"
 
 #: includes/registration-functions.php:387
 msgid "Please enter a username"
-msgstr "Por favor introduza o nome"
+msgstr "Favor inserir um nome de usuário"
 
 #: includes/registration-functions.php:391
 msgid "Invalid email"
@@ -3548,7 +3527,7 @@ msgstr "Email inválido"
 
 #: includes/registration-functions.php:395
 msgid "Email already registered"
-msgstr "Email já registado"
+msgstr "Email já cadastrado"
 
 #: includes/registration-functions.php:652
 #: includes/registration-functions.php:707
@@ -3589,7 +3568,7 @@ msgstr ""
 
 #: includes/scripts.php:31
 msgid "You must choose a username"
-msgstr ""
+msgstr "Favor escolher um nome de usuário"
 
 #: includes/scripts.php:34
 msgid "Use as Logo"
@@ -3610,30 +3589,29 @@ msgstr "Pagamentos"
 
 #: includes/shortcodes.php:231
 msgid "You are already registered and have an active subscription."
-msgstr "Já está registado"
+msgstr "Você já está cadastrado e já possui uma subscrição ativa."
 
 #: includes/shortcodes.php:295
 msgid "Join %s"
 msgstr ""
 
 #: includes/shortcodes.php:296
-#, fuzzy
 msgid "Register - {{amount}}"
-msgstr "Registe uma conta nova"
+msgstr "Cadastre uma conta nova"
 
 #: includes/shortcodes.php:322
-#, fuzzy
 msgid "You are already subscribed."
-msgstr "Sessão iniciada"
+msgstr "Você já está subscrito"
 
 #: includes/shortcodes.php:514
-#, fuzzy
 msgid "Billing card updated successfully"
-msgstr "Password mudada com sucesso"
+msgstr "Senha alterada com sucesso"
 
 #: includes/shortcodes.php:523
 msgid "Billing card could not be updated, please try again."
 msgstr ""
+"As informações de seu cartão não puderam ser atualizadas. Favor tentar "
+"novamente."
 
 #: includes/subscription-functions.php:216
 msgid "Days"
@@ -3734,17 +3712,16 @@ msgstr ""
 #: templates/card-form-full.php:3 templates/card-form.php:3
 #: templates/card-update-form.php:22
 msgid "Card Number"
-msgstr ""
+msgstr "Número do cartão"
 
 #: templates/card-form-full.php:7 templates/card-form.php:7
 #: templates/card-update-form.php:26
 msgid "Card CVC"
-msgstr ""
+msgstr "CVC do cartão (3 digitos de autorização no verso do cartão)"
 
 #: templates/card-form-full.php:11
-#, fuzzy
 msgid "Address"
-msgstr "Morada PayPal"
+msgstr "Endereço"
 
 #: templates/card-form-full.php:15
 msgid "City"
@@ -3755,29 +3732,27 @@ msgid "State or Providence"
 msgstr ""
 
 #: templates/card-form-full.php:23
-#, fuzzy
 msgid "Country"
-msgstr "Valor"
+msgstr "País"
 
 #: templates/card-form-full.php:274 templates/card-form.php:11
 #: templates/card-update-form.php:30
 msgid "Card ZIP or Postal Code"
-msgstr ""
+msgstr "CEP/Código Postal"
 
 #: templates/card-form-full.php:278 templates/card-form.php:15
 #: templates/card-update-form.php:34
 msgid "Name on Card"
-msgstr ""
+msgstr "Nome no cartão"
 
 #: templates/card-form-full.php:282 templates/card-form.php:19
 #: templates/card-update-form.php:38
-#, fuzzy
 msgid "Expiration (MM/YYYY)"
-msgstr "Expiração"
+msgstr "Data de expiração (MM/AAAA)"
 
 #: templates/card-update-form.php:7
 msgid "Your Cards"
-msgstr ""
+msgstr "Seus cartões"
 
 #: templates/card-update-form.php:11
 #, fuzzy
@@ -3790,30 +3765,28 @@ msgid "Type:"
 msgstr "Tipo"
 
 #: templates/card-update-form.php:13
-#, fuzzy
 msgid "Last 4:"
-msgstr "Último Nome"
+msgstr "Últimos 4 digitos:"
 
 #: templates/card-update-form.php:14
 msgid "Exp:"
-msgstr ""
+msgstr "Venc.:"
 
 #: templates/card-update-form.php:58
-#, fuzzy
 msgid "Update Card"
-msgstr "Pagamentos"
+msgstr "Atualizar cartão"
 
 #: templates/change-password.php:7
 msgid "Password changed successfully"
-msgstr "Password mudada com sucesso"
+msgstr "Senha alterada com sucesso"
 
 #: templates/change-password.php:13 templates/profile-editor.php:55
 msgid "New Password"
-msgstr "Nova password"
+msgstr "Nova senha"
 
 #: templates/change-password.php:17
 msgid "Password Confirm"
-msgstr "Confirme passwords"
+msgstr "Confirme a senha"
 
 #: templates/invoice.php:10 templates/invoice.php:195 templates/invoice.php:205
 msgid "Invoice %s"
@@ -3842,9 +3815,8 @@ msgid "Additional Info:"
 msgstr ""
 
 #: templates/invoice.php:276
-#, fuzzy
 msgid "Payment Date:"
-msgstr "Forma de pagamento"
+msgstr "Data de pagamento"
 
 #: templates/invoice.php:292
 msgid "Print"
@@ -3853,45 +3825,40 @@ msgstr ""
 #: templates/login.php:16 templates/register-single.php:45
 #: templates/register.php:44
 msgid "Password"
-msgstr "Password"
+msgstr "Senha"
 
 #: templates/login.php:22
-#, fuzzy
 msgid "Remember me"
-msgstr "Membros"
+msgstr "Mantenha-se logado"
 
 #: templates/login.php:24
 msgid "Lost your password?"
-msgstr "Perdeu a password?"
+msgstr "Perdeu a senha?"
 
 #: templates/login.php:29
-#, fuzzy
 msgid "Login"
-msgstr "Página iniciar sessão"
+msgstr "Login"
 
 #: templates/login.php:38 templates/lostpassword.php:28
 #: templates/lostpassword_checkemail.php:10
-#, fuzzy
 msgid "Log out"
-msgstr "Erro"
+msgstr "Sair"
 
 #: templates/lostpassword.php:11
-#, fuzzy
 msgid "Username or E-mail:"
-msgstr "Email"
+msgstr "Nome de usuário ou e-mail"
 
 #: templates/lostpassword.php:19
 msgid "Request Password Reset"
-msgstr ""
+msgstr "Solicitar alteração de senha"
 
 #: templates/lostpassword_checkemail.php:5
 msgid "Check your e-mail for the confirmation link."
-msgstr ""
+msgstr "Confira sua caixa de entrada pelo e-mail com link de confirmação."
 
 #: templates/paypal-express-confirm.php:3
-#, fuzzy
 msgid "Please confirm your payment"
-msgstr "Por favor introduza o nome"
+msgstr "Favor confirmar seu pagamento"
 
 #: templates/paypal-express-confirm.php:5
 #, fuzzy
@@ -3918,62 +3885,56 @@ msgid "Every %d %s"
 msgstr ""
 
 #: templates/paypal-express-confirm.php:49
-#, fuzzy
 msgid "Confirm"
-msgstr "Confirme passwords"
+msgstr "Confirmar"
 
 #: templates/profile-editor.php:16
 msgid "Success"
-msgstr ""
+msgstr "Sucesso"
 
 #: templates/profile-editor.php:16
 msgid "Your profile has been updated."
-msgstr ""
+msgstr "Seu perfil foi atualizado"
 
 #: templates/profile-editor.php:23
 msgid "Change your Name"
-msgstr ""
+msgstr "Alterar o seu nome"
 
 #: templates/profile-editor.php:33
-#, fuzzy
 msgid "Display Name"
-msgstr "Primeiro Nome"
+msgstr "Nome de exibição"
 
 #: templates/profile-editor.php:49
-#, fuzzy
 msgid "Email Address"
-msgstr "Morada PayPal"
+msgstr "E-mail"
 
 #: templates/profile-editor.php:53
-#, fuzzy
 msgid "Change your Password"
-msgstr "Mude password"
+msgstr "Altere sua senha"
 
 #: templates/profile-editor.php:59
-#, fuzzy
 msgid "Re-enter Password"
-msgstr "Por favor introduza a password"
+msgstr "Favor inserir sua senha novamente"
 
 #: templates/profile-editor.php:62
 msgid "Please note after changing your password, you must log back in."
-msgstr ""
+msgstr "Após alterar sua senha terá que fazer o login novamente."
 
 #: templates/profile-editor.php:67
 msgid "Save Changes"
-msgstr ""
+msgstr "Salvar alterações"
 
 #: templates/register-single.php:7 templates/register.php:5
 msgid "Register New Account"
-msgstr "Registe uma conta nova"
+msgstr "Cadastre uma conta nova"
 
 #: templates/register-single.php:11 templates/register.php:9
-#, fuzzy
 msgid "Upgrade Your Subscription"
 msgstr "Atualizar a sua subscrição"
 
 #: templates/register-single.php:49 templates/register.php:48
 msgid "Password Again"
-msgstr "Password outra vez"
+msgstr "Senha novamente"
 
 #: templates/register-single.php:62 templates/register.php:87
 msgid "Discount Code"

@@ -67,7 +67,7 @@ function rcp_term_edit_meta_fields( $term ) {
 		</td>
 	</tr>
 	<tr>
-		<th scope="row"><?php _e( 'Subscription Levels', 'rcp' ); ?></th>
+		<th scope="row"><?php _e( 'Membership Levels', 'rcp' ); ?></th>
 		<td>
 			<?php foreach( rcp_get_subscription_levels() as $level ) : ?>
 				<label for="rcp_category_meta[subscriptions][<?php echo $level->id; ?>]">
@@ -75,7 +75,7 @@ function rcp_term_edit_meta_fields( $term ) {
 					<?php echo $level->name; ?>
 				</label><br/>
 			<?php endforeach; ?>
-			<span class="description"><?php _e( 'Subscription levels allowed to view content in this category. Leave unchecked for all.', 'rcp' ); ?></span>
+			<span class="description"><?php _e( 'Membership levels allowed to view content in this category. Leave unchecked for all.', 'rcp' ); ?></span>
 			<?php wp_nonce_field( 'rcp_edit_term', 'rcp_edit_term' ); ?>
 		</td>
 	</tr>
@@ -114,14 +114,14 @@ function rcp_term_add_meta_fields( $taxonomy ) {
 		</label>
 	</div>
 	<div class="form-field">
-		<p><?php _e( 'Subscription Levels', 'rcp' ); ?></p>
+		<p><?php _e( 'Membership Levels', 'rcp' ); ?></p>
 		<?php foreach( rcp_get_subscription_levels() as $level ) : ?>
 			<label for="rcp_category_meta[subscriptions][<?php echo $level->id; ?>]">
 				<input type="checkbox" name="rcp_category_meta[subscriptions][<?php echo $level->id; ?>]" id="rcp_category_meta[subscriptions][<?php echo $level->id; ?>]" value="1"/>
 				<?php echo $level->name; ?>
 			</label>
 		<?php endforeach; ?>
-		<span class="description"><?php _e( 'Subscription levels allowed to view content in this category. Leave unchecked for all.', 'rcp' ); ?></span>
+		<span class="description"><?php _e( 'Membership levels allowed to view content in this category. Leave unchecked for all.', 'rcp' ); ?></span>
 		<?php wp_nonce_field( 'rcp_edit_term', 'rcp_edit_term' ); ?>
 	</div>
 <?php

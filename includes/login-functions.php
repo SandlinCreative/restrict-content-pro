@@ -41,26 +41,6 @@ function rcp_get_login_url( $redirect = '' ) {
 }
 
 /**
- * Log a user in
- *
- * @param int    $user_id    ID of the user to login.
- * @param string $user_login Login name of the user.
- * @param bool   $remember   Whether or not to remember the user.
- *
- * @since  1.0
- * @return void
- */
-function rcp_login_user_in( $user_id, $user_login, $remember = false ) {
-	$user = get_userdata( $user_id );
-	if( ! $user )
-		return;
-	wp_set_auth_cookie( $user_id, $remember );
-	wp_set_current_user( $user_id, $user_login );
-	do_action( 'wp_login', $user_login, $user );
-}
-
-
-/**
  * Process the login form
  *
  * @uses rcp_login_user_in()
@@ -89,54 +69,64 @@ function rcp_process_login_form() {
 
 	}
 
+	/**
+	 * Executes before error checks are performed.
+	 *
+	 * @param array $_POST Posted data.
+	 */
 	do_action( 'rcp_before_form_errors', $_POST );
 
-	if( !$user ) {
+	if( ! $user ) {
 		// if the user name doesn't exist
 		rcp_errors()->add( 'empty_username', __( 'Invalid username or email', 'rcp' ), 'login' );
 	}
 
-	if( !isset( $_POST['rcp_user_pass'] ) || $_POST['rcp_user_pass'] == '') {
+	if( ! isset( $_POST['rcp_user_pass'] ) || $_POST['rcp_user_pass'] == '') {
 		// if no password was entered
 		rcp_errors()->add( 'empty_password', __( 'Please enter a password', 'rcp' ), 'login' );
 	}
 
-	if( $user ) {
-		// check the user's login with their password
-		if( ! wp_check_password( $_POST['rcp_user_pass'], $user->user_pass, $user->ID ) ) {
-			// if the password is incorrect for the specified user
-			rcp_errors()->add( 'empty_password', __( 'Incorrect password', 'rcp' ), 'login' );
-		}
-	}
-
-	if( function_exists( 'is_limit_login_ok' ) && ! is_limit_login_ok() ) {
-
-		rcp_errors()->add( 'limit_login_failed', limit_login_error_msg(), 'login' );
-
-	}
-
+	/**
+	 * Third party plugins can use this action to add additional error checks and messages.
+	 *
+	 * @param array $_POST Posted data.
+	 */
 	do_action( 'rcp_login_form_errors', $_POST );
 
-	// retrieve all error messages
+	// Retrieve all error messages. At this point these are only the errors added via the above hook.
 	$errors = rcp_errors()->get_error_messages();
 
-	// only log the user in if there are no errors
+	// Exit early if we have errors from third party plugins.
+	if ( ! empty( $errors ) ) {
+		return;
+	}
+
+	// Now we can attempt the login.
+	$user = wp_signon( array(
+		'user_login'    => $user->user_login,
+		'user_password' => $_POST['rcp_user_pass'],
+		'remember'      => isset( $_POST['rcp_user_remember'] )
+	) );
+
+	// Add error message if the login failed.
+	if ( is_wp_error( $user ) ) {
+		rcp_errors()->add( $user->get_error_code(), $user->get_error_message(), 'login' );
+	}
+
+	// Refresh error messages.
+	$errors = rcp_errors()->get_error_messages();
+
+	// Redirect if the login was successful.
 	if( empty( $errors ) ) {
 
-		$remember = isset( $_POST['rcp_user_remember'] );
-
 		$redirect = ! empty( $_POST['rcp_redirect'] ) ? $_POST['rcp_redirect'] : home_url();
-
-		rcp_login_user_in( $user->ID, $_POST['rcp_user_login'], $remember );
 
 		// redirect the user back to the page they were previously on
 		wp_safe_redirect( apply_filters( 'rcp_login_redirect_url', esc_url_raw( $redirect ), $user ) ); exit;
 
 	} else {
 
-		if( function_exists( 'limit_login_failed' ) ) {
-			limit_login_failed( $_POST['rcp_user_login'] );
-		}
+		// Page will refresh with errors shown.
 
 	}
 }
@@ -198,7 +188,7 @@ add_action('init', 'rcp_process_lostpassword_reset');
  */
 function rcp_process_lostpassword_form() {
 
-	if( 'POST' !== $_SERVER['REQUEST_METHOD'] || ! isset( $_POST['rcp_action'] ) || 'lostpassword' != $_POST['rcp_action'] ) {
+	if( ! isset( $_POST['rcp_action'] ) || 'lostpassword' != $_POST['rcp_action'] ) {
 		return;
 	}
 
@@ -296,7 +286,7 @@ function rcp_retrieve_password() {
 	}
 
 	$title   = sprintf( __('[%s] Password Reset', 'rcp'), $blogname );
-	$title   = apply_filters( 'retrieve_password_title', $title );
+	$title   = apply_filters( 'retrieve_password_title', $title, $user_login, $user_data );
 	$message = apply_filters( 'retrieve_password_message', $message, $key, $user_login, $user_data );
 
 	$emails = new RCP_Emails;
@@ -333,3 +323,29 @@ function rcp_get_user_resetting_password( $rp_cookie ) {
 
 	return $user;
 }
+
+/**
+ * When a customer logs in, record their login date and IP address.
+ *
+ * @param string  $user_login User login.
+ * @param WP_User $user       User object.
+ *
+ * @since 3.0
+ * @return void
+ */
+function rcp_log_ip_and_last_login_date( $user_login, $user ) {
+
+	$customer = rcp_get_customer_by_user_id( $user->ID );
+
+	if ( empty( $customer ) ) {
+		return;
+	}
+
+	$customer->add_ip( rcp_get_ip() );
+
+	$customer->update( array(
+		'last_login' => current_time( 'mysql' )
+	) );
+
+}
+add_action( 'wp_login', 'rcp_log_ip_and_last_login_date', 10, 2 );

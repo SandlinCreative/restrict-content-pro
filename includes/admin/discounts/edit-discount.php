@@ -69,22 +69,29 @@ $code = rcp_get_discount_details( urldecode( $_GET['edit_discount'] ) );
 			</tr>
 			<tr class="form-field">
 				<th scope="row" valign="top">
-					<label for="rcp-subscription"><?php _e( 'Subscription', 'rcp' ); ?></label>
+					<label for="rcp-subscription"><?php _e( 'Membership Levels', 'rcp' ); ?></label>
 				</th>
 				<td>
 					<?php
-					$levels = rcp_get_subscription_levels('all', false);
-					if( $levels ) : ?>
-						<select name="subscription" id="rcp-subscription">
-							<option value="0"><?php _e( 'All Levels', 'rcp' ); ?></option>
-							<?php
-								foreach( $levels as $level ) :
-									echo '<option value="' . $level->id . '" ' . selected( $code->subscription_id, $level->id, false ) . '>' . $level->name . '</option>';
-								endforeach;
-							?>
-						</select>
-					<?php endif; ?>
-					<p class="description"><?php _e( 'The subscription levels this discount code can be used for.', 'rcp' ); ?></p>
+					$levels = rcp_get_subscription_levels('all' );
+					if( $levels ) {
+						$current = maybe_unserialize( $code->membership_level_ids );
+						if ( empty ( $current ) || ! is_array( $current ) ) {
+							$current = array();
+						}
+						foreach ( $levels as $level ) : ?>
+							<input type="checkbox" id="rcp-membership-levels-<?php echo esc_attr( $level->id ); ?>" name="membership_levels[]" value="<?php echo esc_attr( $level->id ) ?>" <?php checked( true, in_array( $level->id, $current ) ); ?>>
+							<label for="rcp-membership-levels-<?php echo esc_attr( $level->id ); ?>"><?php echo esc_html( $level->name ); ?></label>
+							<br>
+						<?php
+						endforeach;
+						?>
+						<p class="description"><?php _e( 'The membership levels this discount code can be used for. Leave blank for all levels.', 'rcp' ); ?></p>
+						<?php
+					} else {
+						echo '<p class="description">' . __( 'No membership levels created yet. This discount will be available to use with all future membership levels.', 'rcp' ) . '</p>';
+					}
+					?>
 				</td>
 			</tr>
 			<tr valign="top">
@@ -92,8 +99,8 @@ $code = rcp_get_discount_details( urldecode( $_GET['edit_discount'] ) );
 					<label for="rcp-expiration"><?php _e(' Expiration date', 'rcp' ); ?></label>
 				</th>
 				<td>
-					<input name="expiration" id="rcp-expiration" type="text" class="rcp-datepicker" value="<?php echo $code->expiration == '' ? '' : esc_attr( date( 'Y-m-d', strtotime( $code->expiration, current_time( 'timestamp' ) ) ) ); ?>"/>
-					<p class="description"><?php _e(' Enter the expiration date for this discount code in the format of yyyy-mm-dd. Leave blank for no expiration', 'rcp' ); ?></p>
+					<input name="expiration" id="rcp-expiration" type="text" class="rcp-datetimepicker" value="<?php echo $code->expiration == '' ? '' : esc_attr( date( 'Y-m-d H:i:s', strtotime( $code->expiration, current_time( 'timestamp' ) ) ) ); ?>"/>
+					<p class="description"><?php _e(' Enter the expiration date for this discount code in the format of yyyy-mm-dd hh:mm:ss. Leave blank for no expiration', 'rcp' ); ?></p>
 				</td>
 			</tr>
 			<tr class="form-field">

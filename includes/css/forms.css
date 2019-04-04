@@ -96,6 +96,14 @@
 	border-top: none;
 }
 
+#order_summary .rcp-ppe-confirm-price {
+	text-align: right;
+	width: 70px;
+}
+#order_summary tfoot th {
+	text-align: right;
+}
+
 /* Input Fields
 -------------------------------------------------------------- */
 
@@ -195,5 +203,10 @@ p.rcp_success {
 
 	.rcp-table td:first-child {
 		background-color: rgba(0, 0, 0, 0.1);
+	}
+
+	#order_summary .rcp-ppe-confirm-price {
+		text-align: left;
+		width: auto;
 	}
 }

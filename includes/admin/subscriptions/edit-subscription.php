@@ -1,9 +1,9 @@
 <?php
 /**
- * Edit Subscription Page
+ * Edit Membership Level Page
  *
  * @package     Restrict Content Pro
- * @subpackage  Admin/Edit Subscription
+ * @subpackage  Admin/Edit Membership Level
  * @copyright   Copyright (c) 2017, Restrict Content Pro
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU Public License
  */
@@ -16,7 +16,7 @@ $trial_duration = ! empty( $level->trial_duration ) ? $level->trial_duration : 0
 $trial_duration_unit = in_array( $level->trial_duration_unit, array( 'day', 'month', 'year' ) ) ? $level->trial_duration_unit : 'day'
 ?>
 <h1>
-	<?php _e( 'Edit Subscription Level:', 'rcp' ); echo ' ' . stripslashes( $level->name ); ?>
+	<?php _e( 'Edit Membership Level:', 'rcp' ); echo ' ' . stripslashes( $level->name ); ?>
 	<a href="<?php echo admin_url( '/admin.php?page=rcp-member-levels' ); ?>" class="add-new-h2">
 		<?php _e( 'Cancel', 'rcp' ); ?>
 	</a>
@@ -30,7 +30,7 @@ $trial_duration_unit = in_array( $level->trial_duration_unit, array( 'day', 'mon
 				</th>
 				<td>
 					<input name="name" id="rcp-name" type="text" value="<?php echo esc_attr( stripslashes( $level->name ) ); ?>"/>
-					<p class="description"><?php _e( 'The name of this subscription. This is shown on the registration page.', 'rcp' ); ?></p>
+					<p class="description"><?php _e( 'The name of this membership level. This is shown on the registration page.', 'rcp' ); ?></p>
 				</td>
 			</tr>
 			<tr class="form-field">
@@ -39,7 +39,7 @@ $trial_duration_unit = in_array( $level->trial_duration_unit, array( 'day', 'mon
 				</th>
 				<td>
 					<textarea name="description" id="rcp-description"><?php echo esc_textarea( stripslashes( $level->description ) ); ?></textarea>
-					<p class="description"><?php _e( 'The description of this subscription. This is shown on the registration page.', 'rcp' ); ?></p>
+					<p class="description"><?php _e( 'The description of this membership level. This is shown on the registration page.', 'rcp' ); ?></p>
 				</td>
 			</tr>
 			<tr class="form-field">
@@ -54,7 +54,7 @@ $trial_duration_unit = in_array( $level->trial_duration_unit, array( 'day', 'mon
 						}
 						?>
 					</select>
-					<p class="description"><?php _e( 'Level of access this subscription gives.', 'rcp' ); ?></p>
+					<p class="description"><?php _e( 'Level of access this membership gives.', 'rcp' ); ?></p>
 				</td>
 			</tr>
 			<tr class="form-field">
@@ -84,11 +84,43 @@ $trial_duration_unit = in_array( $level->trial_duration_unit, array( 'day', 'mon
 					</select>
 					<p class="description">
 						<?php _e('Length of time the free trial should last. Enter 0 for no free trial.', 'rcp'); ?>
-						<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php _e( '<strong>Example</strong>: setting this to 7 days would give the member a 7-day free trial. The member would be billed at the end of the trial. <p><strong>Note:</strong> If you enable a free trial, the regular subscription duration and price must be greater than 0.</p>', 'rcp' ); ?>"></span>
+						<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php _e( '<strong>Example</strong>: setting this to 7 days would give the member a 7-day free trial. The member would be billed at the end of the trial. <p><strong>Note:</strong> If you enable a free trial, the regular membership duration and price must be greater than 0.</p>', 'rcp' ); ?>"></span>
 					</p>
 				</td>
 			</tr>
-
+			<tr class="form-field">
+				<th scope="row" valign="top">
+					<label for="rcp-maximum-renewals-setting"><?php _e( 'Maximum Renewals', 'rcp' ); ?></label>
+				</th>
+				<td>
+					<select name="maximum_renewals_setting" id="rcp-maximum-renewals-setting">
+						<option value="forever" <?php selected( empty( $level->maximum_renewals ) ); ?>><?php _e( 'Until Cancelled', 'rcp' ); ?></option>
+						<option value="specific" <?php selected( ! empty( $level->maximum_renewals ) ); ?>><?php _e( 'Specific Number', 'rcp' ); ?></option>
+					</select>
+					<label for="rcp-maximum-renewals" class="screen-reader-text"><?php _e( 'Enter the maximum number of renewals', 'rcp' ); ?></label>
+					<input type="number" id="rcp-maximum-renewals" name="maximum_renewals" value="<?php echo esc_attr( $level->maximum_renewals ); ?>"<?php echo empty( $level->maximum_renewals ) ? ' style="display: none;"' : ''; ?>/>
+					<p class="description">
+						<?php _e( 'Number of renewals to process after the first payment.', 'rcp' ); ?>
+						<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php esc_attr_e( '<strong>Until Cancelled</strong>: will continue billing the member indefinitely, or until they cancel their membership. <br/><br/><strong>Specific Number</strong> will allow you to enter the number of additional times you wish to bill the customer after their first payment. If you enter "3", the member will be billed once immediately when they sign up, then 3 more times after that. Then billing will stop automatically.', 'rcp' ); ?>"></span>
+					</p>
+				</td>
+			</tr>
+			<tr class="form-field"<?php echo empty( $level->maximum_renewals ) ? ' style="display: none;"' : ''; ?>>
+				<th scope="row" valign="top">
+					<label for="rcp-after-final-payment"><?php _e( 'After Final Payment', 'rcp' ); ?></label>
+				</th>
+				<td>
+					<select name="after_final_payment" id="rcp-after-final-payment">
+						<option value="lifetime" <?php selected( $level->after_final_payment, 'lifetime' ); ?>><?php _e( 'Grant Lifetime Access', 'rcp' ); ?></option>
+						<option value="expire_immediately" <?php selected( $level->after_final_payment, 'expire_immediately' ); ?>><?php _e( 'End Membership Immediately', 'rcp' ); ?></option>
+						<option value="expire_term_end" <?php selected( $level->after_final_payment, 'expire_term_end' ); ?>><?php _e( 'End Membership at End of Billing Period', 'rcp' ); ?></option>
+					</select>
+					<p class="description">
+						<?php _e( 'Action to take after the final payment has been received.', 'rcp'); ?>
+						<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php esc_attr_e( '<strong>Grant Lifetime Access</strong>: will update the member\'s expiration date to "none" to give them lifetime access to restricted content. <br/><br/><strong>End Membership Immediately</strong>: will make the user\'s membership expire immediately after the final payment is received and they will lose access to restricted content. <br/><br/><strong>End Membership at End of Billing Period</strong>: will allow the user to complete one more period after the final payment, after which their membership will expire. For example, if the membership duration is set to 1 month, the user will make their final payment then have access for 1 more month after that before expiring.', 'rcp' ); ?>"></span>
+					</p>
+				</td>
+			</tr>
 			<tr class="form-field">
 				<th scope="row" valign="top">
 					<label for="rcp-price"><?php _e( 'Price', 'rcp' ); ?></label>
@@ -116,7 +148,7 @@ $trial_duration_unit = in_array( $level->trial_duration_unit, array( 'day', 'mon
 						<option value="active" <?php selected( $level->status, 'active' ); ?>><?php _e( 'Active', 'rcp' ); ?></option>
 						<option value="inactive" <?php selected( $level->status, 'inactive' ); ?>><?php _e( 'Inactive', 'rcp' ); ?></option>
 					</select>
-					<p class="description"><?php _e( 'Members may only sign up for active subscription levels.', 'rcp' ); ?></p>
+					<p class="description"><?php _e( 'Members may only sign up for active membership levels.', 'rcp' ); ?></p>
 				</td>
 			</tr>
 			<tr class="form-field">
@@ -136,7 +168,7 @@ $trial_duration_unit = in_array( $level->trial_duration_unit, array( 'day', 'mon
 	<p class="submit">
 		<input type="hidden" name="rcp-action" value="edit-subscription"/>
 		<input type="hidden" name="subscription_id" value="<?php echo absint( urldecode( $_GET['edit_subscription'] ) ); ?>"/>
-		<input type="submit" value="<?php _e( 'Update Subscription', 'rcp' ); ?>" class="button-primary"/>
+		<input type="submit" value="<?php _e( 'Update Membership Level', 'rcp' ); ?>" class="button-primary"/>
 	</p>
 	<?php wp_nonce_field( 'rcp_edit_level_nonce', 'rcp_edit_level_nonce' ); ?>
 </form>

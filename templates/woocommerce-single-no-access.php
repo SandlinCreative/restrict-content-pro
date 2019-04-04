@@ -14,11 +14,7 @@
  */
 
 global $rcp_options;
-$message = ! empty( $rcp_options['paid_message'] ) ? $rcp_options['paid_message'] : '';
-
-if( empty( $message ) ) {
-	$message = __( 'This content is restricted to subscribers', 'rcp' );
-}
+$message = rcp_get_restricted_content_message( true );
 ?>
 
 <div class="rcp-woocommerce-no-access">

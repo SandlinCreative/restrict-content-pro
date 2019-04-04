@@ -11,7 +11,15 @@
 
 class RCP_EDD {
 
+	/**
+	 * @var WP_User
+	 */
 	private $user;
+
+	/**
+	 * @var RCP_Member
+	 * @deprecated 3.0
+	 */
 	private $member;
 
 	/**
@@ -20,8 +28,7 @@ class RCP_EDD {
 	 * @return void
 	 */
 	public function __construct() {
-		$this->user = wp_get_current_user();
-		$this->member = new RCP_Member( $this->user->ID );
+		$this->user     = wp_get_current_user();
 
 		add_filter( 'edd_can_purchase_download', array( $this, 'can_purchase' ), 10, 2 );
 		add_filter( 'edd_purchase_download_form', array( $this, 'download_form' ), 10, 2 );
@@ -42,7 +49,7 @@ class RCP_EDD {
 	 */
 	public function can_purchase( $can_purchase, $download ) {
 
-		if ( ! $can_purchase || ! $this->member->can_access( $download->ID ) ) {
+		if ( ! $can_purchase || ! rcp_user_can_access( $this->user->ID, $download->ID ) ) {
 			$can_purchase = false;
 		}
 
@@ -61,7 +68,7 @@ class RCP_EDD {
 	 */
 	public function download_form( $purchase_form, $args ) {
 
-		if ( ! $this->member->can_access( $args['download_id'] ) ) {
+		if ( ! rcp_user_can_access( $this->user->ID, $args['download_id'] ) ) {
 			return '';
 		}
 
@@ -81,7 +88,7 @@ class RCP_EDD {
 	 */
 	public function file_download_has_access( $has_access, $payment_id, $args ) {
 
-		if ( ! $this->member->can_access( $args['download'] ) ) {
+		if ( ! rcp_user_can_access( $this->user->ID, $args['download'] ) ) {
 			$has_access = false;
 		}
 
@@ -102,7 +109,13 @@ class RCP_EDD {
 
 		global $rcp_options;
 
-		if ( isset( $rcp_options['hide_premium'] ) && ! rcp_is_active( get_current_user_id() ) ) {
+		if ( ! isset( $rcp_options['hide_premium'] ) ) {
+			return $query;
+		}
+
+		$customer = rcp_get_customer(); // current customer
+
+		if ( empty( $customer ) || ! $customer->has_active_membership() ) {
 			$premium_ids              = rcp_get_restricted_post_ids();
 			$term_restricted_post_ids = rcp_get_post_ids_assigned_to_restricted_terms();
 			$post_ids                 = array_unique( array_merge( $premium_ids, $term_restricted_post_ids ) );
@@ -125,23 +138,13 @@ class RCP_EDD {
 	 */
 	public function edd_downloads_excerpt( $excerpt ) {
 
-		global $rcp_options;
-
 		$post_id = get_the_ID();
 
-		if ( $this->member->can_access( $post_id ) || get_post_meta( $post_id, 'rcp_show_excerpt', true ) ) {
+		if ( rcp_user_can_access( $this->user->ID, $post_id ) || get_post_meta( $post_id, 'rcp_show_excerpt', true ) ) {
 			return $excerpt;
 		}
 
-		if ( rcp_is_paid_content( $post_id ) ) {
-			$excerpt = ! empty( $rcp_options['paid_message'] ) ? $rcp_options['paid_message'] : false;
-		} else {
-			$excerpt = ! empty( $rcp_options['free_message'] ) ? $rcp_options['free_message'] : false;
-		}
-
-		if( empty( $excerpt ) ) {
-			$excerpt = __( 'This content is restricted to subscribers', 'rcp' );
-		}
+		$excerpt = rcp_get_restricted_content_message();
 
 		return $excerpt;
 	}

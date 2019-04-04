@@ -272,21 +272,6 @@ function rcp_excerpt_by_id( $post, $length = 50, $tags = '<a><em><strong><blockq
 
 
 /**
- * The default length for excerpts.
- *
- * @param int $excerpt_length Number of words to show in the excerpt.
- *
- * @access private
- * @return string
- */
-function rcp_excerpt_length( $excerpt_length ) {
-	// the number of words to show in the excerpt
-	return 100;
-}
-add_filter( 'rcp_filter_excerpt_length', 'rcp_excerpt_length' );
-
-
-/**
  * Get current URL.
  *
  * Returns the URL to the current page, including detection for https.
@@ -326,15 +311,33 @@ function rcp_get_current_url() {
 
 
 /**
- * Check if "Prevent Account Sharing" is enabled.
+ * Check if a "Maximum number of simultaneous connections per member" has been set.
  *
  * @access private
  * @since  1.4
  * @return bool
  */
 function rcp_no_account_sharing() {
+	return intval( rcp_no_account_sharing_number() ) > 0;
+}
+
+
+/**
+ * Returns the "Maximum number of simultaneous connections per member".
+ *
+ * @access private
+ * @since  2.7
+ * @return int
+*/
+function rcp_no_account_sharing_number() {
 	global $rcp_options;
-	return (bool) apply_filters( 'rcp_no_account_sharing', isset( $rcp_options['no_login_sharing'] ) );
+
+	$sharing_number = 0;
+	if ( isset( $rcp_options['no_login_sharing'] ) ) {
+		$sharing_number = $rcp_options['no_login_sharing'];
+	}
+
+	return apply_filters( 'rcp_no_account_sharing', $sharing_number );
 }
 
 
@@ -371,7 +374,7 @@ function rcp_set_user_logged_in_status( $logged_in_cookie, $expire, $expiration,
 
 		$data[] = $logged_in_cookie;
 
-		set_transient( 'rcp_user_logged_in_' . $user_id, $data );
+		set_transient( 'rcp_user_logged_in_' . $user_id, $data, MONTH_IN_SECONDS );
 
 	endif;
 }
@@ -415,7 +418,7 @@ function rcp_clear_auth_cookie() {
 		if( false !== $key ) {
 			unset( $data[$key] );
 			$data = array_values( $data );
-			set_transient( 'rcp_user_logged_in_' . $user_id, $data );
+			set_transient( 'rcp_user_logged_in_' . $user_id, $data, MONTH_IN_SECONDS );
 		}
 
 	endif;
@@ -432,7 +435,7 @@ add_action( 'clear_auth_cookie', 'rcp_clear_auth_cookie' );
  *
  * The first cookie in the transient is the oldest, so it is the one that gets logged out.
  *
- * We only log a user out if there are more than 2 users logged into the same account and
+ * We only log a user out if there are more than X users logged into the same account and
  * if it is not an administrator account.
  *
  * @access private
@@ -468,14 +471,14 @@ function rcp_can_user_be_logged_in() {
 
 			// remove the oldest logged in users
 			$prev_data_count = count( $data );
-			while ( count( $data ) >= 2 ) {
+			while ( count( $data ) > intval( rcp_no_account_sharing_number() ) ) {
 				unset( $data[0] );
 				$data = array_values( $data );
 			}
 
 			// save modified data
 			if ( count( $data ) != $prev_data_count ) {
-				set_transient( 'rcp_user_logged_in_' . $user_id, $data );
+				set_transient( 'rcp_user_logged_in_' . $user_id, $data, MONTH_IN_SECONDS );
 			}
 
 			if( ! in_array( $_COOKIE[LOGGED_IN_COOKIE], $data ) ) {
@@ -494,7 +497,7 @@ add_action( 'init', 'rcp_can_user_be_logged_in' );
 /**
  * Retrieve a list of the allowed HTML tags.
  *
- * This is used for filtering HTML in subscription level descriptions and other places.
+ * This is used for filtering HTML in membership level descriptions and other places.
  *
  * @access public
  * @since  1.5
@@ -643,30 +646,7 @@ function rcp_get_payment_status_label( $payment ) {
 	}
 
 	$status = ! empty( $payment->status ) ? $payment->status : 'complete';
-
-	switch( $status ) {
-
-		case 'pending' :
-			$label = __( 'Pending', 'rcp' );
-			break;
-
-		case 'refunded' :
-			$label = __( 'Refunded', 'rcp' );
-			break;
-
-		case 'abandoned' :
-			$label = __( 'Abandoned', 'rcp' );
-			break;
-
-		case 'failed' :
-			$label = __( 'Failed', 'rcp' );
-			break;
-
-		case 'complete' :
-		default :
-			$label = __( 'Complete', 'rcp' );
-			break;
-	}
+	$label  = rcp_get_status_label( $status );
 
 	return apply_filters( 'rcp_payment_status_label', $label, $status, $payment );
 
@@ -689,11 +669,18 @@ function rcp_get_ip() {
 		$ip = $_SERVER['HTTP_CLIENT_IP'];
 	} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
 		//to check ip is pass from proxy
-		$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+		// can include more than 1 ip, first is the public one
+		$ip = explode( ',',$_SERVER['HTTP_X_FORWARDED_FOR'] );
+		$ip = trim( $ip[0] );
 	} elseif( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 		$ip = $_SERVER['REMOTE_ADDR'];
 	}
-	return apply_filters( 'rcp_get_ip', $ip );
+
+	// Fix potential CSV returned from $_SERVER variables
+	$ip_array = explode( ',', $ip );
+	$ip_array = array_map( 'trim', $ip_array );
+
+	return apply_filters( 'rcp_get_ip', $ip_array[0] );
 }
 
 /**
@@ -733,6 +720,62 @@ function rcp_is_restricted_content( $post_id ) {
 }
 
 /**
+ * Get an array of restrictions on a given post.
+ *
+ * If the post's post type is restricted, then the global post type restrictions are returned.
+ * Otherwise, it will be an array of requirements from the individual post.
+ * Terms are not checked at this time, but may be in the future.
+ *
+ * @param int $post_id
+ *
+ * @since 3.0.4
+ * @return array
+ */
+function rcp_get_post_restrictions( $post_id ) {
+
+	// Set up defaults.
+	$restrictions = array(
+		'membership_levels' => '', // Can be a string "any-paid", "any", or array of level IDs.
+		'access_level'      => 0,
+		'user_level'        => array()
+	);
+
+	$post_type_restrictions = rcp_get_post_type_restrictions( get_post_type( $post_id ) );
+
+	if ( empty( $post_type_restrictions ) ) {
+		$membership_levels = rcp_get_content_subscription_levels( $post_id );
+		$access_level      = get_post_meta( $post_id, 'rcp_access_level', true );
+		$user_level        = get_post_meta( $post_id, 'rcp_user_level', true );
+	} else {
+		$membership_levels = array_key_exists( 'subscription_level', $post_type_restrictions ) ? $post_type_restrictions['subscription_level'] : false;
+		$access_level      = array_key_exists( 'access_level', $post_type_restrictions ) ? $post_type_restrictions['access_level'] : false;
+		$user_level        = array_key_exists( 'user_level', $post_type_restrictions ) ? $post_type_restrictions['user_level'] : false;
+	}
+
+	// Check that user level is an array for backwards compatibility.
+	if ( ! empty( $user_level ) && ! is_array( $user_level ) ) {
+		$user_level = array( $user_level );
+	}
+
+	if ( ! empty( $membership_levels ) ) {
+		$restrictions['membership_levels'] = $membership_levels;
+	}
+
+	if ( ! empty( $access_level ) ) {
+		$restrictions['access_level'] = $access_level;
+	}
+
+	if ( ! empty( $user_level ) && 'all' != strtolower( $user_level[0] ) ) {
+		$restrictions['user_level'] = $user_level;
+	}
+
+	// @todo check terms
+
+	return $restrictions;
+
+}
+
+/**
  * Checks to see if a given post has any restrictions. This checks post
  * restrictions only via the Edit Post meta box.
  *
@@ -761,7 +804,10 @@ function rcp_has_post_restrictions( $post_id ) {
 
 	if ( ! $restricted ) {
 		$rcp_user_level = get_post_meta( $post_id, 'rcp_user_level', true );
-		if ( ! empty( $rcp_user_level ) && 'all' !== strtolower( $rcp_user_level ) ) {
+		if ( ! empty( $rcp_user_level ) && ! is_array( $rcp_user_level ) ) {
+			$rcp_user_level = array( $rcp_user_level );
+		}
+		if ( ! empty( $rcp_user_level ) && 'all' !== strtolower( $rcp_user_level[0] ) ) {
 			$restricted = true;
 		}
 	}
@@ -798,6 +844,11 @@ function rcp_get_restricted_post_types() {
  */
 function rcp_get_post_type_restrictions( $post_type ) {
 	$restricted_post_types = rcp_get_restricted_post_types();
+
+	if ( empty( $post_type ) || empty( $restricted_post_types ) ) {
+		return array();
+	}
+
 	return array_key_exists( $post_type, $restricted_post_types ) ? $restricted_post_types[ $post_type ] : array();
 }
 
@@ -849,6 +900,9 @@ function rcp_is_post_taxonomy_restricted( $post_id, $taxonomy, $user_id = null )
 		$user_id = get_current_user_id();
 	}
 
+	$customer = rcp_get_customer_by_user_id( $user_id );
+	$is_paid  = is_object( $customer ) ? $customer->has_paid_membership() : false;
+
 	// Loop through the categories and determine if one has restriction options
 	foreach( $terms as $term ) {
 
@@ -862,21 +916,21 @@ function rcp_is_post_taxonomy_restricted( $post_id, $taxonomy, $user_id = null )
 
 		/** Check that the user has a paid subscription ****************************************************************/
 		$paid_only = ! empty( $term_meta['paid_only'] );
-		if( $paid_only && rcp_is_paid_user( $user_id ) ) {
+		if( $paid_only && $is_paid ) {
 			$restricted = false;
 			break;
 		}
 
-		/** If restricted to one or more subscription levels, make sure that the user is a member of one of the levels */
+		/** If restricted to one or more membership levels, make sure that the user is a member of one of the levels */
 		$subscriptions = ! empty( $term_meta['subscriptions'] ) ? array_map( 'absint', $term_meta['subscriptions'] ) : false;
-		if( $subscriptions && in_array( rcp_get_subscription_id( $user_id ), $subscriptions ) ) {
+		if( $subscriptions && $customer && count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $subscriptions ) ) ) {
 			$restricted = false;
 			break;
 		}
 
 		/** If restricted to one or more access levels, make sure that the user is a member of one of the levls ********/
 		$access_level = ! empty( $term_meta['access_level'] ) ? absint( $term_meta['access_level'] ) : 0;
-		if( $access_level > 0 && rcp_user_has_access( $user_id, $access_level ) ) {
+		if( $access_level > 0 && $customer && $customer->has_access_level( $access_level ) ) {
 			$restricted = false;
 			break;
 		}
@@ -1186,4 +1240,235 @@ function rcp_log( $message = '', $force = false ) {
 
 	$logs = new RCP_Logging();
 	$logs->log( $message );
+}
+
+if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
+	require_once ABSPATH . '/wp-admin/includes/plugin.php';
+}
+
+/**
+ * Get the name of the membership levels database table.
+ *
+ * @return string
+ */
+function rcp_get_levels_db_name() {
+	global $wpdb;
+
+	$prefix = is_plugin_active_for_network( plugin_basename( RCP_PLUGIN_FILE ) ) ? '' : $wpdb->prefix;
+
+	if ( defined( 'RCP_NETWORK_SEPARATE_SITES' ) && RCP_NETWORK_SEPARATE_SITES ) {
+		$prefix = $wpdb->prefix;
+	}
+
+	return apply_filters( 'rcp_levels_db_name', $prefix . 'restrict_content_pro' );
+}
+
+/**
+ * Get the name of the membership level meta database table.
+ *
+ * @return string
+ */
+function rcp_get_level_meta_db_name() {
+	global $wpdb;
+
+	$prefix = is_plugin_active_for_network( plugin_basename( RCP_PLUGIN_FILE ) ) ? '' : $wpdb->prefix;
+
+	if ( defined( 'RCP_NETWORK_SEPARATE_SITES' ) && RCP_NETWORK_SEPARATE_SITES ) {
+		$prefix = $wpdb->prefix;
+	}
+
+	return apply_filters( 'rcp_level_meta_db_name', $prefix . 'rcp_subscription_level_meta' );
+}
+
+/**
+ * Get the name of the discount codes database table.
+ *
+ * @return string
+ */
+function rcp_get_discounts_db_name() {
+	global $wpdb;
+
+	$prefix = is_plugin_active_for_network( plugin_basename( RCP_PLUGIN_FILE ) ) ? '' : $wpdb->prefix;
+
+	if ( defined( 'RCP_NETWORK_SEPARATE_SITES' ) && RCP_NETWORK_SEPARATE_SITES ) {
+		$prefix = $wpdb->prefix;
+	}
+
+	return apply_filters( 'rcp_discounts_db_name', $prefix . 'rcp_discounts' );
+}
+
+/**
+ * Get the name of the payments database table.
+ *
+ * @return string
+ */
+function rcp_get_payments_db_name() {
+	global $wpdb;
+
+	$prefix = is_plugin_active_for_network( plugin_basename( RCP_PLUGIN_FILE ) ) ? '' : $wpdb->prefix;
+
+	if ( defined( 'RCP_NETWORK_SEPARATE_SITES' ) && RCP_NETWORK_SEPARATE_SITES ) {
+		$prefix = $wpdb->prefix;
+	}
+
+	return apply_filters( 'rcp_payments_db_name', $prefix . 'rcp_payments' );
+}
+
+/**
+ * Get the name of the payment meta database table.
+ *
+ * @return string
+ */
+function rcp_get_payment_meta_db_name() {
+	global $wpdb;
+
+	$prefix = is_plugin_active_for_network( plugin_basename( RCP_PLUGIN_FILE ) ) ? '' : $wpdb->prefix;
+
+	if ( defined( 'RCP_NETWORK_SEPARATE_SITES' ) && RCP_NETWORK_SEPARATE_SITES ) {
+		$prefix = $wpdb->prefix;
+	}
+
+	return apply_filters( 'rcp_payment_meta_db_name', $prefix . 'rcp_payment_meta' );
+}
+
+/**
+ * Get the name of the customers database table.
+ *
+ * @since 3.0
+ * @return string
+ */
+function rcp_get_customers_db_name() {
+	return restrict_content_pro()->customers_table->get_table_name();
+}
+
+/**
+ * Get the name of the memberships database table.
+ *
+ * @since 3.0
+ * @return string
+ */
+function rcp_get_memberships_db_name() {
+	return restrict_content_pro()->memberships_table->get_table_name();
+}
+
+/**
+ * Get the name of the batch processing queue table.
+ *
+ * @since 3.0
+ * @return string
+ */
+function rcp_get_queue_db_name() {
+	return restrict_content_pro()->queue_table->get_table_name();
+}
+
+/**
+ * Format an array of count objects, using the $groupby key.
+ *
+ * @param array  $counts
+ * @param string $groupby
+ *
+ * @since 3.0
+ * @return array
+ */
+function rcp_format_counts( $counts = array(), $groupby = '' ) {
+
+	// Default array
+	$c = array(
+		'total' => 0
+	);
+
+	// Loop through counts and shape return value
+	if ( ! empty( $counts->items ) ) {
+
+		// Loop through statuses
+		foreach ( $counts->items as $count ) {
+			$c[ $count[ $groupby ] ] = absint( $count['count'] );
+		}
+
+		// Total
+		$c['total'] = array_sum( $c );
+	}
+
+	// Return array of counts
+	return $c;
+
+}
+
+/**
+ * Returns a translation-ready status label for display.
+ *
+ * @param string $status
+ *
+ * @since 3.0
+ * @return string
+ */
+function rcp_get_status_label( $status = '' ) {
+
+	static $labels = null;
+
+	// Array of status labels
+	if ( null === $labels ) {
+		$labels = array(
+
+			// General
+			'active'    => __( 'Active', 'rcp' ),
+			'inactive'  => __( 'Inactive', 'rcp' ),
+			'pending'   => __( 'Pending', 'rcp' ),
+
+			// Memberships
+			'cancelled' => __( 'Cancelled',  'rcp' ),
+			'expired'   => __( 'Expired',   'rcp' ),
+			'free'      => __( 'Free',    'rcp' ), // deprecated
+
+			// Payments
+			'abandoned' => __( 'Abandoned', 'rcp' ),
+			'complete'  => __( 'Complete', 'rcp' ),
+			'failed'    => __( 'Failed', 'rcp' ),
+			'refunded'  => __( 'Refunded', 'rcp' ),
+			'new'       => __( 'New', 'rcp' ),
+			'renewal'   => __( 'Renewal', 'rcp' ),
+			'upgrade'   => __( 'Upgrade', 'rcp' ),
+			'downgrade' => __( 'Downgrade', 'rcp' ),
+
+			// Discount Codes
+			'disabled'  => __( 'Disabled', 'rcp' ),
+		);
+	}
+
+	// Return the label if set, or uppercase the first letter if not
+	$final_label = isset( $labels[ $status ] )
+		? $labels[ $status ]
+		: ucwords( $status );
+
+	return $final_label;
+
+}
+
+/**
+ * Get restricted content message
+ *
+ * @param bool $paid Whether or not this is paid content. For backwards compatibility only.
+ *
+ * @since 3.0
+ * @return string
+ */
+function rcp_get_restricted_content_message( $paid = false ) {
+	global $post, $rcp_options;
+
+	// If we have a "new" global restricted message, use that and be done
+	if ( ! empty( $rcp_options['restriction_message'] ) ) {
+		return apply_filters( 'rcp_restricted_content_message', $rcp_options['restriction_message'] );
+	}
+
+	$message = __( 'This content is restricted to subscribers', 'rcp' );
+
+	if( ! empty( $rcp_options['free_message'] ) ) {
+		$message = $rcp_options['free_message'];
+	}
+
+	if ( ! empty( $rcp_options['paid_message'] ) && ( rcp_is_paid_content( $post->ID ) || in_array( $post->ID, rcp_get_post_ids_assigned_to_restricted_terms() ) || $paid ) ) {
+		$message = $rcp_options['paid_message'];
+	}
+
+	return apply_filters( 'rcp_restricted_content_message', $message );
 }

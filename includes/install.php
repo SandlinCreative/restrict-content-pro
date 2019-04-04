@@ -44,6 +44,188 @@ function rcp_options_install( $network_wide = false ) {
 	$caps = new RCP_Capabilities;
 	$caps->add_caps();
 
+	// Insert default notices.
+	$reminders = new RCP_Reminders();
+	$notices   = $reminders->get_notices();
+	if ( empty( $notices ) ) {
+		$notices[] = $reminders->get_default_notice( 'renewal' );
+		$notices[] = $reminders->get_default_notice( 'expiration' );
+
+		update_option( 'rcp_reminder_notices', $notices );
+	}
+
+	update_option( 'rcp_settings', $rcp_options );
+
+	// and option that allows us to make sure RCP is installed
+	update_option( 'rcp_is_installed', '1' );
+
+	if ( ! get_option( 'rcp_version' ) ) {
+		update_option( 'rcp_version', RCP_PLUGIN_VERSION );
+	}
+
+	do_action( 'rcp_options_install' );
+}
+// run the install scripts upon plugin activation
+register_activation_hook( RCP_PLUGIN_FILE, 'rcp_options_install' );
+
+/**
+ * Check if RCP is installed and if not, run installation
+ *
+ * @return void
+ */
+function rcp_check_if_installed() {
+
+	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+		return;
+	}
+
+	// this is mainly for network activated installs
+	if( ! get_option( 'rcp_is_installed' ) ) {
+		rcp_options_install();
+	}
+}
+add_action( 'admin_init', 'rcp_check_if_installed' );
+
+/**
+ * Creates the Restrict Content Pro database tables.
+ *
+ * Note: This creates pre-3.0 tables only. The new tables in version 3.0 can be created like so:
+ *
+ * restrict_content_pro()->memberships_table->create()
+ * restrict_content_pro()->customers_table->create()
+ * restrict_content_pro()->queue_table->create()
+ *
+ * @since 2.7
+ * @return void
+ */
+function rcp_create_tables() {
+
+	// create the RCP membership level database table
+	$rcp_db_name = rcp_get_levels_db_name();
+	$sql = "CREATE TABLE {$rcp_db_name} (
+		id bigint(9) NOT NULL AUTO_INCREMENT,
+		name varchar(200) NOT NULL,
+		description longtext NOT NULL,
+		duration smallint NOT NULL,
+		duration_unit tinytext NOT NULL,
+		trial_duration smallint NOT NULL,
+		trial_duration_unit tinytext NOT NULL,
+		price tinytext NOT NULL,
+		fee tinytext NOT NULL,
+		maximum_renewals smallint NOT NULL,
+		after_final_payment tinytext NOT NULL,
+		list_order mediumint NOT NULL,
+		level mediumint NOT NULL,
+		status varchar(12) NOT NULL,
+		role tinytext NOT NULL,
+		PRIMARY KEY id (id),
+		KEY name (name),
+		KEY status (status)
+		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
+
+	@dbDelta( $sql );
+
+	// Create membership level meta table
+	$sub_meta_table_name = rcp_get_level_meta_db_name();
+	$sql = "CREATE TABLE {$sub_meta_table_name} (
+		meta_id bigint(20) NOT NULL AUTO_INCREMENT,
+		level_id bigint(20) NOT NULL DEFAULT '0',
+		meta_key varchar(255) DEFAULT NULL,
+		meta_value longtext,
+		PRIMARY KEY meta_id (meta_id),
+		KEY level_id (level_id),
+		KEY meta_key (meta_key)
+		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
+
+	@dbDelta( $sql );
+
+	// create the RCP discounts database table
+	$rcp_discounts_db_name = rcp_get_discounts_db_name();
+	$sql = "CREATE TABLE {$rcp_discounts_db_name} (
+		id bigint(9) NOT NULL AUTO_INCREMENT,
+		name tinytext NOT NULL,
+		description longtext NOT NULL,
+		amount tinytext NOT NULL,
+		unit tinytext NOT NULL,
+		code tinytext NOT NULL,
+		use_count mediumint NOT NULL,
+		max_uses mediumint NOT NULL,
+		status tinytext NOT NULL,
+		expiration mediumtext NOT NULL,
+		membership_level_ids text NOT NULL,
+		PRIMARY KEY id (id)
+		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
+
+	@dbDelta( $sql );
+
+	// create the RCP payments database table
+	$rcp_payments_db_name = rcp_get_payments_db_name();
+	$sql = "CREATE TABLE {$rcp_payments_db_name} (
+		id bigint(9) unsigned NOT NULL AUTO_INCREMENT,
+		customer_id bigint(20) unsigned NOT NULL,
+		membership_id bigint(20) unsigned NOT NULL,
+		subscription varchar(200) NOT NULL,
+		object_id bigint(9) unsigned NOT NULL,
+		object_type varchar(20) NOT NULL DEFAULT 'subscription',
+		date datetime NOT NULL,
+		amount mediumtext NOT NULL,
+		subtotal mediumtext NOT NULL,
+		credits mediumtext NOT NULL,
+		fees mediumtext NOT NULL,
+		discount_amount mediumtext NOT NULL,
+		discount_code tinytext NOT NULL,
+		user_id bigint(20) unsigned NOT NULL,
+		payment_type tinytext NOT NULL,
+		transaction_type varchar(12) NOT NULL,
+		subscription_key varchar(32) NOT NULL,
+		transaction_id varchar(64) NOT NULL,
+		status varchar(12) NOT NULL,
+		gateway tinytext NOT NULL,
+		PRIMARY KEY id (id),
+		KEY subscription (subscription),
+		KEY customer_id (customer_id),
+		KEY membership_id (membership_id),
+		KEY user_id (user_id),
+		KEY transaction_type (transaction_type),
+		KEY subscription_key (subscription_key),
+		KEY transaction_id (transaction_id),
+		KEY status (status)
+		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
+
+	@dbDelta( $sql );
+
+	// Create payment meta table
+	$payment_meta_table_name = rcp_get_payment_meta_db_name();
+	$sql = "CREATE TABLE {$payment_meta_table_name} (
+		meta_id bigint(20) NOT NULL AUTO_INCREMENT,
+		rcp_payment_id bigint(20) NOT NULL DEFAULT '0',
+		meta_key varchar(255) DEFAULT NULL,
+		meta_value longtext,
+		PRIMARY KEY meta_id (meta_id),
+		KEY rcp_payment_id (rcp_payment_id),
+		KEY meta_key (meta_key)
+		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
+
+	@dbDelta( $sql );
+
+	do_action( 'rcp_create_tables' );
+}
+
+/**
+ * Create pages for Restrict Content Pro
+ *
+ * @since 3.0.3
+ * @return void
+ */
+function rcp_create_pages() {
+
+	// Bail if pages have already been created.
+	if( get_option( 'rcp_install_pages_created' ) ) {
+		return;
+	}
+
+	global $rcp_options, $wpdb;
+
 	// Checks if the purchase page option exists
 	if ( ! isset( $rcp_options['registration_page'] ) ) {
 
@@ -159,152 +341,10 @@ function rcp_options_install( $network_wide = false ) {
 
 	}
 
-	// Insert default notices.
-	$reminders = new RCP_Reminders();
-	$notices   = $reminders->get_notices();
-	if ( empty( $notices ) ) {
-		$notices[] = $reminders->get_default_notice( 'renewal' );
-		$notices[] = $reminders->get_default_notice( 'expiration' );
-
-		update_option( 'rcp_reminder_notices', $notices );
-	}
-
 	update_option( 'rcp_settings', $rcp_options );
 
-	// and option that allows us to make sure RCP is installed
-	update_option( 'rcp_is_installed', '1' );
-	update_option( 'rcp_version', RCP_PLUGIN_VERSION );
+	update_option( 'rcp_install_pages_created', current_time( 'mysql' ) );
 
-	do_action( 'rcp_options_install' );
 }
-// run the install scripts upon plugin activation
-register_activation_hook( RCP_PLUGIN_FILE, 'rcp_options_install' );
 
-/**
- * Check if RCP is installed and if not, run installation
- *
- * @return void
- */
-function rcp_check_if_installed() {
-
-	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-		return;
-	}
-
-	// this is mainly for network activated installs
-	if( ! get_option( 'rcp_is_installed' ) ) {
-		rcp_options_install();
-	}
-}
-add_action( 'admin_init', 'rcp_check_if_installed' );
-
-/**
- * Creates the Restrict Content Pro database tables.
- *
- * @since 2.7
- * @return void
- */
-function rcp_create_tables() {
-
-	// create the RCP subscription level database table
-	$rcp_db_name = rcp_get_levels_db_name();
-	$sql = "CREATE TABLE {$rcp_db_name} (
-		id bigint(9) NOT NULL AUTO_INCREMENT,
-		name varchar(200) NOT NULL,
-		description longtext NOT NULL,
-		duration smallint NOT NULL,
-		duration_unit tinytext NOT NULL,
-		trial_duration smallint NOT NULL,
-		trial_duration_unit tinytext NOT NULL,
-		price tinytext NOT NULL,
-		fee tinytext NOT NULL,
-		list_order mediumint NOT NULL,
-		level mediumint NOT NULL,
-		status varchar(12) NOT NULL,
-		role tinytext NOT NULL,
-		PRIMARY KEY id (id),
-		KEY name (name),
-		KEY status (status)
-		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
-
-	@dbDelta( $sql );
-
-	// Create subscription meta table
-	$sub_meta_table_name = rcp_get_level_meta_db_name();
-	$sql = "CREATE TABLE {$sub_meta_table_name} (
-		meta_id bigint(20) NOT NULL AUTO_INCREMENT,
-		level_id bigint(20) NOT NULL DEFAULT '0',
-		meta_key varchar(255) DEFAULT NULL,
-		meta_value longtext,
-		PRIMARY KEY meta_id (meta_id),
-		KEY level_id (level_id),
-		KEY meta_key (meta_key)
-		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
-
-	@dbDelta( $sql );
-
-	// create the RCP discounts database table
-	$rcp_discounts_db_name = rcp_get_discounts_db_name();
-	$sql = "CREATE TABLE {$rcp_discounts_db_name} (
-		id bigint(9) NOT NULL AUTO_INCREMENT,
-		name tinytext NOT NULL,
-		description longtext NOT NULL,
-		amount tinytext NOT NULL,
-		unit tinytext NOT NULL,
-		code tinytext NOT NULL,
-		use_count mediumint NOT NULL,
-		max_uses mediumint NOT NULL,
-		status tinytext NOT NULL,
-		expiration mediumtext NOT NULL,
-		subscription_id mediumint NOT NULL,
-		PRIMARY KEY id (id)
-		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
-
-	@dbDelta( $sql );
-
-	// create the RCP payments database table
-	$rcp_payments_db_name = rcp_get_payments_db_name();
-	$sql = "CREATE TABLE {$rcp_payments_db_name} (
-		id bigint(9) NOT NULL AUTO_INCREMENT,
-		subscription varchar(200) NOT NULL,
-		object_id bigint(9) NOT NULL,
-		object_type varchar(20) NOT NULL DEFAULT 'subscription',
-		date datetime NOT NULL,
-		amount mediumtext NOT NULL,
-		subtotal mediumtext NOT NULL,
-		credits mediumtext NOT NULL,
-		fees mediumtext NOT NULL,
-		discount_amount mediumtext NOT NULL,
-		discount_code tinytext NOT NULL,
-		user_id mediumint NOT NULL,
-		payment_type tinytext NOT NULL,
-		subscription_key varchar(32) NOT NULL,
-		transaction_id varchar(64) NOT NULL,
-		status varchar(12) NOT NULL,
-		gateway tinytext NOT NULL,
-		PRIMARY KEY id (id),
-		KEY subscription (subscription),
-		KEY user_id (user_id),
-		KEY subscription_key (subscription_key),
-		KEY transaction_id (transaction_id),
-		KEY status (status)
-		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
-
-	@dbDelta( $sql );
-
-	// Create payment meta table
-	$sub_meta_table_name = rcp_get_payment_meta_db_name();
-	$sql = "CREATE TABLE {$sub_meta_table_name} (
-		meta_id bigint(20) NOT NULL AUTO_INCREMENT,
-		payment_id bigint(20) NOT NULL DEFAULT '0',
-		meta_key varchar(255) DEFAULT NULL,
-		meta_value longtext,
-		PRIMARY KEY meta_id (meta_id),
-		KEY payment_id (payment_id),
-		KEY meta_key (meta_key)
-		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
-
-	@dbDelta( $sql );
-	
-	do_action( 'rcp_create_tables' );
-}
+add_action( 'admin_init', 'rcp_create_pages' );

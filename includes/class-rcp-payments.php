@@ -71,12 +71,15 @@ class RCP_Payments {
 			'date'                  => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
 			'amount'                => 0.00, // Total amount after fees/credits/discounts are added.
 			'user_id'               => 0,
+			'customer_id'           => 0,
+			'membership_id'         => 0,
 			'payment_type'          => '',
+			'transaction_type'      => 'new',
 			'subscription_key'      => '',
 			'transaction_id'        => '',
 			'status'                => 'complete',
 			'gateway'               => '',
-			'subtotal'              => 0.00, // Base price of the subscription level.
+			'subtotal'              => 0.00, // Base price of the membership level.
 			'credits'               => 0.00, // Proration credits.
 			'fees'                  => 0.00, // Fees.
 			'discount_amount'       => 0.00, // Discount amount from discount code.
@@ -98,6 +101,15 @@ class RCP_Payments {
 			}
 		}
 
+		// Backwards compatibility: include customer ID.
+		if ( empty( $args['customer_id'] ) && ! empty( $args['user_id'] ) ) {
+			$customer = rcp_get_customer_by_user_id( $args['user_id'] );
+
+			if ( ! empty( $customer ) ) {
+				$args['customer_id'] = $customer->get_id();
+			}
+		}
+
 		// Backwards compatibility: update pending payment instead of creating a new one.
 		if ( ! empty( $args['user_id'] ) && 'complete' == $args['status'] ) {
 			$last_pending_payment = get_user_meta( $args['user_id'], 'rcp_pending_payment_id', true );
@@ -110,9 +122,9 @@ class RCP_Payments {
 			}
 		}
 
-		$add = $wpdb->insert( $this->db_name, $args, array( '%s', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ) );
+		$add = $wpdb->insert( $this->db_name, $args, array( '%s', '%d', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ) );
 
-		// if insert was succesful, return the payment ID
+		// if insert was successful, return the payment ID
 		if( $add ) {
 
 			$payment_id = $wpdb->insert_id;
@@ -171,7 +183,7 @@ class RCP_Payments {
 			return $payment_id;
 
 		} else {
-			rcp_log( 'Failed inserting new payment into database.' );
+			rcp_log( 'Failed inserting new payment into database.', true );
 		}
 
 		return false;
@@ -433,18 +445,21 @@ class RCP_Payments {
 		global $wpdb;
 
 		$defaults = array(
-			'number'       => 20,
-			'offset'       => 0,
-			'subscription' => 0,
-			'user_id'      => 0,
-			'date'         => array(),
-			'fields'       => false,
-			'status'       => '',
-			's'            => '',
-			'order'        => 'DESC',
-			'orderby'      => 'id',
-			'object_type'  => '',
-			'object_id'    => ''
+			'number'           => 20,
+			'offset'           => 0,
+			'subscription'     => 0,
+			'user_id'          => 0,
+			'customer_id'      => 0,
+			'membership_id'    => 0,
+			'date'             => array(),
+			'fields'           => false,
+			'status'           => '',
+			's'                => '',
+			'order'            => 'DESC',
+			'orderby'          => 'id',
+			'object_type'      => '',
+			'object_id'        => '',
+			'transaction_type' => ''
 		);
 
 		$args  = wp_parse_args( $args, $defaults );
@@ -452,7 +467,7 @@ class RCP_Payments {
 		$where  = ' WHERE 1=1 ';
 		$values = array();
 
-		// payments for a specific subscription level
+		// payments for a specific membership level
 		if( ! empty( $args['subscription'] ) ) {
 			$where   .= " AND `subscription`= %s ";
 			$values[] = $args['subscription'];
@@ -468,6 +483,32 @@ class RCP_Payments {
 			}
 
 			$where .= " AND `user_id` IN( {$user_ids} ) ";
+
+		}
+
+		// payments for specific customers
+		if( ! empty( $args['customer_id'] ) ) {
+
+			if( is_array( $args['customer_id'] ) ) {
+				$customer_ids = implode( ',', array_map( 'absint', $args['customer_id'] ) );
+			} else {
+				$customer_ids = intval( $args['customer_id'] );
+			}
+
+			$where .= " AND `customer_id` IN( {$customer_ids} ) ";
+
+		}
+
+		// payments for specific memberships
+		if( ! empty( $args['membership_id'] ) ) {
+
+			if( is_array( $args['membership_id'] ) ) {
+				$membership_ids = implode( ',', array_map( 'absint', $args['membership_id'] ) );
+			} else {
+				$membership_ids = intval( $args['membership_id'] );
+			}
+
+			$where .= " AND `membership_id` IN( {$membership_ids} ) ";
 
 		}
 
@@ -563,7 +604,7 @@ class RCP_Payments {
 
 				} elseif( $levels_db->get_level_by( 'name', $args['s'] ) ) {
 
-					// Matching subscription level found so search for payments with this level
+					// Matching membership level found so search for payments with this level
 					$where   .= " AND `subscription` = %s";
 					$values[] = $args['s'];
 				} else {
@@ -582,6 +623,11 @@ class RCP_Payments {
 		if ( ! empty( $args['object_id'] ) ) {
 			$where   .= " AND `object_id` = %d AND `object_id` != 0";
 			$values[] = $args['object_id'];
+		}
+
+		if ( ! empty( $args['transaction_type'] ) ) {
+			$where   .= " AND `transaction_type` = %s";
+			$values[] = $args['transaction_type'];
 		}
 
 		if ( 'DESC' === strtoupper( $args['order'] ) ) {
@@ -634,7 +680,7 @@ class RCP_Payments {
 
 		$data_to_update = array();
 
-		/** Backfill the subscription level ID. */
+		/** Backfill the membership level ID. */
 		if ( empty( $payment->object_id ) && ! empty( $payment->subscription ) ) {
 
 			$subscription = rcp_get_subscription_details_by_name( $payment->subscription );
@@ -658,6 +704,39 @@ class RCP_Payments {
 
 		}
 
+		/** Backfill empty subtotal */
+		if ( $payment->subtotal === "" ) {
+			$payment->subtotal          = $payment->amount;
+			$data_to_update['subtotal'] = $payment->amount;
+		}
+
+		/** Backfill empty credits */
+		if ( $payment->credits === "" ) {
+			$payment->credits          = 0;
+			$data_to_update['credits'] = 0;
+		}
+
+		/** Backfill empty fees */
+		if ( $payment->fees === "" ) {
+			$payment->fees          = 0;
+			$data_to_update['fees'] = 0;
+		}
+
+		/** Backfill empty discount_amount */
+		if ( $payment->discount_amount === "" ) {
+			$payment->discount_amount          = 0;
+			$data_to_update['discount_amount'] = 0;
+		}
+
+		/** Backfill customer ID */
+		if ( ! empty( $payment->user_id ) && empty( $payment->customer_id ) ) {
+			$customer = rcp_get_customer_by_user_id( $payment->user_id );
+
+			if ( ! empty( $customer ) ) {
+				$data_to_update['customer_id'] = $customer->get_id();
+			}
+		}
+
 		if ( ! empty( $data_to_update ) ) {
 			$this->update( $payment->id, $data_to_update );
 		}
@@ -679,9 +758,12 @@ class RCP_Payments {
 		global $wpdb;
 
 		$defaults = array(
-			'user_id' => 0,
-			'status'  => '',
-		    's'       => ''
+			'user_id'          => 0,
+			'status'           => '',
+			's'                => '',
+			'object_id'        => '',
+			'object_type'      => '',
+			'transaction_type' => ''
 		);
 
 		$args  = wp_parse_args( $args, $defaults );
@@ -744,7 +826,7 @@ class RCP_Payments {
 
 				} elseif( $levels_db->get_level_by( 'name', $args['s'] ) ) {
 
-					// Matching subscription level found so search for payments with this level
+					// Matching membership level found so search for payments with this level
 					$where   .= " AND `subscription` = %s";
 					$values[] = $args['s'];
 				} else {
@@ -753,6 +835,24 @@ class RCP_Payments {
 				}
 			}
 
+		}
+
+		// Object type
+		if ( ! empty( $args['object_type'] ) ) {
+			$where   .= " AND `object_type` = %s";
+			$values[] = $args['object_type'];
+		}
+
+		// Object ID
+		if ( ! empty( $args['object_id'] ) ) {
+			$where   .= " AND `object_id` = %d AND `object_id` != 0";
+			$values[] = $args['object_id'];
+		}
+
+		// Transaction type (new, renewal, upgrade, downgrade)
+		if ( ! empty( $args['transaction_type'] ) ) {
+			$where   .= " AND `transaction_type` = %s";
+			$values[] = $args['transaction_type'];
 		}
 
 		$key   = md5( 'rcp_payments_count_' . serialize( $args ) );
@@ -804,9 +904,10 @@ class RCP_Payments {
 
 		$where = ' WHERE 1=1 ';
 
-		// payments for a specific subscription level
+		// payments for a specific membership level
 		if( ! empty( $args['subscription'] ) ) {
-			$where .= $wpdb->prepare( " AND `subscription` = %s ", $args['subscription'] );
+			$where   .= " AND `subscription` = %s ";
+			$values[] = $args['subscription'];
 		}
 
 		// payments for specific users
@@ -824,22 +925,44 @@ class RCP_Payments {
 		// Setup the date query
 		if( ! empty( $args['date'] ) && is_array( $args['date'] ) ) {
 
-			$day   = ! empty( $args['date']['day'] )   ? absint( $args['date']['day'] )   : null;
-			$month = ! empty( $args['date']['month'] ) ? absint( $args['date']['month'] ) : null;
-			$year  = ! empty( $args['date']['year'] )  ? absint( $args['date']['year'] )  : null;
-			$date_where = '';
+			if ( ! empty( $args['date']['start'] ) || ! empty( $args['date']['end'] ) ) {
 
-			$date_where .= ! is_null( $year )  ? $year . " = YEAR ( date ) " : '';
+				if ( ! empty( $args['date']['start'] ) ) {
 
-			if( ! is_null( $month ) ) {
-				$date_where = $month  . " = MONTH ( date ) AND " . $date_where;
+					$start    = date( 'Y-m-d 00:00:00', strtotime( $args['date']['start'] ) );
+					$where   .= " AND `date` >= %s";
+					$values[] = $start;
+
+				}
+
+				if ( ! empty( $args['date']['end'] ) ) {
+
+					$end    = date( 'Y-m-d 23:59:59', strtotime( $args['date']['end'] ) );
+					$where   .= " AND `date` <= %s";
+					$values[] = $end;
+
+				}
+
+			} else {
+
+				$day        = ! empty( $args['date']['day'] ) ? absint( $args['date']['day'] ) : null;
+				$month      = ! empty( $args['date']['month'] ) ? absint( $args['date']['month'] ) : null;
+				$year       = ! empty( $args['date']['year'] ) ? absint( $args['date']['year'] ) : null;
+				$date_where = '';
+
+				$date_where .= ! is_null( $year ) ? $year . " = YEAR ( date ) " : '';
+
+				if ( ! is_null( $month ) ) {
+					$date_where = $month . " = MONTH ( date ) AND " . $date_where;
+				}
+
+				if ( ! is_null( $day ) ) {
+					$date_where = $day . " = DAY ( date ) AND " . $date_where;
+				}
+
+				$where .= " AND (" . $date_where . ")";
+
 			}
-
-			if( ! is_null( $day ) ) {
-				$date_where = $day . " = DAY ( date ) AND " . $date_where;
-			}
-
-			$where .= " AND (" . $date_where . ") ";
 		}
 
 		// Exclude refunded payments
@@ -848,7 +971,14 @@ class RCP_Payments {
 		$earnings = get_transient( $cache_key );
 
 		if( $earnings === false ) {
-			$earnings = $wpdb->get_var( "SELECT SUM(amount) FROM " . $this->db_name . " {$where};" );
+			$query = "SELECT SUM(amount) FROM " . $this->db_name . " {$where};";
+
+			if ( ! empty( $values ) ) {
+				$query = $wpdb->prepare( $query, $values );
+			}
+
+			$earnings = $wpdb->get_var( $query );
+
 			set_transient( $cache_key, $earnings, 3600 );
 		}
 
@@ -885,7 +1015,7 @@ class RCP_Payments {
 
 		$where = '';
 
-		// refunds for a specific subscription level
+		// refunds for a specific membership level
 		if( ! empty( $args['subscription'] ) ) {
 			$where .= "WHERE `subscription`= '{$args['subscription']}' ";
 		}
@@ -983,7 +1113,7 @@ class RCP_Payments {
 	 * @return  mixed                 Will be an array if $single is false. Will be value of meta data field if $single is true.
 	 */
 	public function get_meta( $payment_id = 0, $meta_key = '', $single = false ) {
-		return get_metadata( 'payment', $payment_id, $meta_key, $single );
+		return get_metadata( 'rcp_payment', $payment_id, $meta_key, $single );
 	}
 
 	/**
@@ -999,7 +1129,7 @@ class RCP_Payments {
 	 * @return  bool                  False for failure. True for success.
 	 */
 	public function add_meta( $payment_id = 0, $meta_key = '', $meta_value, $unique = false ) {
-		return add_metadata( 'payment', $payment_id, $meta_key, $meta_value, $unique );
+		return add_metadata( 'rcp_payment', $payment_id, $meta_key, $meta_value, $unique );
 	}
 
 	/**
@@ -1020,7 +1150,7 @@ class RCP_Payments {
 	 * @return  bool                  False on failure, true if success.
 	 */
 	public function update_meta( $payment_id = 0, $meta_key = '', $meta_value, $prev_value = '' ) {
-		return update_metadata( 'payment', $payment_id, $meta_key, $meta_value, $prev_value );
+		return update_metadata( 'rcp_payment', $payment_id, $meta_key, $meta_value, $prev_value );
 	}
 
 	/**
@@ -1039,7 +1169,7 @@ class RCP_Payments {
 	 * @return  bool                  False for failure. True for success.
 	 */
 	public function delete_meta( $payment_id = 0, $meta_key = '', $meta_value = '' ) {
-		return delete_metadata( 'payment', $payment_id, $meta_key, $meta_value );
+		return delete_metadata( 'rcp_payment', $payment_id, $meta_key, $meta_value );
 	}
 
 }

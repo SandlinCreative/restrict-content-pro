@@ -49,9 +49,37 @@ function rcp_admin_notices() {
 			echo '<p><a href="' . wp_nonce_url( add_query_arg( array( 'rcp_notice' => 'missing_license' ) ), 'rcp_dismiss_notice', 'rcp_dismiss_notice_nonce' ) . '">' . _x( 'Dismiss Notice', 'License', 'rcp' ) . '</a></p>';
 			echo '</div>';
 		}
+
+		if ( ( ! empty( $rcp_options['paid_message'] ) || ! empty( $rcp_options['free_message'] ) ) && empty( $rcp_options['restriction_message'] ) && ! get_user_meta( get_current_user_id(), '_rcp_content_restriction_message_missing_dismissed', true ) ) {
+			echo '<div class="notice notice-info">';
+			echo '<p>' . __( 'The Restrict Content Pro "Free Content Message" and "Premium Content Message" settings have been merged into one "Restricted Content Message" setting field. Please visit the', 'rcp' ) . ' <a href="' . esc_url( admin_url( "admin.php?page=rcp-settings" ) ) . '">' . __( 'settings page', 'rcp' ) . '</a> ' . __( 'to confirm your new message.', 'rcp' ) . '</p>';
+			echo '<p>' . __( 'For more information, view our version 3.0 release post on the Restrict Content Pro blog: ', 'rcp' ) . '<a href="https://restrictcontentpro.com/?p=102444#restriction-message" target="_blank">https://restrictcontentpro.com/blog</a></p>';
+			echo '<p><a href="' . esc_url( wp_nonce_url( add_query_arg( array( 'rcp_notice' => 'content_restriction_message_missing' ) ), 'rcp_dismiss_notice', 'rcp_dismiss_notice_nonce' ) ) . '">' . __( 'Dismiss Notice', 'rcp' ) . '</a></p>';
+			echo '</div>';
+		}
+
+		$stripe_user_id = get_option( 'rcp_stripe_connect_account_id' );
+		$enabled_gateways = rcp_get_enabled_payment_gateways();
+		if( empty( $stripe_user_id ) && ( array_key_exists( 'stripe', $enabled_gateways ) || array_key_exists( 'stripe_checkout', $enabled_gateways ) ) && ! get_user_meta( get_current_user_id(), '_rcp_stripe_connect_dismissed', true ) ) {
+			echo '<div class="notice notice-info">';
+			echo '<p>' . sprintf( __( 'Restrict Content Pro now supports Stripe Connect for easier setup and improved security. <a href="%s">Click here</a> to learn more about connecting your Stripe account.', 'rcp' ), esc_url( admin_url( 'admin.php?page=rcp-settings#payments' ) ) ) . '</p>';
+			echo '<p><a href="' . wp_nonce_url( add_query_arg( array( 'rcp_notice' => 'stripe_connect' ) ), 'rcp_dismiss_notice', 'rcp_dismiss_notice_nonce' ) . '">' . _x( 'Dismiss Notice', 'Stripe Connect', 'rcp' ) . '</a></p>';
+			echo '</div>';
+		}
 	}
 
 	if( current_user_can( 'activate_plugins' ) ) {
+		if ( version_compare( PHP_VERSION, '5.6', '<' ) ) {
+			echo '<div class="error">';
+			echo '<p><strong>' . __( 'Restrict Content Pro is increasing its PHP version requirement', 'rcp' ) . '</strong></p>';
+			echo '<p>' . sprintf( __( 'Restrict Content Pro will be increasing its PHP requirement to version 5.6 or higher in version 3.0. It looks like you\'re using version %s, which means you will need to upgrade your version of PHP before upgrading to Restrict Content Pro 3.0. Newer versions of PHP are both faster and more secure. The version you\'re using <a href="%s" target="_blank">no longer receives security updates</a>, which is another great reason to update.', 'rcp' ), PHP_VERSION, 'http://php.net/eol.php' ) . '</p>';
+			echo '<p><strong>' . __( 'Which version should I upgrade to?', 'rcp' ) . '</strong></p>';
+			echo '<p>' . __( 'In order to be compatible with future versions of Restrict Content Pro, you should update your PHP version to 5.6, 7.0, 7.1, or 7.2. On a normal WordPress site, switching to PHP 5.6 should never cause issues. We would however actually recommend you switch to PHP 7.1 or higher to receive the full speed and security benefits provided to more modern and fully supported versions of PHP. However, some plugins may not be fully compatible with PHP 7+, so more testing may be required.', 'rcp' ) . '</p>';
+			echo '<p><strong>' . __( 'Need help upgrading? Ask your web host!', 'rcp' ) . '</strong></p>';
+			echo '<p>' . sprintf( __( 'Many web hosts can give you instructions on how/where to upgrade your version of PHP through their control panel, or may even be able to do it for you. If they do not want to upgrade your PHP version then we would suggest you switch hosts. All of the <a href="%s" target="_blank">WordPress hosting partners</a> support PHP 7.0 and higher.', 'rcp' ), 'https://wordpress.org/hosting/' ) . '</p>';
+			echo '</div>';
+		}
+
 		if ( function_exists( 'rcp_register_stripe_gateway' ) ) {
 			$deactivate_url = add_query_arg( array( 's' => 'restrict+content+pro+-+stripe' ), admin_url( 'plugins.php' ) );
 			echo '<div class="error"><p>' . sprintf( __( 'You are using an outdated version of the Stripe integration for Restrict Content Pro. Please <a href="%s">deactivate</a> the add-on version to configure the new version.', 'rcp' ), $deactivate_url ) . '</p></div>';
@@ -61,6 +89,13 @@ function rcp_admin_notices() {
 			$deactivate_url = add_query_arg( array( 's' => 'restrict+content+pro+-+paypal+pro' ), admin_url( 'plugins.php' ) );
 			echo '<div class="error"><p>' . sprintf( __( 'You are using an outdated version of the PayPal Pro / Express integration for Restrict Content Pro. Please <a href="%s">deactivate</a> the add-on version to configure the new version.', 'rcp' ), $deactivate_url ) . '</p></div>';
 		}
+	}
+
+	$screen = get_current_screen();
+
+	// Message on settings page if email sending is disabled by RCP_DISABLE_EMAILS
+	if( $screen->id === 'restrict_page_rcp-settings' && defined( 'RCP_DISABLE_EMAILS' ) && RCP_DISABLE_EMAILS ) {
+		echo '<div class="notice notice-info"><p>' . sprintf( __( 'Restrict Content Pro will not send emails because the %s constant is active. Remove it from your code to re-enable email notifications. (Emails generated by other plugins or WordPress core are not affected.)', 'rcp' ), '<code>RCP_DISABLE_EMAILS</code>' ) . '</p></div>';
 	}
 
 	// Payment messages.
@@ -109,18 +144,13 @@ function rcp_admin_notices() {
 		switch( $message ) {
 			case 'user_added' :
 
-				$text = __( 'The user\'s subscription has been added', 'rcp' );
+				$text = __( 'The user\'s membership has been added', 'rcp' );
 				break;
 
 			case 'user_not_added' :
 
-				$text = __( 'The user\'s subscription could not be added', 'rcp' );
+				$text = __( 'The user\'s membership could not be added', 'rcp' );
 				$class = 'error';
-				break;
-
-			case 'user_updated' :
-
-				$text = __( 'Member updated', 'rcp' );
 				break;
 
 			case 'members_updated' :
@@ -131,6 +161,11 @@ function rcp_admin_notices() {
 			case 'member_cancelled' :
 
 				$text = __( 'Member\'s payment profile cancelled successfully', 'rcp' );
+				break;
+
+			case 'member_cancelled_error' :
+				$text = __( 'The member\'s payment profile could not be cancelled. Please see the member\'s user notes for details.', 'rcp' );
+				$class = 'error';
 				break;
 
 			case 'verification_sent' :
@@ -145,50 +180,134 @@ function rcp_admin_notices() {
 		}
 	}
 
+	// Customer messages.
+	if ( current_user_can( 'rcp_manage_members' ) ) {
+		switch ( $message ) {
+			case 'customer_added' :
+
+				$text = __( 'Customer added', 'rcp' );
+				break;
+
+			case 'user_updated' :
+
+				$text = __( 'Customer updated', 'rcp' );
+				break;
+
+			case 'customer_note_added' :
+
+				$text = __( 'Note added', 'rcp' );
+				break;
+
+			case 'customer_deleted' :
+
+				$text = __( 'Customer deleted', 'rcp' );
+				break;
+		}
+	}
+
+	// Membership messages.
+	if ( current_user_can( 'rcp_manage_members' ) ) {
+		switch( $message ) {
+			case 'membership_added' :
+
+				$text = __( 'Membership added', 'rcp' );
+				break;
+
+			case 'membership_updated' :
+
+				$text = __( 'Membership updated', 'rcp' );
+				break;
+
+			case 'membership_level_changed' :
+
+				$text = __( 'Membership level changed', 'rcp' );
+				break;
+
+			case 'membership_expired' :
+
+				$text = __( 'Membership has been expired. The customer no longer has access to associated content.', 'rcp' );
+				break;
+
+			case 'membership_cancelled' :
+
+				$text = __( 'Membership cancelled. The customer will retain access until they reach their expiration date.', 'rcp' );
+				break;
+
+			case 'membership_note_added' :
+
+				$text = __( 'Note added', 'rcp' );
+				break;
+
+			case 'membership_deleted' :
+
+				$text = __( 'Membership deleted', 'rcp' );
+				break;
+
+		}
+	}
+
 	// Level messages.
 	if( current_user_can( 'rcp_manage_levels' ) ) {
 		switch( $message ) {
 			case 'level_added' :
 
-				$text = __( 'Subscription level added', 'rcp' );
+				$text = __( 'Membership level added', 'rcp' );
 				break;
 
 			case 'level_updated' :
 
-				$text = __( 'Subscription level updated', 'rcp' );
+				$text = __( 'Membership level updated', 'rcp' );
+				break;
+
+			case 'invalid_level_price' :
+
+				$text  = __( 'Invalid price: the membership level price must be a valid positive number.', 'rcp' );
+				$class = 'error';
+				break;
+
+			case 'invalid_level_fee' :
+
+				$text  = __( 'Invalid fee: the membership level price must be a valid positive number.', 'rcp' );
+				$class = 'error';
+				break;
+
+			case 'invalid_level_trial' :
+
+				$text = sprintf( __( 'Invalid trial: a membership level with a trial must have a price and duration greater than zero. Please see <a href="%s">the documentation article on creating trials</a> for further instructions.', 'rcp' ), 'http://docs.restrictcontentpro.com/article/1764-creating-free-trials' );
+				$class = 'error';
 				break;
 
 			case 'level_not_added' :
 
-				$text = __( 'Subscription level could not be added', 'rcp' );
+				$text  = __( 'An unexpected error occurred while trying to add the membership level.', 'rcp' );
 				$class = 'error';
 				break;
 
 			case 'level_not_updated' :
 
-				$text = __( 'Subscription level could not be updated', 'rcp' );
+				$text = __( 'An unexpected error occurred while trying to update the membership level.', 'rcp' );
 				$class = 'error';
 				break;
 
 			case 'level_missing_fields' :
 
-				$text = __( 'Subscription level fields are required', 'rcp' );
+				$text = __( 'Membership level fields are required', 'rcp' );
 				$class = 'error';
 				break;
 
 			case 'level_deleted' :
 
-				$text = __( 'Subscription level deleted', 'rcp' );
+				$text = __( 'Membership level deleted', 'rcp' );
 				break;
 
 			case 'level_activated' :
 
-				$text = __( 'Subscription level activated', 'rcp' );
+				$text = __( 'Membership level activated', 'rcp' );
 				break;
 
 			case 'level_deactivated' :
 
-				$text = __( 'Subscription level deactivated', 'rcp' );
+				$text = __( 'Membership level deactivated', 'rcp' );
 				break;
 		}
 	}
@@ -233,27 +352,39 @@ function rcp_admin_notices() {
 		}
 	}
 
-	// Subscription reminder messages.
+	// Membership reminder messages.
 	if( current_user_can( 'rcp_manage_settings' ) ) {
 		switch( $message ) {
 			case 'reminder_added' :
 
-				$text = __( 'Subscription reminder added', 'rcp' );
+				$text = __( 'Membership reminder added', 'rcp' );
 				break;
 
 			case 'reminder_updated' :
 
-				$text = __( 'Subscription reminder updated', 'rcp' );
+				$text = __( 'Membership reminder updated', 'rcp' );
 				break;
 
 			case 'reminder_deleted' :
 
-				$text = __( 'Subscription reminder deleted', 'rcp' );
+				$text = __( 'Membership reminder deleted', 'rcp' );
 				break;
 
 			case 'test_reminder_sent' :
 
 				$text = __( 'Test reminder sent successfully', 'rcp' );
+				break;
+
+			case 'test_email_sent' :
+
+				$current_user = wp_get_current_user();
+				$text         = sprintf( __( 'Test email sent successfully to %s', 'rcp' ), $current_user->user_email );
+				break;
+
+			case 'test_email_not_sent' :
+
+				$text  = __( 'Test email failed to send.', 'rcp' );
+				$class = 'error';
 				break;
 		}
 

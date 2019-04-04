@@ -89,25 +89,45 @@ jQuery(document).ready(function($) {
 		Settings_Controls.prepare_sub_levels(type);
 	});
 
+	// Deselect all roles if "All" is selected.
+	$('.rcp-user-role').change(function (e) {
+		var this_role_value = $(this).val();
+		if ( 'all' === this_role_value && this.checked ) {
+			// Uncheck all other roles when selecting "All".
+			$(this).parents('p').find('input:checkbox').each(function() {
+				if ( $(this).val() !== 'all' ) {
+					$(this).removeAttr( 'checked' );
+				}
+			});
+		} else if ( 'all' !== this_role_value && this.checked ) {
+			// Uncheck "All" when selecting another role.
+			$('#rcp_user_level_all').removeAttr( 'checked' );
+		}
+	});
+
 	// settings tabs
 
 	//when the history state changes, gets the url from the hash and display
 	$(window).bind( 'hashchange', function(e) {
 
+		if ( $('#rcp-settings-wrap').length == 0) {
+			return;
+		}
+
 		var url = jQuery.param.fragment();
 
 		//hide all
-		jQuery( '.restrict_page_rcp-settings #tab_container .tab_content' ).hide();
-		jQuery( '.restrict_page_rcp-settings #tab_container' ).children(".tab_content").hide();
-		jQuery( '.restrict_page_rcp-settings .nav-tab-wrapper a' ).removeClass("nav-tab-active");
+		jQuery( '#rcp-settings-wrap #tab_container .tab_content' ).hide();
+		jQuery( '#rcp-settings-wrap #tab_container' ).children(".tab_content").hide();
+		jQuery( '#rcp-settings-wrap .nav-tab-wrapper a' ).removeClass("nav-tab-active");
 
 		//find a href that matches url
 		if (url) {
-			jQuery( '.restrict_page_rcp-settings .nav-tab-wrapper a[href="#' + url + '"]' ).addClass( 'nav-tab-active' );
-			jQuery(".restrict_page_rcp-settings #tab_container #" + url).addClass("selected").fadeIn();
+			jQuery( '#rcp-settings-wrap .nav-tab-wrapper a[href="#' + url + '"]' ).addClass( 'nav-tab-active' );
+			jQuery("#rcp-settings-wrap #tab_container #" + url).addClass("selected").fadeIn();
 		} else {
-			jQuery( '.restrict_page_rcp-settings  h2.nav-tab-wrapper a[href="#general"]' ).addClass( 'nav-tab-active' );
-			jQuery(".restrict_page_rcp-settings  #tab_container #general").addClass("selected nav-tab-active").fadeIn();
+			jQuery( '#rcp-settings-wrap  h2.nav-tab-wrapper a[href="#general"]' ).addClass( 'nav-tab-active' );
+			jQuery("#rcp-settings-wrap  #tab_container #general").addClass("selected nav-tab-active").fadeIn();
 		}
 	});
 
@@ -120,8 +140,25 @@ jQuery(document).ready(function($) {
 		var dateFormat = 'yy-mm-dd';
 		$('.rcp-datepicker').datepicker({dateFormat: dateFormat});
 	}
+	if($('.rcp-datetimepicker').length > 0 ) {
+		$('.rcp-datetimepicker').datetimepicker({
+			dateFormat: 'yy-mm-dd',
+			timeFormat: 'HH:mm:ss'
+		});
+	}
 	$('.rcp_cancel').click(function() {
+		if ($(this).is('[disabled=disabled]')) {
+			return false;
+		}
+
 		if(confirm(rcp_vars.cancel_user)) {
+			return true;
+		} else {
+			return false;
+		}
+	});
+	$('#rcp-expire-membership-button').click(function() {
+		if(confirm(rcp_vars.expire_membership)) {
 			return true;
 		} else {
 			return false;
@@ -151,6 +188,18 @@ jQuery(document).ready(function($) {
 		}
 		return false;
 	});
+	$('.rcp-delete-membership').click(function () {
+		if(confirm(rcp_vars.delete_membership)) {
+			return true;
+		}
+		return false;
+	});
+	$('.rcp-delete-customer').click(function () {
+		if(confirm(rcp_vars.delete_customer)) {
+			return true;
+		}
+		return false;
+	});
 	$('#rcp-add-new-member').submit(function() {
 		if($('#rcp-user').val() == '') {
 			alert(rcp_vars.missing_username);
@@ -171,14 +220,23 @@ jQuery(document).ready(function($) {
 	}
 
 	// auto calculate the subscription expiration when manually adding a user
-	$('#rcp-level').change(function() {
+	$('#rcp-membership-level').change(function() {
 		var level_id = $('option:selected', this).val();
 		data = {
 			action: 'rcp_get_subscription_expiration',
 			subscription_level: level_id
 		};
 		$.post(ajaxurl, data, function(response) {
-			$('#rcp-expiration').val(response);
+			let expiration = $( '#rcp-membership-expiration' );
+			let no_expiration = $( '#rcp-membership-expiration-none' );
+
+			if ( 'none' === response ) {
+				expiration.val( '' );
+				no_expiration.prop( 'checked', true );
+			} else {
+				expiration.val( response );
+				no_expiration.prop( 'checked', false );
+			}
 		});
 	});
 
@@ -352,4 +410,304 @@ jQuery(document).ready(function($) {
 		}
 	});
 
+	// Show/hide "times billed" box when option changes.
+	$( '#rcp-maximum-renewals-setting' ).change( function() {
+		var after_payment_field = $(this).parents('tr').next();
+		var show = 'forever' !== $(this).val();
+
+		$('#rcp-maximum-renewals').toggle( show );
+		after_payment_field.toggle( show );
+	});
+
+	// Changes the currency symbol in the Currency Position dropdown to match the Currency setting.
+	var currencySelect = $('#rcp_settings\\[currency\\]');
+	if (currencySelect.length) {
+		var currencies = JSON.parse(rcp_vars.currencies);
+		var currentSymbol = currencies[currencySelect.val()].match(/\(([^)]+)\)/)[1];
+		var currencyPositionBefore = $('#rcp_settings\\[currency_position\\] option[value="before"]');
+		var currencyPositionAfter = $('#rcp_settings\\[currency_position\\] option[value="after"]');
+
+		currencyPositionBefore.text(function () {
+			return $(this).text().replace("$", currentSymbol);
+		});
+
+		currencyPositionAfter.text(function () {
+			return $(this).text().replace("$", currentSymbol);
+		});
+
+		$(currencySelect).on('change', function () {
+			var newCurrency = currencies[$(this).val()].match(/\(([^)]+)\)/)[1];
+
+			currencyPositionBefore.text(function () {
+				return $(this).text().replace(currentSymbol, newCurrency);
+			});
+			currencyPositionAfter.text(function () {
+				return $(this).text().replace(currentSymbol, newCurrency);
+			});
+
+			currentSymbol = newCurrency;
+		});
+	}
+
+	// Customer: show/hide fields based on new or existing user.
+	$('input[name="rcp_customer_user_account"]:radio').change(function() {
+		if ( 'new' === this.value ) {
+			$('.rcp-customer-new-user-field').show();
+		} else {
+			$('.rcp-customer-new-user-field').hide();
+		}
+	});
+
+	/**
+	 * Membership management screen JS
+	 */
+	var RCP_Membership = {
+
+		vars: {
+			member_card_wrap_editable: $('.rcp-membership-card-wrapper .rcp-editable'),
+			member_card_wrap_edit_item: $('.rcp-membership-card-wrapper .rcp-edit-item')
+		},
+
+		init: function () {
+			this.recurring_select();
+			this.edit_membership_level();
+			this.confirm_level_change();
+			this.edit_created_date();
+			this.edit_expiration();
+			this.never_expires();
+			this.edit_gateway_customer_id();
+			this.edit_gateway_subscription_id();
+			this.set_billing_cycle();
+
+			// Trigger change to set cycle on initial page load.
+			$('#rcp-add-membership-info #rcp-membership-level').trigger( 'change' );
+		},
+
+		/**
+		 * Edit Subscription Text Input
+		 *
+		 * @param link object The edit/cancelled element the user clicked.
+		 * @param input object The editable field.
+		 *
+		 * @since 3.0
+		 */
+		edit_membership_input: function ( link, input ) {
+
+			// User clicks edit
+			if ( link.text() === rcp_vars.action_edit ) {
+				// Preserve current value
+				link.data( 'current-value', input.val() );
+				// Update text to 'cancel'
+				link.text( rcp_vars.action_cancel );
+			} else {
+				// User clicked cancel, return previous value
+				input.val( link.data('current-value') );
+				// Update link text back to 'edit'
+				link.text( rcp_vars.action_edit );
+			}
+
+		},
+
+		edit_membership_level: function () {
+			$( '#rcp-edit-membership-level' ).on( 'click', function ( e ) {
+				e.preventDefault();
+
+				let link = $( this );
+				let created_input = $( '#rcp-membership-level' );
+
+				RCP_Membership.edit_membership_input( link, created_input );
+
+				$('.rcp-current-membership-level').toggle();
+				$( '#rcp-membership-level' ).toggle();
+				$( '#rcp-change-membership-level-button' ).toggle();
+			} );
+		},
+
+		confirm_level_change: function () {
+			$( '#rcp-change-membership-level-button' ).on( 'click', function ( e ) {
+				if(confirm(rcp_vars.change_membership_level)) {
+					return true;
+				}
+				return false;
+			} );
+		},
+
+		/**
+		 * Editing the "recurring" flag for a membership.
+		 *
+		 * @since 3.0
+		 */
+		recurring_select: function () {
+			$( document.body ).on( 'change', '#rcp-recurring', function ( e ) {
+				$( '#rcp-membership-recurring-update-notice' ).slideToggle();
+			} );
+		},
+
+		/**
+		 * Editing the expiration date for a membership.
+		 *
+		 * @since 3.0
+		 */
+		edit_created_date: function () {
+			$( '#rcp-edit-membership-created' ).on( 'click', function ( e ) {
+				e.preventDefault();
+
+				let link = $( this );
+				let created_input = $( '#rcp-membership-created' );
+
+				RCP_Membership.edit_membership_input( link, created_input );
+
+				$( '.rcp-membership-created' ).toggle();
+			} );
+		},
+
+		/**
+		 * Editing the expiration date for a membership.
+		 *
+		 * @since 3.0
+		 */
+		edit_expiration: function () {
+			$( '#rcp-edit-membership-expiration' ).on( 'click', function ( e ) {
+				e.preventDefault();
+
+				let link = $( this );
+				let expiration_input = $( '#rcp-membership-expiration' );
+
+				RCP_Membership.edit_membership_input( link, expiration_input );
+
+				$( '.rcp-membership-expiration' ).toggle();
+				$( '#rcp-membership-expiration-update-notice' ).slideToggle();
+				$( '.rcp-membership-expiration-none-wrap' ).toggle();
+			} );
+		},
+
+		/**
+		 * When "never expires" is checked, wipe the expiration date.
+		 */
+		never_expires: function () {
+			$( '#rcp-membership-expiration-none' ).change( function () {
+				if ( $( this ).is( ':checked' ) ) {
+					$( '#rcp-membership-expiration' ).val( '' );
+				}
+			} );
+		},
+
+		/**
+		 * Editing the gateway customer ID for a membership.
+		 *
+		 * @since 3.0
+		 */
+		edit_gateway_customer_id: function () {
+			$( '#rcp-edit-membership-gateway-customer-id' ).on( 'click', function ( e ) {
+				e.preventDefault();
+
+				let link = $( this );
+				let gateway_input = $( '#rcp-membership-gateway-customer-id' );
+
+				RCP_Membership.edit_membership_input( link, gateway_input );
+
+				$( '#rcp-membership-gateway-customer-id' ).toggle();
+			} );
+		},
+
+		/**
+		 * Editing the gateway subscription ID for a membership.
+		 *
+		 * @since 3.0
+		 */
+		edit_gateway_subscription_id: function () {
+			$( '#rcp-edit-membership-gateway-subscription-id' ).on( 'click', function ( e ) {
+				e.preventDefault();
+
+				let link = $( this );
+				let gateway_input = $( '#rcp-membership-gateway-subscription-id' );
+
+				RCP_Membership.edit_membership_input( link, gateway_input );
+
+				$( '#rcp-membership-gateway-subscription-id' ).toggle();
+				$( '#rcp-membership-gateway-subscription-id-update-notice' ).slideToggle();
+			} );
+		},
+
+		/**
+		 * Set the billing cycle fields when changing the membership level.
+		 *
+		 * @since 3.0
+		 */
+		set_billing_cycle: function () {
+			$('#rcp-add-membership-info').on('change', '#rcp-membership-level', function () {
+				let object_id = $(this).val();
+				let initial_amount = $('#rcp-initial-amount');
+				let recurring_amount = $('#rcp-recurring-amount');
+				let recurring_wrap = $('#rcp-billing-cycle-recurring');
+
+				let data = {
+					action: 'rcp_get_membership_billing_cycle',
+					object_id: object_id,
+					rcp_nonce: rcp_vars.rcp_member_nonce
+				};
+
+				$.post(ajaxurl, data, function(response) {
+
+					if ( 'free' === response.data ) {
+						initial_amount.val('0.00');
+						recurring_amount.val('0.00');
+					} else {
+						initial_amount.val(response.data.initial_amount);
+						recurring_amount.val(response.data.recurring_amount);
+					}
+
+					if ( 'free' === response.data || 0 == response.data.recurring_amount ) {
+						recurring_wrap.hide();
+					} else {
+						recurring_wrap.show();
+					}
+				});
+			});
+		},
+
+	};
+	RCP_Membership.init();
+
+	if( window.adminpage === 'restrict_page_rcp-settings' ) {
+		RCP_Settings.init();
+	}
 });
+
+let RCP_Settings = {
+
+	init: function() {
+		this.listeners();
+	},
+
+	listeners: function() {
+		let sandboxCheckbox = document.getElementById( 'rcp_settings[sandbox]' );
+
+		if( ! sandboxCheckbox ) {
+			return;
+		}
+
+		sandboxCheckbox.addEventListener( 'change', function() {
+			let testpub = document.getElementById( 'rcp_settings[stripe_test_publishable]' );
+			let livepub = document.getElementById( 'rcp_settings[stripe_live_publishable]' );
+			let notice = document.getElementById( 'rcp-sandbox-toggle-notice' );
+
+			if( this.checked && testpub.value === '' ) {
+				RCP_Settings.showErrorNotice( notice );
+			}
+
+			if( ! this.checked && livepub.value === '' ) {
+				RCP_Settings.showErrorNotice( notice );
+			}
+		} );
+	},
+
+	showErrorNotice: function( element = false ) {
+		if( ! element ) {
+			return;
+		}
+
+		element.className = 'notice error';
+		element.style.visibility = 'visible';
+	}
+};

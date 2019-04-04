@@ -59,11 +59,12 @@ function rcp_get_tools_tabs() {
 	global $rcp_options;
 
 	$tabs = array(
-		'system_info' => __( 'System Info', 'rcp' )
+		'system_info' => __( 'System Info', 'rcp' ),
+		'debug'       => __( 'Debugging', 'rcp' )
 	);
 
-	if ( ! empty( $rcp_options['debug_mode'] ) ) {
-		$tabs['debug'] = __( 'Debugging', 'rcp' );
+	if ( ! empty( $_GET['tab'] ) && 'batch' === $_GET['tab'] ) {
+		$tabs['batch'] = __( 'Batch Processing', 'rcp' );
 	}
 
 	return apply_filters( 'rcp_tools_tabs', $tabs );
@@ -198,3 +199,74 @@ function rcp_submit_debug_log() {
 
 }
 add_action( 'admin_init', 'rcp_submit_debug_log' );
+
+/**
+ * Displays the batch processing tab on the Tools page.
+ *
+ * @since 3.0
+ */
+function rcp_batch_processing_page() {
+
+	$queue_name = ! empty( $_GET['rcp-queue'] ) ? sanitize_key( $_GET['rcp-queue'] ) : 'rcp_core';
+
+	if( ! empty( $queue_name ) ) {
+		$jobs = \RCP\Utils\Batch\get_jobs( array(
+			'queue' => $queue_name
+		) );
+	} ?>
+
+	<div class="wrap">
+
+		<?php
+
+		if( empty( $jobs ) ) {
+			echo '<p>' . __( 'A valid job queue was not provided.', 'rcp' ) . '</p></div>';
+			return;
+		}
+
+		/**
+		 * @var \RCP\Utils\Batch\Job $job
+		 */
+		foreach( $jobs as $key => $job ) {
+			if( $job->is_completed() ) {
+				echo '<p>' . sprintf( __( '%s has already been completed.', 'rcp' ), $job->get_name() ) . '</p></div>';
+				continue;
+			} ?>
+			<table id="rcp-batch-processing-job-<?php echo esc_attr( $job->get_id() ); ?>" class="wp-list-table widefat fixed posts rcp-batch-processing-job-table">
+				<thead>
+				<tr>
+					<th><?php echo ! empty( $job ) ? $job->get_name() : ''; ?></th>
+					<th><?php _e( 'Progress', 'rcp' ); ?></th>
+					<th><?php _e( 'Actions', 'rcp' ); ?></th>
+				</tr>
+				</thead>
+				<tbody>
+				<tr>
+					<td><?php echo esc_html( $job->get_description() ); ?></td>
+					<td>
+						<span class="rcp-batch-processing-job-progress-bar"><span style="width: <?php echo esc_attr( $job->get_percent_complete() ); ?>%;"></span></span>
+						<span class="rcp-batch-processing-job-progress-text description"><?php printf( __( '%s%% complete', 'rcp' ), '<span class="rcp-batch-processing-job-percent-complete">' . $job->get_percent_complete() . '</span>' ); ?></span>
+					</td>
+					<td>
+						<form class="rcp-batch-form">
+							<input type="hidden" name="rcp-job-step" class="rcp-batch-processing-job-step" value="<?php echo esc_attr( $job->get_step() ); ?>" />
+							<input type="hidden" name="rcp-job-id" class="rcp-batch-processing-job-id" value="<?php echo esc_attr( $job->get_id() ); ?>" />
+							<input type="submit" value="<?php echo $job->get_percent_complete() > 0 ? esc_attr( 'Continue Processing', 'rcp' ) : esc_attr( 'Start Processing', 'rcp' ); ?>" class="button-primary"/>
+							<span class="spinner"></span>
+							<span class="rcp-batch-processing-message"></span>
+						</form>
+					</td>
+				</tr>
+				<tr id="rcp-batch-processing-errors-job-<?php echo esc_attr( $job->get_id() ); ?>" class="rcp-batch-processing-errors" style="display: none;">
+					<td colspan="3"></td>
+				</tr>
+				</tbody>
+			</table>
+			<?php
+		}
+		?>
+
+	</div>
+	<?php
+}
+add_action( 'rcp_tools_tab_batch', 'rcp_batch_processing_page' );

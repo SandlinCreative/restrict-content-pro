@@ -186,6 +186,24 @@ class RCP_Payment_Gateway {
 	public $payment;
 
 	/**
+	 * Customer object for this user.
+	 *
+	 * @var RCP_Customer
+	 * @access public
+	 * @since 3.0
+	 */
+	public $customer;
+
+	/**
+	 * Membership object for this payment.
+	 *
+	 * @var RCP_Membership
+	 * @access public
+	 * @since 3.0
+	 */
+	public $membership;
+
+	/**
 	 * Used for saving an error message that occurs during registration.
 	 *
 	 * @var string
@@ -232,8 +250,10 @@ class RCP_Payment_Gateway {
 			$this->return_url          = $subscription_data['return_url'];
 			$this->subscription_data   = $subscription_data;
 			$this->payment             = $rcp_payments_db->get_payment( $subscription_data['payment_id'] );
+			$this->customer            = $subscription_data['customer'];
+			$this->membership          = rcp_get_membership( $subscription_data['membership_id'] );
 
-			rcp_log( sprintf( 'Registration for user #%d sent to gateway. Level ID: %d; Initial Amount: %.2f; Recurring Amount: %.2f; Auto Renew: %s', $this->user_id, $this->subscription_id, $this->initial_amount, $this->amount, var_export( $this->auto_renew, true ) ) );
+			rcp_log( sprintf( 'Registration for user #%d sent to gateway. Level ID: %d; Initial Amount: %.2f; Recurring Amount: %.2f; Auto Renew: %s; Trial: %s; Membership ID: %d', $this->user_id, $this->subscription_id, $this->initial_amount, $this->amount, var_export( $this->auto_renew, true ), var_export( $this->is_trial(), true ), $this->membership->get_id() ) );
 
 		}
 
@@ -364,9 +384,8 @@ class RCP_Payment_Gateway {
 	}
 
 	/**
-	 * Renew a member's subscription
-	 *
-	 * This is a useful wrapper if you don't already have an RCP_Member object handy.
+	 * Activate or renew the membership. If the membership has been billed `0` times then it is activated for the
+	 * first time. Otherwise it is renewed.
 	 *
 	 * @param bool   $recurring Whether or not it's a recurring subscription.
 	 * @param string $status    Status to set the member to, usually 'active'.
@@ -375,8 +394,11 @@ class RCP_Payment_Gateway {
 	 * @return void
 	 */
 	public function renew_member( $recurring = false, $status = 'active' ) {
-		$member = new RCP_Member( $this->user_id );
-		$member->renew( $recurring, $status );
+		if ( 0 == $this->membership->get_times_billed() ) {
+			$this->membership->activate();
+		} else {
+			$this->membership->renew( $recurring, $status );
+		}
 	}
 
 	/**

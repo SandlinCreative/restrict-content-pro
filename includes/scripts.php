@@ -17,8 +17,10 @@
  */
 function rcp_admin_scripts( $hook ) {
 
-	global $rcp_options, $rcp_members_page, $rcp_subscriptions_page, $rcp_discounts_page, $rcp_payments_page, $rcp_reports_page, $rcp_settings_page, $rcp_export_page, $rcp_help_page, $rcp_tools_page;
-	$pages = array( $rcp_members_page, $rcp_subscriptions_page, $rcp_discounts_page, $rcp_payments_page, $rcp_reports_page, $rcp_settings_page, $rcp_export_page, $rcp_tools_page, $rcp_help_page );
+	$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
+
+	global $rcp_options, $rcp_members_page, $rcp_customers_page, $rcp_subscriptions_page, $rcp_discounts_page, $rcp_payments_page, $rcp_reports_page, $rcp_settings_page, $rcp_export_page, $rcp_help_page, $rcp_tools_page;
+	$pages = array( $rcp_members_page, $rcp_customers_page, $rcp_subscriptions_page, $rcp_discounts_page, $rcp_payments_page, $rcp_reports_page, $rcp_settings_page, $rcp_export_page, $rcp_tools_page, $rcp_help_page );
 
 	$pages[] = 'post.php';
 	$pages[] = 'post-new.php';
@@ -26,6 +28,15 @@ function rcp_admin_scripts( $hook ) {
 
 	if( false !== strpos( $hook, 'rcp-restrict-post-type' ) ) {
 		$pages[] = $hook;
+	}
+
+	if ( $rcp_customers_page == $hook ) {
+		// Load the password show/hide feature and strength meter.
+		wp_enqueue_script( 'user-profile' );
+	}
+
+	if ( $rcp_discounts_page == $hook ) {
+		wp_enqueue_script( 'jquery-ui-timepicker', RCP_PLUGIN_URL . 'includes/js/jquery-ui-timepicker-addon' . $suffix . '.js', array( 'jquery-ui-datepicker', 'jquery-ui-slider' ), '1.6.3' );
 	}
 
 	if( in_array( $hook, $pages ) ) {
@@ -41,22 +52,41 @@ function rcp_admin_scripts( $hook ) {
 	}
 
 	if( in_array( $hook, $pages ) ) {
+		$membership = ! empty( $_GET['membership_id'] ) ? rcp_get_membership( absint( $_GET['membership_id'] ) ) : false;
 		wp_localize_script( 'rcp-admin-scripts', 'rcp_vars', array(
+				'action_cancel'       => __( 'Cancel', 'rcp' ),
+				'action_edit'         => __( 'Edit', 'rcp' ),
 				'rcp_member_nonce'    => wp_create_nonce( 'rcp_member_nonce' ),
 				'cancel_user'         => __( 'Are you sure you wish to cancel this member\'s subscription?', 'rcp' ),
+				'delete_customer'     => __( 'Are you sure you want to delete this customer? This action is irreversible. All their memberships will be cancelled. Proceed?', 'rcp' ),
+				'delete_membership'   => __( 'Are you sure you want to delete this membership? This action is irreversible. Proceed?', 'rcp' ),
 				'delete_subscription' => __( 'If you delete this subscription, all members registered with this level will be canceled. Proceed?', 'rcp' ),
 				'delete_payment'      => __( 'Are you sure you want to delete this payment? This action is irreversible. Proceed?', 'rcp' ),
 				'delete_discount'     => __( 'Are you sure you want to delete this discount? This action is irreversible. Proceed?', 'rcp' ),
 				'delete_reminder'     => __( 'Are you sure you want to delete this reminder email? This action is irreversible. Proceed?', 'rcp' ),
+				'expire_membership'   => __( 'Are you sure you want to expire this membership? The customer will lose access immediately.', 'rcp' ),
+				'change_membership_level' => ! empty( $membership ) && $membership->is_recurring() ? __( 'Are you sure you want to change the membership level? The subscription will be cancelled at the payment gateway and this customer will not be automatically billed again.', 'rcp' ) : __( 'Are you sure you want to change the membership level?', 'rcp' ),
 				'missing_username'    => __( 'You must choose a username', 'rcp' ),
 				'currency_sign'       => rcp_currency_filter(''),
 				'currency_pos'        => isset( $rcp_options['currency_position'] ) ? $rcp_options['currency_position'] : 'before',
 				'use_as_logo'         => __( 'Use as Logo', 'rcp' ),
 				'choose_logo'         => __( 'Choose a Logo', 'rcp' ),
 				'can_cancel_member'   => ( $hook == $rcp_members_page && isset( $_GET['edit_member'] ) && rcp_can_member_cancel( absint( $_GET['edit_member'] ) ) ),
-				'cancel_subscription' => __( 'Cancel subscription at gateway', 'rcp' )
+				'cancel_subscription' => __( 'Cancel subscription at gateway', 'rcp' ),
+				'currencies'          => json_encode( rcp_get_currencies() )
 			)
 		);
+	}
+
+	if ( $rcp_tools_page === $hook ) {
+		wp_enqueue_script( 'rcp-batch', RCP_PLUGIN_URL . 'includes/batch/batch.js', array( 'jquery' ), RCP_PLUGIN_VERSION );
+		wp_localize_script( 'rcp-batch', 'rcp_batch_vars', array(
+			'batch_nonce' => wp_create_nonce( 'rcp_batch_nonce' ),
+			'i18n'        => array(
+				'job_fail'    => __( 'Job failed to complete successfully.', 'rcp' ),
+				'job_retry'   => __( 'Try again.', 'rcp' )
+			)
+		) );
 	}
 }
 add_action( 'admin_enqueue_scripts', 'rcp_admin_scripts' );
@@ -87,9 +117,13 @@ add_action( 'admin_head', 'rcp_admin_help_url' );
  * @return void
  */
 function rcp_admin_styles( $hook ) {
-	global $rcp_members_page, $rcp_subscriptions_page, $rcp_discounts_page, $rcp_payments_page, $rcp_reports_page, $rcp_settings_page, $rcp_export_page, $rcp_help_page, $rcp_tools_page, $rcp_add_ons_page;
+	$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
+
+	global $rcp_members_page, $rcp_customers_page, $rcp_subscriptions_page, $rcp_discounts_page, $rcp_payments_page, $rcp_reports_page, $rcp_settings_page, $rcp_export_page, $rcp_help_page, $rcp_tools_page, $rcp_add_ons_page;
+
 	$pages = array(
 		$rcp_members_page,
+		$rcp_customers_page,
 		$rcp_subscriptions_page,
 		$rcp_discounts_page,
 		$rcp_payments_page,
@@ -109,7 +143,6 @@ function rcp_admin_styles( $hook ) {
 	}
 
 	if( in_array( $hook, $pages ) ) {
-		$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
 		wp_enqueue_style( 'datepicker',  RCP_PLUGIN_URL . 'includes/css/datepicker' . $suffix . '.css' );
 		wp_enqueue_style( 'rcp-admin',  RCP_PLUGIN_URL . 'includes/css/admin-styles' . $suffix . '.css', array(), RCP_PLUGIN_VERSION );
 	}

@@ -105,14 +105,29 @@ global $rcp_options, $rcp_payment, $rcp_member; ?>
 		font-size: 14px;
 		height: 38px;
 		line-height: 38px;
-		padding: 0 0 0 20px;
+		padding: 0 20px 0 20px;
 		text-transform: uppercase;
 		width: 100%;
+	}
+	section header .right {
+		float: right;
 	}
 	section article {
 		clear: both;
 		float: left;
 		width: 100%;
+	}
+	thead {
+		background: #efebeb;
+		border-bottom: 1px solid #ddd;
+		border-top: 1px solid #ddd;
+		font-size: 14px;
+		line-height: 38px;
+		text-transform: uppercase;
+	}
+	thead tr th {
+		padding: 0 20px 0 20px;
+		text-align: left;
 	}
 	p {
 		font-size: 14px;
@@ -248,6 +263,15 @@ global $rcp_options, $rcp_payment, $rcp_member; ?>
 				<article>
 					<p><strong><?php echo $rcp_member->first_name . ' ' . $rcp_member->last_name; ?></strong></p>
 					<p><strong><?php echo $rcp_member->user_email; ?></strong></p>
+					<?php
+					/**
+					 * Insert content after the member's name and email.
+					 *
+					 * @param object     $rcp_payment Payment object from the database.
+					 * @param RCP_Member $rcp_member  Member object.
+					 */
+					do_action( 'rcp_invoice_bill_to', $rcp_payment, $rcp_member );
+					?>
 				</article>
 
 			</div>
@@ -256,23 +280,57 @@ global $rcp_options, $rcp_payment, $rcp_member; ?>
 		<!-- Items -->
 		<section id="items">
 
-			<header><?php _e( 'Invoice Items:', 'rcp' ); ?></header>
-
 			<table>
+				<thead>
+					<tr>
+						<th><?php _e( 'Description', 'rcp' ); ?></th>
+						<th><?php _e( 'Amount', 'rcp' ); ?></th>
+					</tr>
+				</thead>
 				<tbody>
 					<tr>
 						<td class="name"><?php echo $rcp_payment->subscription; ?></td>
-						<td class="price"><?php echo rcp_currency_filter( $rcp_payment->amount ); ?></td>
+						<td class="price"><?php echo rcp_currency_filter( $rcp_payment->subtotal ); ?></td>
 					</tr>
 					<?php do_action( 'rcp_invoice_items', $rcp_payment ); ?>
 				</tbody>
 				<tfoot>
 					<?php do_action( 'rcp_invoice_items_before_total_price', $rcp_payment ); ?>
 
+					<!-- Fees -->
+					<?php if ( $rcp_payment->fees != 0 ) : ?>
+					<tr>
+						<td class="name"><?php _e( 'Fees:', 'rcp' ); ?></td>
+						<td class="price"><?php echo rcp_currency_filter( $rcp_payment->fees ); ?></td>
+					</tr>
+					<?php endif; ?>
+
+					<!-- Subtotal -->
+					<tr>
+						<td class="name"><?php _e( 'Subtotal:', 'rcp' ); ?></td>
+						<td class="price"><?php echo rcp_currency_filter( $rcp_payment->subtotal + $rcp_payment->fees ); ?></td>
+					</tr>
+
+					<!-- Credits -->
+					<?php if ( $rcp_payment->credits != 0 ) : ?>
+					<tr>
+						<td class="name"><?php _e( 'Credits:', 'rcp' ); ?></td>
+						<td class="price"><?php echo rcp_currency_filter( -1 * abs( $rcp_payment->credits ) ); ?></td>
+					</tr>
+					<?php endif; ?>
+
+					<!-- Discount -->
+					<?php if ( $rcp_payment->discount_amount != 0 ) : ?>
+					<tr>
+						<td class="name"><?php _e( 'Discount:', 'rcp' ); ?></td>
+						<td class="price"><?php echo rcp_currency_filter( -1 * abs( $rcp_payment->discount_amount ) ); ?></td>
+					</tr>
+					<?php endif; ?>
+
 					<!-- Total -->
 					<tr>
-						<td class="name"><?php _e( 'Total Price:', 'rcp' ); ?></td>
-						<td class="price"><?php echo rcp_currency_filter( $rcp_payment->amount ); ?></td>
+						<td class="name"><strong><?php _e( 'Total Price:', 'rcp' ); ?></strong></td>
+						<td class="price"><strong><?php echo rcp_currency_filter( $rcp_payment->amount ); ?></strong></td>
 					</tr>
 
 					<!-- Paid -->
@@ -289,9 +347,11 @@ global $rcp_options, $rcp_payment, $rcp_member; ?>
 			<div class="alignleft">
 				<header><?php _e( 'Additional Info:', 'rcp' ); ?></header>
 
-				<article>
-					<p><?php echo __( 'Payment Date:', 'rcp' ) . ' ' . date_i18n( 'dS F, Y', strtotime( $rcp_payment->date, current_time( 'timestamp' ) ) ); ?></p>
-				</article>
+				<?php if ( in_array( $rcp_payment->status, array( 'complete', 'refunded' ) ) ) : ?>
+					<article>
+						<p><?php echo __( 'Payment Date:', 'rcp' ) . ' ' . date_i18n( get_option( 'date_format' ), strtotime( $rcp_payment->date, current_time( 'timestamp' ) ) ); ?></p>
+					</article>
+				<?php endif; ?>
 
 				<?php if( ! empty( $rcp_options['invoice_notes'] ) ) : ?>
 					<article>

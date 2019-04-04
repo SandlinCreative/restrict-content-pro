@@ -56,36 +56,35 @@ add_action('wp', 'rcp_setup_cron_jobs');
  */
 function rcp_check_for_expired_users() {
 
-	global $wpdb;
+	rcp_log( 'Starting rcp_check_for_expired_users() cron job.', true );
 
 	$current_time = date( 'Y-m-d H:i:s', strtotime( '-1 day', current_time( 'timestamp' ) ) );
 
-	$query = "SELECT ID FROM $wpdb->users
-		INNER JOIN $wpdb->usermeta ON ($wpdb->users.ID = $wpdb->usermeta.user_id)
-		INNER JOIN $wpdb->usermeta AS mt1 ON ($wpdb->users.ID = mt1.user_id)
-		INNER JOIN $wpdb->usermeta AS mt2 ON ($wpdb->users.ID = mt2.user_id)
-		WHERE 1=1 AND ( ($wpdb->usermeta.meta_key = 'rcp_expiration'
-			AND CAST($wpdb->usermeta.meta_value AS DATETIME) < '$current_time')
-			AND  (mt1.meta_key = 'rcp_expiration'
-				AND CAST(mt1.meta_value AS CHAR) != 'none')
-			AND  (mt2.meta_key = 'rcp_status'
-				AND CAST(mt2.meta_value AS CHAR) = 'active') )
-		ORDER BY user_login ASC LIMIT 9999";
+	$expired_memberships = rcp_get_memberships( array(
+		'expiration_date' => array(
+			'end' => $current_time
+		),
+		'status' => array( 'active', 'cancelled' ),
+		'number' => -1
+	) );
 
-	$query = apply_filters( 'rcp_check_for_expired_users_query_filter', $query );
+	$expired_memberships = apply_filters( 'rcp_check_for_expired_users_members_filter', $expired_memberships );
 
-	$expired_members = $wpdb->get_results( $query );
-	$expired_members = wp_list_pluck( $expired_members, 'ID' );
-	$expired_members = apply_filters( 'rcp_check_for_expired_users_members_filter', $expired_members );
+	if( $expired_memberships ) {
+		foreach( $expired_memberships as $key => $membership ) {
 
-	if( $expired_members ) {
-		foreach( $expired_members as $key => $member_id ) {
+			/**
+			 * @var RCP_Membership $membership
+			 */
 
-			$expiration_date = rcp_get_expiration_timestamp( $member_id );
+			$expiration_date = $membership->get_expiration_time();
 			if( $expiration_date && strtotime( '-2 days', current_time( 'timestamp' ) ) > $expiration_date ) {
-				rcp_set_status( $member_id, 'expired' );
+				rcp_log( sprintf( 'Expiring membership #%d via cron job.', $membership->get_id() ) );
+				$membership->set_status( 'expired' );
 			}
 		}
+	} else {
+		rcp_log( 'No expired memberships found.' );
 	}
 }
 //add_action( 'admin_init', 'rcp_check_for_expired_users' );
@@ -97,12 +96,13 @@ add_action( 'rcp_expired_users_check', 'rcp_check_for_expired_users' );
  * Runs each day and checks for members that are soon to expire. Based on settings, each
  * member gets sent an expiry notice email.
  *
- * @uses rcp_get_renewal_reminder_period()
- * @uses rcp_email_expiring_notice()
+ * @uses RCP_Reminders
  *
  * @return void
  */
 function rcp_check_for_soon_to_expire_users() {
+
+	rcp_log( 'Starting rcp_check_for_soon_to_expire_users() cron job.', true );
 
 	$reminders = new RCP_Reminders();
 	$reminders->send_reminders();
@@ -111,7 +111,7 @@ function rcp_check_for_soon_to_expire_users() {
 add_action( 'rcp_send_expiring_soon_notice', 'rcp_check_for_soon_to_expire_users' );
 
 /**
- * Counts the active members on a subscription level to ensure counts are accurate.
+ * Counts the active members on a membership level to ensure counts are accurate.
  *
  * Runs once per day
  *
@@ -120,6 +120,8 @@ add_action( 'rcp_send_expiring_soon_notice', 'rcp_check_for_soon_to_expire_users
  * @return void
  */
 function rcp_check_member_counts() {
+
+	rcp_log( 'Starting rcp_check_member_counts() cron job.', true );
 
 	global $rcp_levels_db;
 	$levels = $rcp_levels_db->get_levels();
@@ -133,9 +135,18 @@ function rcp_check_member_counts() {
 	foreach( $levels as $level ) {
 
 		foreach( $statuses as $status ) {
+			$key = $level->id . '_' . $status . '_member_count';
 
-			$count = rcp_count_members( $level->id, $status );
-			$key   = $level->id . '_' . $status . '_member_count';
+			// Change "free" to "active".
+			if ( 'free' == $status ) {
+				$status = 'active';
+			}
+
+			$count = rcp_count_memberships( array(
+				'status'    => $status,
+				'object_id' => $level->id
+			) );
+
 			$rcp_levels_db->update_meta( $level->id, $key, $count );
 
 		}
@@ -151,6 +162,8 @@ add_action( 'rcp_check_member_counts', 'rcp_check_member_counts' );
  * @return void
  */
 function rcp_mark_abandoned_payments() {
+
+	rcp_log( 'Starting rcp_mark_abandoned_payments() cron job.', true );
 
 	/**
 	 * @var RCP_Payments $rcp_payments_db

@@ -16,6 +16,7 @@
 function rcp_screen_options() {
 
 	global $rcp_members_page;
+	global $rcp_customers_page;
 	global $rcp_subscriptions_page;
 	global $rcp_discounts_page;
 	global $rcp_payments_page;
@@ -31,9 +32,18 @@ function rcp_screen_options() {
 
 		case $rcp_members_page :
 			$args = array(
-				'label' => __('Members per page', 'rcp'),
+				'label' => __('Memberships per page', 'rcp'),
 				'default' => 10,
 				'option' => 'rcp_members_per_page'
+			);
+			add_screen_option( 'per_page', $args );
+			break;
+
+		case $rcp_customers_page :
+			$args = array(
+				'label' => __( 'Customers per page', 'rcp' ),
+				'default' => 10,
+				'option' => 'rcp_customers_per_page'
 			);
 			add_screen_option( 'per_page', $args );
 			break;
@@ -61,6 +71,9 @@ function rcp_screen_options() {
  */
 function rcp_set_screen_option($status, $option, $value) {
 	if ( 'rcp_members_per_page' == $option ) {
+		return $value;
+	}
+	if ( 'rcp_customers_per_page' == $option ) {
 		return $value;
 	}
 	if ( 'rcp_payments_per_page' == $option ) {

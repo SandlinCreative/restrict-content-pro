@@ -18,7 +18,7 @@
  * @return array
  */
 function rcp_add_user_columns( $columns ) {
-	$columns['rcp_subscription'] 	= __( 'Subscription', 'rcp' );
+	$columns['rcp_subscription'] 	= __( 'Membership', 'rcp' );
     $columns['rcp_status'] 			= __( 'Status', 'rcp' );
 	$columns['rcp_links'] 			= __( 'Actions', 'rcp' );
     return $columns;
@@ -35,19 +35,51 @@ add_filter( 'manage_users_columns', 'rcp_add_user_columns' );
  * @return string
  */
 function rcp_show_user_columns( $value, $column_name, $user_id ) {
-	if ( 'rcp_status' == $column_name )
-		return rcp_get_status( $user_id );
-	if ( 'rcp_subscription' == $column_name ) {
-		return rcp_get_subscription( $user_id );
-	}
-	if ( 'rcp_links' == $column_name ) {
-		$page = admin_url( '/admin.php?page=rcp-members' );
-		if( rcp_is_active( $user_id ) ) {
-			$links = '<a href="' . esc_url( $page ) . '&edit_member=' . esc_attr( absint( $user_id ) ) . '">' . __( 'Edit Subscription', 'rcp' ) . '</a>';
-		} else {
-			$links = '<a href="' . esc_url( $page ) . '&edit_member=' . esc_attr( absint( $user_id ) ) . '">' . __( 'Add Subscription', 'rcp' ) . '</a>';
+	$customer   = rcp_get_customer_by_user_id( $user_id );
+	$membership = is_object( $customer ) ? rcp_get_customer_single_membership( $customer->get_id() ) : false;
+
+	if ( 'rcp_status' == $column_name ) {
+		$status = '&ndash;';
+
+		if ( ! empty( $membership ) ) {
+			$status = $membership->get_status();
 		}
-		
+
+		return $status;
+	}
+
+	if ( 'rcp_subscription' == $column_name ) {
+		$membership_level = '&ndash;';
+
+		if ( ! empty( $membership ) ) {
+			$membership_level = $membership->get_membership_level_name();
+		}
+
+		return $membership_level;
+	}
+
+	if ( 'rcp_links' == $column_name ) {
+		$page  = rcp_get_memberships_admin_page();
+		$label = __( 'Add Membership', 'rcp' );
+
+		if ( ! empty( $membership ) ) {
+			$page = add_query_arg( array(
+				'membership_id' => $membership->get_id(),
+				'view'          => 'edit'
+			), $page );
+
+			$label = __( 'Edit Membership', 'rcp' );
+		} else {
+			$user = get_userdata( $user_id );
+
+			$page = add_query_arg( array(
+				'view' => 'add',
+				'email' => urlencode( $user->user_email )
+			), $page );
+		}
+
+		$links = '<a href="' . esc_url( $page ) . '">' . $label . '</a>';
+
 		return $links;
 	}
 	return $value;

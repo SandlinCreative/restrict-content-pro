@@ -24,7 +24,6 @@ function rcp_load_gateway_files() {
 		}
 	}
 }
-add_action( 'plugins_loaded', 'rcp_load_gateway_files', 9999 );
 
 /**
  * Get all available payment gateways
@@ -35,6 +34,40 @@ add_action( 'plugins_loaded', 'rcp_load_gateway_files', 9999 );
 function rcp_get_payment_gateways() {
 	$gateways = new RCP_Payment_Gateways;
 	return $gateways->available_gateways;
+}
+
+/**
+ * Get information about a payment gateway by its slug.
+ *
+ * For example, if you have the slug `paypal_express` and want to return the admin label of
+ * `PayPal Express`, you'd use this function like so:
+ *
+ * rcp_get_payment_gateway_details( 'paypal_express', 'admin_label' )
+ *
+ * @param string $slug Gateway slug to get details for.
+ * @param string $key  Specific key to retrieve. Leave blank for array of all details, including:
+ *                     `label`, `admin_label`, `class`
+ *
+ * @since 3.0.4
+ * @return array|string
+ */
+function rcp_get_payment_gateway_details( $slug, $key = '' ) {
+
+	$gateways = rcp_get_payment_gateways();
+	$details  = array();
+
+	if ( isset( $gateways[ $slug ] ) ) {
+		$details = $gateways[ $slug ];
+	}
+
+	if ( ! empty( $key ) && isset( $details[ $key ] ) ) {
+		return $details[ $key ];
+	} elseif ( ! empty( $key ) ) {
+		return '';
+	}
+
+	return $details;
+
 }
 
 /**
@@ -250,17 +283,42 @@ function rcp_process_update_card_form_post() {
 		return;
 	}
 
-	if( ! rcp_member_can_update_billing_card() ) {
+	$membership_id = isset( $_POST['rcp_membership_id'] ) ? absint( $_POST['rcp_membership_id'] ) : false;
+
+	if ( empty( $membership_id ) ) {
+		$customer   = rcp_get_customer_by_user_id(); // current customer
+		$membership = ! empty( $customer ) ? rcp_get_customer_single_membership( $customer->get_id() ) : false;
+	} else {
+		$membership = rcp_get_membership( $membership_id );
+	}
+
+	if ( ! is_object( $membership ) || 0 == $membership->get_id() ) {
+		wp_die( __( 'Invalid membership.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 500 ) );
+	}
+
+	if( ! $membership->can_update_billing_card() ) {
 		wp_die( __( 'Your account does not support updating your billing card', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 403 ) );
 	}
 
-	$member = new RCP_Member( get_current_user_id() );
+	if ( has_action( 'rcp_update_billing_card' ) ) {
+		$member = new RCP_Member( get_current_user_id() );
 
-	if( $member ) {
-
-		do_action( 'rcp_update_billing_card', $member->ID, $member );
-
+		if ( $member ) {
+			/**
+			 * @deprecated 3.0 Use `rcp_update_membership_billing_card` instead.
+			 */
+			do_action( 'rcp_update_billing_card', $member->ID, $member );
+		}
 	}
+
+	/**
+	 * Processes the billing card update. Individual gateways hook into here.
+	 *
+	 * @param RCP_Membership $membership
+	 *
+	 * @since 3.0
+	 */
+	do_action( 'rcp_update_membership_billing_card', $membership );
 
 }
 add_action( 'init', 'rcp_process_update_card_form_post' );
@@ -324,6 +382,8 @@ function rcp_get_merchant_transaction_id_link( $payment ) {
 
 			// PayPal
 			case 'paypal' :
+			case 'paypal_express' :
+			case 'paypal_pro' :
 
 				$mode = $test ? 'sandbox.' : '';
 				$url  = 'https://www.' . $mode . 'paypal.com/webscr?cmd=_history-details-from-hub&id=' . $payment->transaction_id;
@@ -340,9 +400,11 @@ function rcp_get_merchant_transaction_id_link( $payment ) {
 
 			// Stripe
 			case 'stripe' :
+			case 'stripe_checkout' :
 
 				$mode = $test ? 'test/' : '';
-				$url  = 'https://dashboard.stripe.com/' . $mode . 'payments/' . $payment->transaction_id;
+				$dir  = false !== strpos( $payment->transaction_id, 'sub_' ) ? 'subscriptions/' : 'payments/';
+				$url  = 'https://dashboard.stripe.com/' . $mode . $dir . $payment->transaction_id;
 
 				break;
 
@@ -444,3 +506,148 @@ function rcp_log_gateway_payment_processed( $member, $payment_id, $gateway ) {
 	rcp_log( sprintf( 'Payment #%d completed for member #%d via %s gateway.', $payment_id, $member->ID, rcp_get_gateway_name_from_object( $gateway ) ) );
 }
 add_action( 'rcp_gateway_payment_processed', 'rcp_log_gateway_payment_processed', 10, 3 );
+
+/**
+ * Return the direct URL to manage a customer profile in the gateway.
+ *
+ * @param string $gateway     Gateway slug.
+ * @param int    $customer_id ID of the customer profile in the payment gateway.
+ *
+ * @since 3.0.4
+ * @return string
+ */
+function rcp_get_gateway_customer_id_url( $gateway, $customer_id ) {
+
+	global $rcp_options;
+
+	$url     = '';
+	$sandbox = rcp_is_sandbox();
+
+	if ( false !== strpos( $gateway, 'stripe' ) ) {
+
+		/**
+		 * Stripe, Stripe Checkout, Stripe Elements (TK).
+		 */
+		$base_url = $sandbox ? 'https://dashboard.stripe.com/test/' : 'https://dashboard.stripe.com/';
+		$url      = $base_url . 'customers/' . urlencode( $customer_id );
+
+	} elseif ( 'braintree' == $gateway ) {
+
+		/**
+		 * Braintree
+		 */
+		$subdomain = $sandbox ? 'sandbox.' : '';
+		$merchant_id = '';
+
+		if ( $sandbox && ! empty( $rcp_options['braintree_sandbox_merchantId'] ) ) {
+			$merchant_id = $rcp_options['braintree_sandbox_merchantId'];
+		} elseif ( ! $sandbox && ! empty( $rcp_options['braintree_live_merchantId'] ) ) {
+			$merchant_id = $rcp_options['braintree_live_merchantId'];
+		}
+
+		if ( ! empty( $merchant_id ) ) {
+			$url = sprintf( 'https://%sbraintreegateway.com/merchants/%s/customers/%s', $subdomain, urlencode( $merchant_id ), urlencode( $customer_id ) );
+		}
+
+	}
+
+	/**
+	 * Filters the customer profile URL.
+	 *
+	 * @param string $url         URL to manage the customer profile in the gateway.
+	 * @param string $gateway     Payment gateway slug.
+	 * @param string $customer_id ID of the customer in the gateway.
+	 *
+	 * @since 3.0.4
+	 */
+	return apply_filters( 'rcp_gateway_customer_id_url', $url, $gateway, $customer_id );
+
+}
+
+/**
+ * Return the direct URL to manage a subscription in the gateway.
+ *
+ * @param string $gateway         Gateway slug.
+ * @param int    $subscription_id ID of the subscription in the payment gateway.
+ *
+ * @since 3.0.4
+ * @return string
+ */
+function rcp_get_gateway_subscription_id_url( $gateway, $subscription_id ) {
+
+	global $rcp_options;
+
+	$url     = '';
+	$sandbox = rcp_is_sandbox();
+
+	if ( false !== strpos( $gateway, 'stripe' ) ) {
+
+		/**
+		 * Stripe, Stripe Checkout, Stripe Elements (TK).
+		 */
+		$base_url = $sandbox ? 'https://dashboard.stripe.com/test/' : 'https://dashboard.stripe.com/';
+		$url      = $base_url . 'subscriptions/' . urlencode( $subscription_id );
+
+	} elseif( false !== strpos( $gateway, 'paypal' ) ) {
+
+		/**
+		 * PayPal Standard, PayPal Express, PayPal Pro
+		 */
+		$base_url = $sandbox ? 'https://www.sandbox.paypal.com' : 'https://www.paypal.com';
+		$url      = $base_url . '/cgi-bin/webscr?cmd=_profile-recurring-payments&encrypted_profile_id=' . urlencode( $subscription_id );
+
+	} elseif ( 'twocheckout' == $gateway ) {
+
+		/**
+		 * 2Checkout
+		 */
+		if ( $sandbox ) {
+			$base_url = 'https://sandbox.2checkout.com/sandbox/sales/detail';
+		} else {
+			$base_url = 'https://2checkout.com/sales/detail';
+		}
+
+		$twocheckout_id = str_replace( '2co_', '', $subscription_id );
+		$url            = add_query_arg( 'sale_id', urlencode( $twocheckout_id ), $base_url );
+
+	} elseif( 'authorizenet' == $gateway ) {
+
+		/**
+		 * Authorize.net
+		 */
+		$anet_id  = str_replace( 'anet_', '', $subscription_id );
+		$base_url = $sandbox ? 'https://sandbox.authorize.net/' : 'https://authorize.net/';
+		$url      = $base_url . 'ui/themes/sandbox/ARB/SubscriptionDetail.aspx?SubscrID=' . urlencode( $anet_id );
+
+	} elseif ( 'braintree' == $gateway ) {
+
+		/**
+		 * Braintree
+		 */
+		$subdomain = $sandbox ? 'sandbox.' : '';
+		$merchant_id = '';
+
+		if ( $sandbox && ! empty( $rcp_options['braintree_sandbox_merchantId'] ) ) {
+			$merchant_id = $rcp_options['braintree_sandbox_merchantId'];
+		} elseif ( ! $sandbox && ! empty( $rcp_options['braintree_live_merchantId'] ) ) {
+			$merchant_id = $rcp_options['braintree_live_merchantId'];
+		}
+
+		if ( ! empty( $merchant_id ) ) {
+			$url = sprintf( 'https://%sbraintreegateway.com/merchants/%s/subscriptions/%s', $subdomain, urlencode( $merchant_id ), urlencode( $subscription_id ) );
+		}
+
+	}
+
+	/**
+	 * Filters the subscription profile URL.
+	 *
+	 * @param string $url             URL to manage the subscription in the gateway.
+	 * @param string $gateway         Payment gateway slug.
+	 * @param string $subscription_id ID of the subscription in the gateway.
+	 *
+	 * @since 3.0.4
+	 */
+	return apply_filters( 'rcp_gateway_subscription_id_url', $url, $gateway, $subscription_id );
+
+}

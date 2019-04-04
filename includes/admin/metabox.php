@@ -149,13 +149,15 @@ function rcp_save_meta_data( $post_id ) {
 
 				case 'specific' :
 
+					$is_paid = true;
+
 					$levels = array_map( 'absint', $_POST[ 'rcp_subscription_level' ] );
 
 					foreach( $levels as $level ) {
 
 						$price = rcp_get_subscription_price( $level );
-						if( ! empty( $price ) ) {
-							$is_paid = true;
+						if( empty( $price ) ) {
+							$is_paid = false;
 							break;
 						}
 
@@ -177,16 +179,6 @@ function rcp_save_meta_data( $post_id ) {
 
 			update_post_meta( $post_id, 'rcp_access_level', absint( $_POST[ 'rcp_access_level' ] ) );
 
-			$levels = rcp_get_subscription_levels();
-			foreach( $levels as $level ) {
-
-				if( ! empty( $level->price ) ) {
-					$is_paid = true;
-					break;
-				}
-
-			}
-
 			// Remove unneeded fields
 			delete_post_meta( $post_id, 'rcp_subscription_level' );
 
@@ -200,16 +192,6 @@ function rcp_save_meta_data( $post_id ) {
 			// Remove unneeded fields
 			delete_post_meta( $post_id, 'rcp_subscription_level' );
 
-			$levels = rcp_get_subscription_levels();
-			foreach( $levels as $level ) {
-
-				if( ! empty( $level->price ) ) {
-					$is_paid = true;
-					break;
-				}
-
-			}
-
 			break;
 
 	}
@@ -218,7 +200,12 @@ function rcp_save_meta_data( $post_id ) {
 
 	$content_excerpts  = isset( $rcp_options['content_excerpts'] ) ? $rcp_options['content_excerpts'] : 'individual';
 	$show_excerpt      = isset( $_POST['rcp_show_excerpt'] );
-	$user_role         = ! empty( $_POST['rcp_user_level'] ) ? sanitize_text_field( $_POST[ 'rcp_user_level' ] ) : 'All';
+	$user_role         = ! empty( $_POST['rcp_user_level'] ) ? $_POST[ 'rcp_user_level' ] : 'all';
+
+	if ( ! is_array( $user_role ) ) {
+		$user_role = array( $user_role );
+	}
+	$user_role = array_map( 'sanitize_text_field', $user_role );
 
 	if ( 'individual' === $content_excerpts && $show_excerpt ) {
 		update_post_meta( $post_id, 'rcp_show_excerpt', $show_excerpt );

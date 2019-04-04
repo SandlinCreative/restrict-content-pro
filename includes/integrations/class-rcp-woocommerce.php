@@ -232,14 +232,23 @@ class RCP_WooCommerce {
 
 		if( $ret ) {
 
+			$customer     = rcp_get_customer(); // current customer
 			$has_access   = true;
 			$active_only  = get_post_meta( $product->get_id(), '_rcp_woo_active_to_purchase', true );
 			$levels       = (array) get_post_meta( $product->get_id(), '_rcp_woo_subscription_levels_to_purchase', true );
 			$access_level = get_post_meta( $product->get_id(), '_rcp_woo_access_level_to_purchase', true );
 
+			if ( ! empty( $active_only ) || ! empty( $levels ) || ! empty( $access_level ) ) {
+				// Product has some kind of restrictions.
+				if ( ! empty( $customer ) && $customer->is_pending_verification() ) {
+					// Customer is pending email verification so they should not get access.
+					$has_access = false;
+				}
+			}
+
 			if( $active_only ) {
 
-				if( ! rcp_is_active() ) {
+				if( empty( $customer ) || ! $customer->has_active_membership() ) {
 					$has_access = false;
 				}
 
@@ -247,7 +256,7 @@ class RCP_WooCommerce {
 
 			if( is_array( $levels ) && ! empty( $levels[0] ) ) {
 
-				if( ! in_array( rcp_get_subscription_id(), $levels ) ) {
+				if( empty( $customer ) || ! count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $levels ) ) ) {
 					$has_access = false;
 				}
 
@@ -255,7 +264,7 @@ class RCP_WooCommerce {
 
 			if( $access_level ) {
 
-				if( ! rcp_user_has_access( get_current_user_id(), $access_level ) ) {
+				if ( empty( $customer ) || ! $customer->has_access_level( $access_level  ) ) {
 					$has_access = false;
 				}
 
@@ -288,13 +297,22 @@ class RCP_WooCommerce {
 			return true;
 		}
 
+		$customer     = rcp_get_customer(); // current customer
 		$active_only  = get_post_meta( $product_id, '_rcp_woo_active_to_view', true );
 		$levels       = (array) get_post_meta( $product_id, '_rcp_woo_subscription_levels_to_view', true );
 		$access_level = get_post_meta( $product_id, '_rcp_woo_access_level_to_view', true );
 
+		if ( ! empty( $active_only ) || ! empty( $levels ) || ! empty( $access_level ) ) {
+			// Product has some kind of restrictions.
+			if ( ! empty( $customer ) && $customer->is_pending_verification() ) {
+				// Customer is pending email verification so they should not get access.
+				$ret = false;
+			}
+		}
+
 		if( $active_only ) {
 
-			if( ! rcp_is_active() ) {
+			if( empty( $customer ) || ! $customer->has_active_membership() ) {
 				$ret = false;
 			}
 
@@ -302,7 +320,7 @@ class RCP_WooCommerce {
 
 		if( is_array( $levels ) && ! empty( $levels[0] ) ) {
 
-			if( ! in_array( rcp_get_subscription_id(), $levels ) ) {
+			if( empty( $customer ) || ! count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $levels ) ) ) {
 				$ret = false;
 			}
 
@@ -310,7 +328,7 @@ class RCP_WooCommerce {
 
 		if( $access_level ) {
 
-			if( ! rcp_user_has_access( get_current_user_id(), $access_level ) ) {
+			if ( empty( $customer ) || ! $customer->has_access_level( $access_level ) ) {
 				$ret = false;
 			}
 
@@ -354,6 +372,8 @@ class RCP_WooCommerce {
 			return $template;
 		}
 
+		$customer = rcp_get_customer(); // current customer
+
 
 		$active_only    = get_post_meta( $product_id, '_rcp_woo_active_to_view', true );
 		$levels         = get_post_meta( $product_id, '_rcp_woo_subscription_levels_to_view', true );
@@ -381,17 +401,22 @@ class RCP_WooCommerce {
 		$visible = ( $cat_restricted || $tag_restricted ) ? false : true;
 
 		// Active subscription setting
-		if ( $active_only && ! rcp_is_active() ) {
+		if ( $active_only && ( empty( $customer ) || ! $customer->has_active_membership() ) ) {
 			$visible = false;
 		}
 
-		// Subscription level setting
-		if ( is_array( $levels ) && ! in_array( rcp_get_subscription_id(), $levels ) ) {
+		// Membership level setting
+		if ( is_array( $levels ) && ( empty( $customer ) || ! count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $levels ) ) ) ) {
 			$visible = false;
 		}
 
 		// User level setting
-		if ( $access_level && ! rcp_user_has_access( get_current_user_id(), $access_level ) ) {
+		if ( $access_level && ( empty( $customer ) || ! $customer->has_access_level( $access_level ) ) ) {
+			$visible = false;
+		}
+
+		// Customer pending email verification.
+		if ( ! empty( $customer ) && $customer->is_pending_verification() ) {
 			$visible = false;
 		}
 

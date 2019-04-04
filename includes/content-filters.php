@@ -21,19 +21,9 @@
 function rcp_filter_restricted_content( $content ) {
 	global $post, $rcp_options;
 
-	$user_id = get_current_user_id();
+	if ( ! rcp_user_can_access( get_current_user_id(), $post->ID ) ) {
 
-	$member = new RCP_Member( $user_id );
-
-	if ( ! $member->can_access( $post->ID ) ) {
-
-		$message = ! empty( $rcp_options['free_message'] ) ? $rcp_options['free_message'] : false; // message shown for free content
-
-		if ( rcp_is_paid_content( $post->ID ) || in_array( $post->ID, rcp_get_post_ids_assigned_to_restricted_terms() ) ) {
-			$message = ! empty( $rcp_options['paid_message'] ) ? $rcp_options['paid_message'] : false; // message shown for premium content
-		}
-
-		$message = ! empty( $message ) ? $message : __( 'This content is restricted to subscribers', 'rcp' );
+		$message = rcp_get_restricted_content_message();
 
 		return rcp_format_teaser( $message );
 	}
@@ -83,13 +73,10 @@ function rcp_format_teaser( $message ) {
 	$show_excerpt = isset( $rcp_options['content_excerpts'] ) ? $rcp_options['content_excerpts'] : 'individual';
 
 	if ( 'always' == $show_excerpt || ( 'individual' == $show_excerpt && get_post_meta( $post->ID, 'rcp_show_excerpt', true ) ) ) {
-		$excerpt_length = 50;
-		if ( has_filter( 'rcp_filter_excerpt_length' ) ) {
-			$excerpt_length = apply_filters( 'rcp_filter_excerpt_length', $excerpt_length );
-		}
-		$excerpt = rcp_excerpt_by_id( $post, $excerpt_length );
-		$message = apply_filters( 'rcp_restricted_message', $message );
-		$message = $excerpt . $message;
+		$excerpt_length = apply_filters( 'rcp_filter_excerpt_length', 100 );
+		$excerpt        = rcp_excerpt_by_id( $post, $excerpt_length );
+		$message        = apply_filters( 'rcp_restricted_message', $message );
+		$message        = $excerpt . $message;
 	} else {
 		$message = apply_filters( 'rcp_restricted_message', $message );
 	}
@@ -120,9 +107,9 @@ function rcp_restricted_message_pending_verification( $message ) {
 
 	global $rcp_load_css;
 
-	$rcp_load_css = true;
-
 	if( rcp_is_pending_verification() ) {
+		$rcp_load_css = true;
+
 		$message = '<div class="rcp_message error"><p class="rcp_error rcp_pending_member"><span>' . __( 'Your account is pending email verification.', 'rcp' ) . '</span></p></div>';
 	}
 
@@ -142,7 +129,7 @@ add_filter( 'rcp_restricted_message', 'rcp_restricted_message_pending_verificati
  * @return bool
  */
 function rcp_post_password_required_rest_api( $required, $post ) {
-	if( DEFINED( 'REST_REQUEST' ) && REST_REQUEST && rcp_is_restricted_content( $post->ID ) ) {
+	if( DEFINED( 'REST_REQUEST' ) && REST_REQUEST && rcp_is_restricted_content( $post->ID ) && ! rcp_user_can_access( get_current_user_id(), $post->ID ) ) {
 		$required = true;
 	}
 

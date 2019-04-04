@@ -3,14 +3,14 @@ msgstr ""
 "Project-Id-Version: sz\n"
 "Report-Msgid-Bugs-To: https://restrictcontentpro.com/support/\n"
 "POT-Creation-Date: 2016-10-06 09:34:23+00:00\n"
-"PO-Revision-Date: 2016-05-29 12:40+0200\n"
+"PO-Revision-Date: 2018-04-19 16:18-0000\n"
 "Last-Translator: flowdee <coder@flowdee.de>\n"
 "Language-Team: sz\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 1.8.7\n"
+"X-Generator: Poedit 1.6.10\n"
 "X-Poedit-Basepath: ..\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Poedit-SourceCharset: UTF-8\n"
@@ -277,7 +277,8 @@ msgstr "﻿Rabatte"
 msgid "Discount Codes"
 msgstr "Rabattcodes"
 
-#: includes/admin/admin-pages.php:18 includes/admin/members/edit-member.php:152
+#: includes/admin/admin-pages.php:18
+#: includes/admin/members/edit-member.php:152
 #: includes/admin/payments/payments-page.php:23
 #: includes/admin/settings/settings.php:35
 msgid "Payments"
@@ -299,7 +300,8 @@ msgstr "Mitglieder﻿-Daten exportieren"
 msgid "Export"
 msgstr "﻿Exportieren"
 
-#: includes/admin/admin-pages.php:22 includes/libraries/class-wp-logging.php:69
+#: includes/admin/admin-pages.php:22
+#: includes/libraries/class-wp-logging.php:69
 msgid "Logs"
 msgstr "Logs"
 
@@ -427,7 +429,7 @@ msgstr "Mitgliedschaft"
 #: includes/member-functions.php:554 includes/member-functions.php:594
 #: templates/register-total-details.php:15 templates/subscription.php:58
 msgid "Amount"
-msgstr "Menge"
+msgstr "Betrag"
 
 #: includes/admin/discounts/discount-codes.php:22
 #: includes/admin/discounts/discount-codes.php:65
@@ -1182,10 +1184,10 @@ msgstr ""
 msgid "New Expiration Date"
 msgstr "Ablaufdatum"
 
-#: includes/admin/members/members-page.php:129 templates/register-single.php:67
-#: templates/register.php:92
+#: includes/admin/members/members-page.php:129
+#: templates/register-single.php:67 templates/register.php:92
 msgid "Apply"
-msgstr ""
+msgstr "Anwenden"
 
 #: includes/admin/members/members-page.php:136
 #: includes/admin/members/members-page.php:213
@@ -2770,7 +2772,8 @@ msgstr "Ablaufdatum von Mitglied ändert von %s zu %s"
 msgid "Signup Credit"
 msgstr ""
 
-#: includes/content-filters.php:23 templates/woocommerce-single-no-access.php:6
+#: includes/content-filters.php:23
+#: templates/woocommerce-single-no-access.php:6
 msgid "This content is restricted to subscribers"
 msgstr ""
 
@@ -2935,7 +2938,7 @@ msgstr ""
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:158
 #: includes/gateways/paypal/functions.php:190
 msgid "Something has gone wrong, please try again"
-msgstr ""
+msgstr "Da ist etwas schief gelaufen, bitte versuche es nochmal."
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:156
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:185
@@ -2947,7 +2950,7 @@ msgstr ""
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:219
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:289
 msgid "PayPal payment processing failed."
-msgstr ""
+msgstr "PayPal Verarbeitung fehlgeschlagen"
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-express.php:437
 #: includes/gateways/class-rcp-payment-gateway-paypal.php:343
@@ -2956,12 +2959,12 @@ msgstr "IPN Report"
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:125
 msgid "PayPal subscription creation failed."
-msgstr ""
+msgstr "PayPal Abo fehlgeschlagen."
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:189
 #: includes/gateways/class-rcp-payment-gateway-stripe.php:654
 msgid "The card number you have entered is invalid"
-msgstr ""
+msgstr "Die Kartennummer die du eingegeben hast ist ungültig."
 
 #: includes/gateways/class-rcp-payment-gateway-paypal-pro.php:201
 #: includes/gateways/class-rcp-payment-gateway-stripe.php:666
@@ -3041,9 +3044,10 @@ msgstr ""
 #: includes/gateways/stripe/functions.php:527
 #: includes/gateways/stripe/functions.php:544
 #: includes/gateways/stripe/functions.php:560
-#: includes/gateways/stripe/functions.php:576 includes/member-functions.php:977
-#: includes/member-functions.php:994 includes/member-functions.php:1010
-#: includes/member-functions.php:1026 includes/member-functions.php:1039
+#: includes/gateways/stripe/functions.php:576
+#: includes/member-functions.php:977 includes/member-functions.php:994
+#: includes/member-functions.php:1010 includes/member-functions.php:1026
+#: includes/member-functions.php:1039
 msgid "An error occurred"
 msgstr ""
 
@@ -3095,7 +3099,7 @@ msgstr ""
 #: includes/gateways/class-rcp-payment-gateways.php:82
 #: includes/gateways/class-rcp-payment-gateways.php:87
 msgid "Credit / Debit Card"
-msgstr ""
+msgstr "Kreditkarte"
 
 #: includes/gateways/class-rcp-payment-gateways.php:73
 msgid "PayPal Pro"
@@ -3516,17 +3520,20 @@ msgstr "gratis"
 
 #: includes/registration-functions.php:704
 msgid " every %s %s"
-msgstr ""
+msgstr " Alle %s %s"
 
 #: includes/registration-functions.php:830
 msgid "Proration Credit"
-msgstr ""
+msgstr "Gutschrift aus vorheriger Zahlung"
 
 #: includes/registration-functions.php:844
 msgid ""
 "If you upgrade or downgrade your account, the new subscription will be "
 "prorated up to %s for the first payment. Prorated prices are shown below."
 msgstr ""
+"Wenn du deine Mitgliedschaft hochstufst, werden dir schon geleistete "
+"Zahlungen bis zu %s bei der ersten Zahlung gutgeschrieben. Die "
+"entsprechenden Preise werden unten angezeigt."
 
 #: includes/scripts.php:28
 msgid "Are you sure you wish to cancel this member's subscription?"
@@ -3562,11 +3569,11 @@ msgstr "Wähle ein Logo"
 
 #: includes/scripts.php:130
 msgid "Please Wait . . . "
-msgstr ""
+msgstr "Bitte warten . . . "
 
 #: includes/scripts.php:131
 msgid "Submit Payment"
-msgstr ""
+msgstr "Zahlung abschicken"
 
 #: includes/shortcodes.php:231
 msgid "You are already registered and have an active subscription."
@@ -3574,24 +3581,23 @@ msgstr "Sie sind bereits ein registriertes Mitglied"
 
 #: includes/shortcodes.php:295
 msgid "Join %s"
-msgstr ""
+msgstr "Teilnehmen %s"
 
 #: includes/shortcodes.php:296
 msgid "Register - {{amount}}"
-msgstr ""
+msgstr "Registrieren - {{amount}}"
 
 #: includes/shortcodes.php:322
 msgid "You are already subscribed."
-msgstr ""
+msgstr "Du hast schon ein Abonnement"
 
 #: includes/shortcodes.php:514
-#, fuzzy
 msgid "Billing card updated successfully"
-msgstr "Passwort erfolgreich geändert"
+msgstr "Karte erfolgreich aktualisiert"
 
 #: includes/shortcodes.php:523
 msgid "Billing card could not be updated, please try again."
-msgstr ""
+msgstr "Karte konnte nicht aktualisiert werden, bitte versuche es erneut."
 
 #: includes/subscription-functions.php:216
 msgid "Days"
@@ -3692,48 +3698,47 @@ msgstr ""
 #: templates/card-form-full.php:3 templates/card-form.php:3
 #: templates/card-update-form.php:22
 msgid "Card Number"
-msgstr ""
+msgstr "Kartennummer"
 
 #: templates/card-form-full.php:7 templates/card-form.php:7
 #: templates/card-update-form.php:26
 msgid "Card CVC"
-msgstr ""
+msgstr "CVC"
 
 #: templates/card-form-full.php:11
 msgid "Address"
-msgstr "E-Mail-Adresse"
+msgstr "Adresse"
 
 #: templates/card-form-full.php:15
 msgid "City"
-msgstr ""
+msgstr "Stadt"
 
 #: templates/card-form-full.php:19
 msgid "State or Providence"
-msgstr ""
+msgstr "Bundesland oder Region"
 
 #: templates/card-form-full.php:23
-#, fuzzy
 msgid "Country"
-msgstr "Menge"
+msgstr "Land"
 
 #: templates/card-form-full.php:274 templates/card-form.php:11
 #: templates/card-update-form.php:30
 msgid "Card ZIP or Postal Code"
-msgstr ""
+msgstr "PLZ der Rechnungsadresse"
 
 #: templates/card-form-full.php:278 templates/card-form.php:15
 #: templates/card-update-form.php:34
 msgid "Name on Card"
-msgstr ""
+msgstr "Name (wie auf der Karte)"
 
 #: templates/card-form-full.php:282 templates/card-form.php:19
 #: templates/card-update-form.php:38
 msgid "Expiration (MM/YYYY)"
-msgstr ""
+msgstr "Ablaufdatum (MM/JJJJ)"
 
 #: templates/card-update-form.php:7
 msgid "Your Cards"
-msgstr ""
+msgstr "Deine Karten"
 
 #: templates/card-update-form.php:11
 msgid "Name:"
@@ -3741,19 +3746,19 @@ msgstr ""
 
 #: templates/card-update-form.php:12
 msgid "Type:"
-msgstr ""
+msgstr "Typ:"
 
 #: templates/card-update-form.php:13
 msgid "Last 4:"
-msgstr ""
+msgstr "Letzte 4 Ziffern:"
 
 #: templates/card-update-form.php:14
 msgid "Exp:"
-msgstr ""
+msgstr "Ablauf:"
 
 #: templates/card-update-form.php:58
 msgid "Update Card"
-msgstr ""
+msgstr "Karte aktualisieren"
 
 #: templates/change-password.php:7
 msgid "Password changed successfully"
@@ -3767,43 +3772,38 @@ msgstr "Neues Passwort"
 msgid "Password Confirm"
 msgstr "Passwort bestätigen"
 
-#: templates/invoice.php:10 templates/invoice.php:195 templates/invoice.php:205
-#, fuzzy
+#: templates/invoice.php:10 templates/invoice.php:195
+#: templates/invoice.php:205
 msgid "Invoice %s"
 msgstr "Rechnung #%d"
 
 #: templates/invoice.php:232
 msgid "Bill To:"
-msgstr ""
+msgstr "Rechnung an:"
 
 #: templates/invoice.php:245
-#, fuzzy
 msgid "Invoice Items:"
 msgstr "Rechnungs Artikel"
 
 #: templates/invoice.php:257
-#, fuzzy
 msgid "Total Price:"
 msgstr "Gesamtsumme"
 
 #: templates/invoice.php:263
-#, fuzzy
 msgid "Payment Status:"
-msgstr "Zahlungsdatum"
+msgstr "Zahlung:"
 
 #: templates/invoice.php:273
-#, fuzzy
 msgid "Additional Info:"
 msgstr "Zusätzliche Hinweise"
 
 #: templates/invoice.php:276
-#, fuzzy
 msgid "Payment Date:"
 msgstr "Zahlungsdatum"
 
 #: templates/invoice.php:292
 msgid "Print"
-msgstr ""
+msgstr "Drucken"
 
 #: templates/login.php:16 templates/register-single.php:45
 #: templates/register.php:44
@@ -3811,7 +3811,6 @@ msgid "Password"
 msgstr "Passwort"
 
 #: templates/login.php:22
-#, fuzzy
 msgid "Remember me"
 msgstr "Angemeldet bleiben"
 
@@ -3838,35 +3837,35 @@ msgstr "Passwort zurücksetzen"
 
 #: templates/lostpassword_checkemail.php:5
 msgid "Check your e-mail for the confirmation link."
-msgstr ""
+msgstr "Überprüfe dein eMail-Postfach für den Bestätigung-Link"
 
 #: templates/paypal-express-confirm.php:3
 msgid "Please confirm your payment"
-msgstr ""
+msgstr "Bitte bestätige deine Zahlung"
 
 #: templates/paypal-express-confirm.php:5
 msgid "PayPal Status:"
-msgstr ""
+msgstr "PayPal Status:"
 
 #: templates/paypal-express-confirm.php:6
 msgid "Email:"
-msgstr ""
+msgstr "eMail:"
 
 #: templates/paypal-express-confirm.php:13
 msgid "Recurs"
-msgstr ""
+msgstr "Wiederholt sich"
 
 #: templates/paypal-express-confirm.php:18
 msgid "Subscription Cost"
-msgstr ""
+msgstr "Abokosten"
 
 #: templates/paypal-express-confirm.php:27
 msgid "Every %d %s"
-msgstr ""
+msgstr "Alle %d %s"
 
 #: templates/paypal-express-confirm.php:49
 msgid "Confirm"
-msgstr ""
+msgstr "Bestätigen"
 
 #: templates/profile-editor.php:16
 msgid "Success"
@@ -3935,25 +3934,26 @@ msgstr "Zahlungsmethode auswählen"
 
 #: templates/register-total-details.php:26
 msgid "Discounts and Fees"
-msgstr ""
+msgstr "Rabatte und Gebühren"
 
 #: templates/register-total-details.php:54
 msgid "Total Today"
-msgstr ""
+msgstr "Heute fällig"
 
 #: templates/register-total-details.php:63
 msgid "Total Recurring Per %s"
-msgstr ""
+msgstr "Zukünftig pro %s"
 
 #: templates/register-total-details.php:65
-#, fuzzy
 msgid "Total Recurring Every %s %s"
-msgstr "Nicht wiederkehrend"
+msgstr "Zukünftig wiederkehrend alle %s %s"
 
 #: templates/register.php:21
 msgid ""
 "<a href=\"%s\">Log in</a> if you wish to renew an existing subscription."
 msgstr ""
+"<a href=\"%s\">Melde dich hier an</a>, wenn du eine bestehende "
+"Mitgliedschaft erneuern willst."
 
 #: templates/register.php:62
 msgid "Choose your subscription level"
@@ -3965,7 +3965,7 @@ msgstr "Sie Haben noch keine Mitgliedschaftsstufe erstellt."
 
 #: templates/subscription.php:10
 msgid "Your profile has been successfully cancelled."
-msgstr ""
+msgstr "Dein Profil wurde erfolgreich gelöscht."
 
 #: templates/subscription.php:18
 msgid "Renewal Date"
@@ -3977,7 +3977,7 @@ msgstr "Verlängern Sie Ihre Mitgliedschaft"
 
 #: templates/subscription.php:38
 msgid "Upgrade or change your subscription"
-msgstr ""
+msgstr "Upgrade oder ändere dein Abo"
 
 #: templates/subscription.php:42
 msgid "Cancel your subscription"

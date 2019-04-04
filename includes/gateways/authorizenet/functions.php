@@ -12,6 +12,9 @@
 /**
  * Cancel an Authorize.net subscriber
  *
+ * @deprecated 3.0 Use `rcp_authnet_cancel_membership` instead.
+ * @see rcp_authnet_cancel_membership()
+ *
  * @param int $member_id ID of the member to cancel.
  *
  * @access      private
@@ -20,64 +23,24 @@
  */
 function rcp_authnet_cancel_member( $member_id = 0 ) {
 
-	global $rcp_options;
+	$customer = rcp_get_customer_by_user_id( $member_id );
 
-	$ret             = true;
-	if ( rcp_is_sandbox() ) {
-		$api_login_id    = isset( $rcp_options['authorize_test_api_login'] ) ? sanitize_text_field( $rcp_options['authorize_test_api_login'] ) : '';
-		$transaction_key = isset( $rcp_options['authorize_test_txn_key'] ) ? sanitize_text_field( $rcp_options['authorize_test_txn_key'] ) : '';
-	} else {
-		$api_login_id    = isset( $rcp_options['authorize_api_login'] ) ? sanitize_text_field( $rcp_options['authorize_api_login'] ) : '';
-		$transaction_key = isset( $rcp_options['authorize_txn_key'] ) ? sanitize_text_field( $rcp_options['authorize_txn_key'] ) : '';
-	}
-	$md5_hash_value  = isset( $rcp_options['authorize_hash_value'] ) ? sanitize_text_field( $rcp_options['authorize_hash_value'] ) : '';
-
-	require_once RCP_PLUGIN_DIR . 'includes/libraries/anet_php_sdk/autoload.php';
-
-	$member     = new RCP_Member( $member_id );
-	$profile_id = str_replace( 'anet_', '', $member->get_payment_profile_id() );
-
-	/**
-	 * Create a merchantAuthenticationType object with authentication details.
-	 */
-	$merchant_authentication = new net\authorize\api\contract\v1\MerchantAuthenticationType();
-	$merchant_authentication->setName( $api_login_id );
-	$merchant_authentication->setTransactionKey( $transaction_key );
-
-	/**
-	 * Set the transaction's refId
-	 */
-	$refId = 'ref' . time();
-
-	$request = new net\authorize\api\contract\v1\ARBCancelSubscriptionRequest();
-	$request->setMerchantAuthentication( $merchant_authentication );
-	$request->setRefId( $refId );
-	$request->setSubscriptionId( $profile_id );
-
-	/**
-	 * Submit the request
-	 */
-	$controller  = new net\authorize\api\controller\ARBCancelSubscriptionController( $request );
-	$environment = rcp_is_sandbox() ? \net\authorize\api\constants\ANetEnvironment::SANDBOX : \net\authorize\api\constants\ANetEnvironment::PRODUCTION;
-	$response    = $controller->executeWithApiResponse( $environment );
-
-	/**
-	 * An error occurred - get the error message.
-	 */
-	if( $response == null || $response->getMessages()->getResultCode() != "Ok" ) {
-
-		$error_messages = $response->getMessages()->getMessage();
-		$error          = $error_messages[0]->getCode() . "  " .$error_messages[0]->getText();
-		$ret            = new WP_Error( 'rcp_authnet_error', $error );
-
+	if ( empty( $customer ) ) {
+		return new WP_Error( 'rcp_authnet_error', __( 'Unable to find customer from member ID.', 'rcp' ) );
 	}
 
-	return $ret;
+	$membership = rcp_get_customer_single_membership( $customer->get_id() );
+	$profile_id = str_replace( 'anet_', '', $membership->get_gateway_subscription_id() );
+
+	return rcp_authnet_cancel_membership( $profile_id );
 }
 
 
 /**
  * Determine if a member is an Authorize.net Customer
+ *
+ * @deprecated 3.0 Use `rcp_is_authnet_membership()` instead.
+ * @see rcp_is_authnet_membership()
  *
  * @param int $user_id The ID of the user to check
  *
@@ -93,18 +56,55 @@ function rcp_is_authnet_subscriber( $user_id = 0 ) {
 
 	$ret = false;
 
-	$member = new RCP_Member( $user_id );
+	$customer = rcp_get_customer_by_user_id( $user_id );
 
-	$profile_id = $member->get_payment_profile_id();
+	if ( ! empty( $customer ) ) {
+		$membership = rcp_get_customer_single_membership( $customer->get_id() );
 
-	// Check if the member is an Authorize.net customer
-	if( false !== strpos( $profile_id, 'anet_' ) ) {
-
-		$ret = true;
-
+		if ( ! empty( $membership ) ) {
+			$ret = rcp_is_authnet_membership( $membership );
+		}
 	}
 
 	return (bool) apply_filters( 'rcp_is_authorizenet_subscriber', $ret, $user_id );
+}
+
+/**
+ * Determines if a membership is an Authorize.net subscription.
+ *
+ * @param int|RCP_Membership $membership_object_or_id Membership ID or object.
+ *
+ * @since 3.0
+ * @return bool
+ */
+function rcp_is_authnet_membership( $membership_object_or_id ) {
+
+	if ( ! is_object( $membership_object_or_id ) ) {
+		$membership = rcp_get_membership( $membership_object_or_id );
+	} else {
+		$membership = $membership_object_or_id;
+	}
+
+	$is_authnet = false;
+
+	if ( ! empty( $membership ) && $membership->get_id() > 0 ) {
+		$subscription_id = $membership->get_gateway_subscription_id();
+
+		if ( false !== strpos( $subscription_id, 'anet_' ) ) {
+			$is_authnet = true;
+		}
+	}
+
+	/**
+	 * Filters whether or not the membership is an Authorize.net subscription.
+	 *
+	 * @param bool           $is_authnet
+	 * @param RCP_Membership $membership
+	 *
+	 * @since 3.0
+	 */
+	return (bool) apply_filters( 'rcp_is_authorizenet_membership', $is_authnet, $membership );
+
 }
 
 /**
@@ -138,6 +138,9 @@ function rcp_has_authnet_api_access() {
 /**
  * Process an update card form request for Authorize.net
  *
+ * @deprecated 3.0 Use `rcp_authorizenet_update_membership_billing_card()` instead.
+ * @see rcp_authorizenet_update_membership_billing_card()
+ *
  * @param int        $member_id  ID of the member.
  * @param RCP_Member $member_obj Member object.
  *
@@ -145,9 +148,7 @@ function rcp_has_authnet_api_access() {
  * @since       2.7
  * @return      void
  */
-function rcp_authorizenet_update_billing_card( $member_id = 0, $member_obj ) {
-
-	global $rcp_options;
+function rcp_authorizenet_update_billing_card( $member_id, $member_obj ) {
 
 	if( empty( $member_id ) ) {
 		return;
@@ -157,7 +158,40 @@ function rcp_authorizenet_update_billing_card( $member_id = 0, $member_obj ) {
 		return;
 	}
 
-	if( ! rcp_is_authnet_subscriber( $member_id ) ) {
+	$customer = rcp_get_customer_by_user_id( $member_id );
+
+	if ( empty( $customer ) ) {
+		return;
+	}
+
+	$membership = rcp_get_customer_single_membership( $customer->get_id() );
+
+	if ( empty( $membership ) ) {
+		return;
+	}
+
+	rcp_authorizenet_update_membership_billing_card( $membership );
+
+}
+//add_action( 'rcp_update_billing_card', 'rcp_authorizenet_update_billing_card', 10, 2 );
+
+/**
+ * Update the billing card for a given membership.
+ *
+ * @param RCP_Membership $membership
+ *
+ * @since 3.0
+ * @return void
+ */
+function rcp_authorizenet_update_membership_billing_card( $membership ) {
+
+	global $rcp_options;
+
+	if ( ! is_a( $membership, 'RCP_Membership' ) ) {
+		return;
+	}
+
+	if ( ! rcp_is_authnet_membership( $membership ) ) {
 		return;
 	}
 
@@ -185,8 +219,7 @@ function rcp_authorizenet_update_billing_card( $member_id = 0, $member_obj ) {
 
 	if ( empty( $error ) ) {
 
-		$member     = new RCP_Member( $member_id );
-		$profile_id = str_replace( 'anet_', '', $member->get_payment_profile_id() );
+		$profile_id = str_replace( 'anet_', '', $membership->get_gateway_subscription_id() );
 
 		/**
 		 * Create a merchantAuthenticationType object with authentication details.
@@ -246,12 +279,76 @@ function rcp_authorizenet_update_billing_card( $member_id = 0, $member_obj ) {
 	}
 
 	if( ! empty( $error ) ) {
-
 		wp_redirect( add_query_arg( array( 'card' => 'not-updated', 'msg' => urlencode( $error ) ) ) ); exit;
-
 	}
 
 	wp_redirect( add_query_arg( array( 'card' => 'updated', 'msg' => '' ) ) ); exit;
 
 }
-add_action( 'rcp_update_billing_card', 'rcp_authorizenet_update_billing_card', 10, 2 );
+add_action( 'rcp_update_membership_billing_card', 'rcp_authorizenet_update_membership_billing_card' );
+
+/**
+ * Cancel an Authorize.net subscription based on the subscription ID.
+ *
+ * @param string $payment_profile_id Subscription ID.
+ *
+ * @since 3.0
+ * @return true|WP_Error True on success, WP_Error on failure.
+ */
+function rcp_authnet_cancel_membership( $payment_profile_id ) {
+
+	global $rcp_options;
+
+	$ret = true;
+
+	if ( rcp_is_sandbox() ) {
+		$api_login_id    = isset( $rcp_options['authorize_test_api_login'] ) ? sanitize_text_field( $rcp_options['authorize_test_api_login'] ) : '';
+		$transaction_key = isset( $rcp_options['authorize_test_txn_key'] ) ? sanitize_text_field( $rcp_options['authorize_test_txn_key'] ) : '';
+	} else {
+		$api_login_id    = isset( $rcp_options['authorize_api_login'] ) ? sanitize_text_field( $rcp_options['authorize_api_login'] ) : '';
+		$transaction_key = isset( $rcp_options['authorize_txn_key'] ) ? sanitize_text_field( $rcp_options['authorize_txn_key'] ) : '';
+	}
+	$md5_hash_value  = isset( $rcp_options['authorize_hash_value'] ) ? sanitize_text_field( $rcp_options['authorize_hash_value'] ) : '';
+
+	require_once RCP_PLUGIN_DIR . 'includes/libraries/anet_php_sdk/autoload.php';
+
+	$profile_id = str_replace( 'anet_', '', $payment_profile_id );
+
+	/**
+	 * Create a merchantAuthenticationType object with authentication details.
+	 */
+	$merchant_authentication = new net\authorize\api\contract\v1\MerchantAuthenticationType();
+	$merchant_authentication->setName( $api_login_id );
+	$merchant_authentication->setTransactionKey( $transaction_key );
+
+	/**
+	 * Set the transaction's refId
+	 */
+	$refId = 'ref' . time();
+
+	$request = new net\authorize\api\contract\v1\ARBCancelSubscriptionRequest();
+	$request->setMerchantAuthentication( $merchant_authentication );
+	$request->setRefId( $refId );
+	$request->setSubscriptionId( $profile_id );
+
+	/**
+	 * Submit the request
+	 */
+	$controller  = new net\authorize\api\controller\ARBCancelSubscriptionController( $request );
+	$environment = rcp_is_sandbox() ? \net\authorize\api\constants\ANetEnvironment::SANDBOX : \net\authorize\api\constants\ANetEnvironment::PRODUCTION;
+	$response    = $controller->executeWithApiResponse( $environment );
+
+	/**
+	 * An error occurred - get the error message.
+	 */
+	if( $response == null || $response->getMessages()->getResultCode() != "Ok" ) {
+
+		$error_messages = $response->getMessages()->getMessage();
+		$error          = $error_messages[0]->getCode() . "  " .$error_messages[0]->getText();
+		$ret            = new WP_Error( 'rcp_authnet_error', $error );
+
+	}
+
+	return $ret;
+
+}

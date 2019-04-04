@@ -63,7 +63,7 @@ function rcp_discounts_page() {
 						<th scope="col" class="rcp-discounts-name-col column-primary" ><?php _e( 'Name', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-discounts-desc-col"><?php _e( 'Description', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-discounts-code-col" ><?php _e( 'Code', 'rcp' ); ?></th>
-						<th scope="col" class="rcp-discounts-subscription-col" ><?php _e( 'Subscription', 'rcp' ); ?></th>
+						<th scope="col" class="rcp-discounts-subscription-col" ><?php _e( 'Membership Levels', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-discounts-amount-col"><?php _e( 'Amount', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-discounts-type-col"><?php _e( 'Type', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-discounts-status-col"><?php _e( 'Status', 'rcp' ); ?></th>
@@ -80,7 +80,7 @@ function rcp_discounts_page() {
 					$i = 1;
 					foreach( $codes as $key => $code) : ?>
 						<tr class="rcp_row <?php if( rcp_is_odd( $i ) ) { echo 'alternate'; } ?>">
-							<td class="column-primary has-row-actions" data-colname="<?php _e( 'Name', 'rcp' ); ?>">
+							<td class="column-primary has-row-actions" data-colname="<?php esc_attr_e( 'Name', 'rcp' ); ?>">
 								<strong><a href="<?php echo esc_url( add_query_arg( 'edit_discount', $code->id, $page ) ); ?>"><?php echo stripslashes( $code->name ); ?></a></strong>
 								<div class="row-actions">
 									<?php if( current_user_can( 'rcp_manage_discounts' ) ) : ?>
@@ -96,20 +96,23 @@ function rcp_discounts_page() {
 								</div>
 								<button type="button" class="toggle-row"><span class="screen-reader-text"><?php _e( 'Show more details', 'rcp' ); ?></span></button>
 							</td>
-							<td data-colname="<?php _e( 'Description', 'rcp' ); ?>"><?php echo stripslashes( $code->description ); ?></td>
-							<td data-colname="<?php _e( 'Code', 'rcp' ); ?>"><?php echo $code->code; ?></td>
-							<td>
+							<td data-colname="<?php esc_attr_e( 'Description', 'rcp' ); ?>"><?php echo stripslashes( $code->description ); ?></td>
+							<td data-colname="<?php esc_attr_e( 'Code', 'rcp' ); ?>"><?php echo $code->code; ?></td>
+							<td data-colname="<?php esc_attr_e( 'Membership Levels', 'rcp' ); ?>">
 								<?php
-								if ( $code->subscription_id > 0 ) {
-									echo rcp_get_subscription_name( $code->subscription_id );
+								$membership_levels = maybe_unserialize( $code->membership_level_ids );
+								if ( ! empty( $membership_levels ) && count( $membership_levels ) > 1 ) {
+									_e( 'Multiple Levels', 'rcp' );
+								} elseif( ! empty( $membership_levels ) && 1 === count( $membership_levels ) ) {
+									echo rcp_get_subscription_name( $membership_levels[0] );
 								} else {
 									echo __( 'All Levels', 'rcp' );
 								}
 								?>
 							</td>
-							<td data-colname="<?php _e( 'Amount', 'rcp' ); ?>"><?php echo rcp_discount_sign_filter( $code->amount, $code->unit ); ?></td>
-							<td data-colname="<?php _e( 'Type', 'rcp' ); ?>"><?php echo $code->unit == '%' ? __( 'Percentage', 'rcp' ) : __( 'Flat', 'rcp' ); ?></td>
-							<td data-colname="<?php _e( 'Status', 'rcp' ); ?>">
+							<td data-colname="<?php esc_attr_e( 'Amount', 'rcp' ); ?>"><?php echo rcp_discount_sign_filter( $code->amount, $code->unit ); ?></td>
+							<td data-colname="<?php esc_attr_e( 'Type', 'rcp' ); ?>"><?php echo $code->unit == '%' ? __( 'Percentage', 'rcp' ) : __( 'Flat', 'rcp' ); ?></td>
+							<td data-colname="<?php esc_attr_e( 'Status', 'rcp' ); ?>">
 								<?php
 									if(rcp_is_discount_not_expired( $code->id ) ) {
 										echo $code->status === 'active' ? __( 'active', 'rcp' ) : __( 'disabled', 'rcp' );
@@ -118,9 +121,9 @@ function rcp_discounts_page() {
 									}
 								?>
 							</td>
-							<td data-colname="<?php _e( 'Uses', 'rcp' ); ?>"><?php if( $code->max_uses > 0 ) { echo rcp_count_discount_code_uses( $code->code ) . '/' . $code->max_uses; } else { echo rcp_count_discount_code_uses( $code->code ); }?></td>
-							<td data-colname="<?php _e( 'Uses Left', 'rcp' ); ?>"><?php echo rcp_discount_has_uses_left( $code->id ) ? 'yes' : 'no'; ?></td>
-							<td data-colname="<?php _e( 'Expiration', 'rcp' ); ?>"><?php echo $code->expiration == '' ? __( 'none', 'rcp' ) : date_i18n( 'Y-m-d', strtotime( $code->expiration, current_time( 'timestamp' ) ) ); ?></td>
+							<td data-colname="<?php esc_attr_e( 'Uses', 'rcp' ); ?>"><?php if( $code->max_uses > 0 ) { echo rcp_count_discount_code_uses( $code->code ) . '/' . $code->max_uses; } else { echo rcp_count_discount_code_uses( $code->code ); }?></td>
+							<td data-colname="<?php esc_attr_e( 'Uses Left', 'rcp' ); ?>"><?php echo rcp_discount_has_uses_left( $code->id ) ? 'yes' : 'no'; ?></td>
+							<td data-colname="<?php esc_attr_e( 'Expiration', 'rcp' ); ?>"><?php echo $code->expiration == '' ? __( 'none', 'rcp' ) : date_i18n( 'Y-m-d H:i:s', strtotime( $code->expiration, current_time( 'timestamp' ) ) ); ?></td>
 							<?php do_action('rcp_discounts_page_table_column', $code->id); ?>
 						</tr>
 					<?php
@@ -135,7 +138,7 @@ function rcp_discounts_page() {
 						<th scope="col" class="rcp-discounts-name-col column-primary" ><?php _e( 'Name', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-discounts-desc-col"><?php _e( 'Description', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-discounts-code-col" ><?php _e( 'Code', 'rcp' ); ?></th>
-						<th scope="col" class="rcp-discounts-subscription-col" ><?php _e( 'Subscription', 'rcp' ); ?></th>
+						<th scope="col" class="rcp-discounts-subscription-col" ><?php _e( 'Membership Levels', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-discounts-amount-col"><?php _e( 'Amount', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-discounts-type-col"><?php _e( 'Type', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-discounts-status-col"><?php _e( 'Status', 'rcp' ); ?></th>
@@ -202,22 +205,25 @@ function rcp_discounts_page() {
 							</tr>
 							<tr class="form-field">
 								<th scope="row" valign="top">
-									<label for="rcp-subscription"><?php _e( 'Subscription', 'rcp' ); ?></label>
+									<label for="rcp-subscription"><?php _e( 'Membership Levels', 'rcp' ); ?></label>
 								</th>
 								<td>
 									<?php
 									$levels = rcp_get_subscription_levels( 'all' );
-									if( $levels ) : ?>
-										<select name="subscription" id="rcp-subscription">
-											<option value="0"><?php _e( 'All Levels', 'rcp' ); ?></option>
-											<?php
-												foreach( $levels as $level ) :
-													echo '<option value="' . $level->id . '">' . $level->name . '</option>';
-												endforeach;
-											?>
-										</select>
-									<?php endif; ?>
-									<p class="description"><?php _e( 'The subscription levels this discount code can be used for.', 'rcp' ); ?></p>
+									if( $levels ) {
+										foreach ( $levels as $level ) : ?>
+											<input type="checkbox" id="rcp-membership-levels-<?php echo esc_attr( $level->id ); ?>" name="membership_levels[]" value="<?php echo esc_attr( $level->id ) ?>">
+											<label for="rcp-membership-levels-<?php echo esc_attr( $level->id ); ?>"><?php echo esc_html( $level->name ); ?></label>
+											<br>
+										<?php
+										endforeach;
+										?>
+										<p class="description"><?php _e( 'The membership levels this discount code can be used for. Leave blank for all levels.', 'rcp' ); ?></p>
+										<?php
+									} else {
+										echo '<p class="description">' . __( 'No membership levels created yet. This discount will be available to use with all future membership levels.', 'rcp' ) . '</p>';
+									}
+									?>
 								</td>
 							</tr>
 							<tr class="form-field">
@@ -225,8 +231,8 @@ function rcp_discounts_page() {
 									<label for="rcp-expiration"><?php _e( 'Expiration date', 'rcp' ); ?></label>
 								</th>
 								<td>
-									<input name="expiration" id="rcp-expiration" type="text" class="rcp-datepicker"/>
-									<p class="description"><?php _e( 'Enter the expiration date for this discount code in the format of yyyy-mm-dd. For no expiration, leave blank', 'rcp' ); ?></p>
+									<input name="expiration" id="rcp-expiration" type="text" class="rcp-datetimepicker"/>
+									<p class="description"><?php _e( 'Enter the expiration date for this discount code in the format of yyyy-mm-dd hh:mm:ss. For no expiration, leave blank', 'rcp' ); ?></p>
 								</td>
 							</tr>
 							<tr class="form-field">

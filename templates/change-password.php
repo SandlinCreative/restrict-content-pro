@@ -35,7 +35,7 @@ global $rcp_password_form_args; ?>
 			<input type="hidden" name="rcp_action" value="reset-password"/>
 			<input type="hidden" name="rcp_redirect" value="<?php echo esc_url( $rcp_password_form_args['redirect'] ); ?>"/>
 			<input type="hidden" name="rcp_password_nonce" value="<?php echo wp_create_nonce('rcp-password-nonce' ); ?>"/>
-			<input id="rcp_password_submit" type="submit" value="<?php esc_attr_e( apply_filters( 'rcp_registration_change_password_button', __( 'Change Password', 'rcp' ) ) ); ?>"/>
+			<input id="rcp_password_submit" class="rcp-button" type="submit" value="<?php esc_attr_e( apply_filters( 'rcp_registration_change_password_button', __( 'Change Password', 'rcp' ) ) ); ?>"/>
 		</p>
 	</fieldset>
 </form>

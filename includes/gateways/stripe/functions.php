@@ -11,6 +11,9 @@
 /**
  * Determine if a member is a Stripe subscriber
  *
+ * @deprecated 3.0 Use `rcp_is_stripe_membership()` instead.
+ * @see rcp_is_stripe_membership()
+ *
  * @param int $user_id The ID of the user to check
  *
  * @since       2.1
@@ -25,18 +28,55 @@ function rcp_is_stripe_subscriber( $user_id = 0 ) {
 
 	$ret = false;
 
-	$member = new RCP_Member( $user_id );
+	$customer = rcp_get_customer_by_user_id( $user_id );
 
-	$profile_id = $member->get_payment_profile_id();
+	if ( ! empty( $customer ) ) {
+		$membership = rcp_get_customer_single_membership( $customer->get_id() );
 
-	// Check if the member is a Stripe customer
-	if( false !== strpos( $profile_id, 'cus_' ) ) {
-
-		$ret = true;
-
+		if ( ! empty( $membership ) ) {
+			$ret = rcp_is_stripe_membership( $membership );
+		}
 	}
 
 	return (bool) apply_filters( 'rcp_is_stripe_subscriber', $ret, $user_id );
+}
+
+/**
+ * Determines if a membership is a Stripe subscription.
+ *
+ * @param int|RCP_Membership $membership_object_or_id Membership ID or object.
+ *
+ * @since 3.0
+ * @return bool
+ */
+function rcp_is_stripe_membership( $membership_object_or_id ) {
+
+	if ( ! is_object( $membership_object_or_id ) ) {
+		$membership = rcp_get_membership( $membership_object_or_id );
+	} else {
+		$membership = $membership_object_or_id;
+	}
+
+	$is_stripe = false;
+
+	if ( ! empty( $membership ) && $membership->get_id() > 0 ) {
+		$subscription_id = $membership->get_gateway_customer_id();
+
+		if ( false !== strpos( $subscription_id, 'cus_' ) ) {
+			$is_stripe = true;
+		}
+	}
+
+	/**
+	 * Filters whether or not the membership is a Stripe subscription.
+	 *
+	 * @param bool           $is_stripe
+	 * @param RCP_Membership $membership
+	 *
+	 * @since 3.0
+	 */
+	return (bool) apply_filters( 'rcp_is_stripe_membership', $is_stripe, $membership );
+
 }
 
 /**
@@ -124,6 +164,9 @@ add_action( 'rcp_before_update_billing_card_form', 'rcp_stripe_update_card_form_
 /**
  * Process an update card form request
  *
+ * @deprecated 3.0 Use `rcp_stripe_update_membership_billing_card()` instead.
+ * @see rcp_stripe_update_membership_billing_card()
+ *
  * @param int        $member_id  ID of the member.
  * @param RCP_Member $member_obj Member object.
  *
@@ -131,7 +174,7 @@ add_action( 'rcp_before_update_billing_card_form', 'rcp_stripe_update_card_form_
  * @since       2.1
  * @return      void
  */
-function rcp_stripe_update_billing_card( $member_id = 0, $member_obj ) {
+function rcp_stripe_update_billing_card( $member_id, $member_obj ) {
 
 	if( empty( $member_id ) ) {
 		return;
@@ -141,7 +184,38 @@ function rcp_stripe_update_billing_card( $member_id = 0, $member_obj ) {
 		return;
 	}
 
-	if( ! rcp_is_stripe_subscriber( $member_id ) ) {
+	$customer = rcp_get_customer_by_user_id( $member_id );
+
+	if ( empty( $customer ) ) {
+		return;
+	}
+
+	$membership = rcp_get_customer_single_membership( $customer->get_id() );
+
+	if ( empty( $membership ) ) {
+		return;
+	}
+
+	rcp_stripe_update_membership_billing_card( $membership );
+
+}
+//add_action( 'rcp_update_billing_card', 'rcp_stripe_update_billing_card', 10, 2 );
+
+/**
+ * Update the billing card for a given membership.
+ *
+ * @param RCP_Membership $membership
+ *
+ * @since 3.0
+ * @return void
+ */
+function rcp_stripe_update_membership_billing_card( $membership ) {
+
+	if ( ! is_a( $membership, 'RCP_Membership' ) ) {
+		return;
+	}
+
+	if ( ! rcp_is_stripe_membership( $membership ) ) {
 		return;
 	}
 
@@ -149,7 +223,7 @@ function rcp_stripe_update_billing_card( $member_id = 0, $member_obj ) {
 		wp_die( __( 'Missing Stripe token', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 400 ) );
 	}
 
-	$customer_id = $member_obj->get_payment_profile_id();
+	$customer_id = $membership->get_gateway_customer_id();
 
 	global $rcp_options;
 
@@ -267,7 +341,7 @@ function rcp_stripe_update_billing_card( $member_id = 0, $member_obj ) {
 	wp_redirect( add_query_arg( 'card', 'updated' ) ); exit;
 
 }
-add_action( 'rcp_update_billing_card', 'rcp_stripe_update_billing_card', 10, 2 );
+add_action( 'rcp_update_membership_billing_card', 'rcp_stripe_update_membership_billing_card' );
 
 /**
  * Create discount code in Stripe when one is created in RCP
@@ -772,3 +846,90 @@ function rcp_stripe_checkout_new_user_notification( $user_id, $gateway ) {
 
 }
 add_action( 'rcp_stripe_signup', 'rcp_stripe_checkout_new_user_notification', 10, 2 );
+
+/**
+ * Cancel a Stripe membership by its subscription ID.
+ *
+ * @param string $payment_profile_id
+ *
+ * @since 3.0
+ * @return true|WP_Error True on success, WP_Error on failure.
+ */
+function rcp_stripe_cancel_membership( $payment_profile_id ) {
+
+	global $rcp_options;
+
+	if ( ! class_exists( 'Stripe\Stripe' ) ) {
+		require_once RCP_PLUGIN_DIR . 'includes/libraries/stripe/init.php';
+	}
+
+	if ( rcp_is_sandbox() ) {
+		$secret_key = trim( $rcp_options['stripe_test_secret'] );
+	} else {
+		$secret_key = trim( $rcp_options['stripe_live_secret'] );
+	}
+
+	\Stripe\Stripe::setApiKey( $secret_key );
+
+	try {
+		$sub = \Stripe\Subscription::retrieve( $payment_profile_id );
+		$sub->cancel();
+
+		$success = true;
+	} catch ( \Stripe\Error\InvalidRequest $e ) {
+
+		// Invalid parameters were supplied to Stripe's API
+		$body = $e->getJsonBody();
+		$err  = $body['error'];
+
+		rcp_log( sprintf( 'Failed to cancel Stripe payment profile %s. Error code: %s; Error Message: %s.', $payment_profile_id, $err['code'], $err['message'] ) );
+
+		$success = new WP_Error( $err['code'], $err['message'] );
+
+	} catch ( \Stripe\Error\Authentication $e ) {
+
+		// Authentication with Stripe's API failed
+		// (maybe you changed API keys recently)
+
+		$body = $e->getJsonBody();
+		$err  = $body['error'];
+
+		rcp_log( sprintf( 'Failed to cancel Stripe payment profile %s. Error code: %s; Error Message: %s.', $payment_profile_id, $err['code'], $err['message'] ) );
+
+		$success = new WP_Error( $err['code'], $err['message'] );
+
+	} catch ( \Stripe\Error\ApiConnection $e ) {
+
+		// Network communication with Stripe failed
+
+		$body = $e->getJsonBody();
+		$err  = $body['error'];
+
+		rcp_log( sprintf( 'Failed to cancel Stripe payment profile %s. Error code: %s; Error Message: %s.', $payment_profile_id, $err['code'], $err['message'] ) );
+
+		$success = new WP_Error( $err['code'], $err['message'] );
+
+	} catch ( \Stripe\Error\Base $e ) {
+
+		// Display a very generic error to the user
+
+		$body = $e->getJsonBody();
+		$err  = $body['error'];
+
+		rcp_log( sprintf( 'Failed to cancel Stripe payment profile %s. Error code: %s; Error Message: %s.', $payment_profile_id, $err['code'], $err['message'] ) );
+
+		$success = new WP_Error( $err['code'], $err['message'] );
+
+	} catch ( Exception $e ) {
+
+		// Something else happened, completely unrelated to Stripe
+
+		rcp_log( sprintf( 'Failed to cancel Stripe payment profile f%s. Error: %s.', $payment_profile_id, $e ) );
+
+		$success = new WP_Error( 'unknown_error', $e );
+
+	}
+
+	return $success;
+
+}

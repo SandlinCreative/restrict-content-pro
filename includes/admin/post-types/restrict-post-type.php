@@ -170,7 +170,12 @@ function rcp_save_post_type_restrictions() {
 	}
 
 
-	$user_role = sanitize_text_field( $_POST['rcp_user_level'] );
+	$user_role         = ! empty( $_POST['rcp_user_level'] ) ? $_POST[ 'rcp_user_level' ] : 'all';
+
+	if ( ! is_array( $user_role ) ) {
+		$user_role = array( $user_role );
+	}
+	$user_role = array_map( 'sanitize_text_field', $user_role );
 
 	if ( 'unrestricted' !== $_POST['rcp_restrict_by'] ) {
 		$this_post_type_restrictions['user_level'] = $user_role;

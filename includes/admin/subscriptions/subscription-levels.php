@@ -1,15 +1,15 @@
 <?php
 /**
- * Subscription Levels Page
+ * Membership Levels Page
  *
  * @package     Restrict Content Pro
- * @subpackage  Admin/Subscription Levels
+ * @subpackage  Admin/Membership Levels
  * @copyright   Copyright (c) 2017, Restrict Content Pro
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU Public License
  */
 
 /**
- * Render subscription levels page
+ * Render membership levels page
  *
  * @return void
  */
@@ -27,18 +27,18 @@ function rcp_member_levels_page() {
 		<?php if(isset($_GET['edit_subscription'])) :
 			include('edit-subscription.php');
 		else : ?>
-			<h1><?php _e('Subscription Levels', 'rcp'); ?></h1>
+			<h1><?php _e('Membership Levels', 'rcp'); ?></h1>
 
 			<ul class="subsubsub">
 				<li>
-					<a href="<?php echo esc_url( remove_query_arg( 'status', $page ) ); ?>" title="<?php esc_attr_e( 'View all subscription levels', 'rcp' ); ?>"<?php echo 'all' == $status ? ' class="current"' : ''; ?>>
+					<a href="<?php echo esc_url( remove_query_arg( 'status', $page ) ); ?>" title="<?php esc_attr_e( 'View all membership levels', 'rcp' ); ?>"<?php echo 'all' == $status ? ' class="current"' : ''; ?>>
 						<?php _e( 'All', 'rcp' ); ?>
 						<span class="count">(<?php echo $all_count; ?>)</span>
 					</a>
 				</li>
 				<?php if ( $active_count > 0 ) : ?>
 					<li>
-						|<a href="<?php echo esc_url( add_query_arg( 'status', 'active', $page ) ); ?>" title="<?php esc_attr_e( 'View active subscription levels', 'rcp' ); ?>"<?php echo 'active' == $status ? ' class="current"' : ''; ?>>
+						|<a href="<?php echo esc_url( add_query_arg( 'status', 'active', $page ) ); ?>" title="<?php esc_attr_e( 'View active membership levels', 'rcp' ); ?>"<?php echo 'active' == $status ? ' class="current"' : ''; ?>>
 							<?php _e( 'Active', 'rcp' ); ?>
 							<span class="count">(<?php echo $active_count; ?>)</span>
 						</a>
@@ -46,7 +46,7 @@ function rcp_member_levels_page() {
 				<?php endif; ?>
 				<?php if ( $inactive_count > 0 ) : ?>
 					<li>
-						|<a href="<?php echo esc_url( add_query_arg( 'status', 'inactive', $page ) ); ?>" title="<?php esc_attr_e( 'View inactive subscription levels', 'rcp' ); ?>"<?php echo 'inactive' == $status ? ' class="current"' : ''; ?>>
+						|<a href="<?php echo esc_url( add_query_arg( 'status', 'inactive', $page ) ); ?>" title="<?php esc_attr_e( 'View inactive membership levels', 'rcp' ); ?>"<?php echo 'inactive' == $status ? ' class="current"' : ''; ?>>
 							<?php _e( 'Inactive', 'rcp' ); ?>
 							<span class="count">(<?php echo $inactive_count; ?>)</span>
 						</a>
@@ -63,7 +63,7 @@ function rcp_member_levels_page() {
 						<th scope="col" class="rcp-sub-level-col"><?php _e( 'Access Level', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-sub-duration-col"><?php _e( 'Duration', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-sub-price-col"><?php _e( 'Price', 'rcp' ); ?></th>
-						<th scope="col" class="rcp-sub-subs-col"><?php _e( 'Subscribers', 'rcp' ); ?></th>
+						<th scope="col" class="rcp-sub-subs-col"><?php _e( 'Memberships', 'rcp' ); ?></th>
 						<?php do_action('rcp_levels_page_table_header'); ?>
 						<th scope="col" class="rcp-sub-order-col"><?php _e( 'Order', 'rcp' ); ?></th>
 					</tr>
@@ -87,6 +87,7 @@ function rcp_member_levels_page() {
 										<?php } ?>
 										<span class="trash"><a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'rcp-action' => 'delete_subscription', 'level_id' => $level->id ), $page ), 'rcp-delete-subscription-level' ) ); ?>" class="rcp_delete_subscription"><?php _e('Delete', 'rcp'); ?></a></span> |
 										<span class="rcp-sub-id-col rcp-id-col" data-colname="<?php esc_attr_e( 'ID:', 'rcp' ); ?>"> <?php echo __( 'ID:', 'rcp' ) . ' ' . $level->id; ?></span>
+										<?php do_action( 'rcp_membership_level_row_actions', $level ); ?>
 									</div>
 								<?php endif; ?>
 								<button type="button" class="toggle-row"><span class="screen-reader-text"><?php _e( 'Show more details', 'rcp' ); ?></span></button>
@@ -113,13 +114,14 @@ function rcp_member_levels_page() {
 								}
 								?>
 							</td>
-							<td class="rcp-sub-subs-col" data-colname="<?php esc_attr_e( 'Subscribers', 'rcp' ); ?>">
+							<td class="rcp-sub-subs-col" data-colname="<?php esc_attr_e( 'Memberships', 'rcp' ); ?>">
 								<?php
-								if( $price || $level->duration > 0 ) {
-									echo rcp_get_subscription_member_count( $level->id, 'active' );
-								} else {
-									echo rcp_get_subscription_member_count( $level->id, 'free' );
-								}
+								$memberships_page = rcp_get_memberships_admin_page( array( 'object_id' => urlencode( $level->id ) ) );
+								$membership_count = rcp_count_memberships( array(
+									'status__in' => array( 'active', 'cancelled' ),
+									'object_id'  => absint( $level->id )
+								) );
+								echo '<a href="' . esc_url( $memberships_page ) . '">' . $membership_count . '</a>';
 								?>
 							</td>
 							<?php do_action('rcp_levels_page_table_column', $level->id); ?>
@@ -128,7 +130,7 @@ function rcp_member_levels_page() {
 					<?php $i++;
 					endforeach;
 				else : ?>
-					<tr><td colspan="9"><?php _e('No subscription levels added yet.', 'rcp'); ?></td></tr>
+					<tr><td colspan="9"><?php _e('No membership levels added yet.', 'rcp'); ?></td></tr>
 				<?php endif; ?>
 				</tbody>
 				<tfoot>
@@ -139,7 +141,7 @@ function rcp_member_levels_page() {
 						<th scope="col" class="rcp-sub-level-col"><?php _e( 'Access Level', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-sub-duration-col"><?php _e( 'Duration', 'rcp' ); ?></th>
 						<th scope="col" class="rcp-sub-price-col"><?php _e( 'Price', 'rcp' ); ?></th>
-						<th scope="col" class="rcp-sub-subs-col"><?php _e( 'Subscribers', 'rcp' ); ?></th>
+						<th scope="col" class="rcp-sub-subs-col"><?php _e( 'Memberships', 'rcp' ); ?></th>
 						<?php do_action('rcp_levels_page_table_footer'); ?>
 						<th scope="col" class="rcp-sub-order-col"><?php _e( 'Order', 'rcp' ); ?></th>
 					</tr>
@@ -183,7 +185,7 @@ function rcp_member_levels_page() {
 										?>
 									</select>
 									<p class="description">
-										<?php _e('Level of access this subscription gives. Leave None for default or you are unsure what this is.', 'rcp'); ?>
+										<?php _e('Level of access this membership gives. Leave None for default or you are unsure what this is.', 'rcp'); ?>
 										<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php _e( '<strong>Access Level</strong>: refers to a tiered system where a member\'s ability to view content is determined by the access level assigned to their account. A member with an access level of 5 can view content assigned to access levels of 5 and lower, whereas a member with an access level of 4 can only view content assigned to levels of 4 and lower.', 'rcp' ); ?>"></span>
 									</p>
 								</td>
@@ -207,6 +209,39 @@ function rcp_member_levels_page() {
 							</tr>
 							<tr class="form-field">
 								<th scope="row" valign="top">
+									<label for="rcp-maximum-renewals-setting"><?php _e( 'Maximum Renewals', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<select name="maximum_renewals_setting" id="rcp-maximum-renewals-setting">
+										<option value="forever"><?php _e( 'Until Cancelled', 'rcp' ); ?></option>
+										<option value="specific"><?php _e( 'Specific Number', 'rcp' ); ?></option>
+									</select>
+									<label for="rcp-maximum-renewals" class="screen-reader-text"><?php _e( 'Enter the maximum number of renewals', 'rcp' ); ?></label>
+									<input type="number" id="rcp-maximum-renewals" name="maximum_renewals" value="0" style="display:none;"/>
+									<p class="description">
+										<?php _e( 'Number of renewals to process after the first payment.', 'rcp' ); ?>
+										<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php esc_attr_e( '<strong>Until Cancelled</strong>: will continue billing the member indefinitely, or until they cancel their membership. <br/><br/><strong>Specific Number</strong> will allow you to enter the number of additional times you wish to bill the customer after their first payment. If you enter "3", the member will be billed once immediately when they sign up, then 3 more times after that. Then billing will stop automatically.', 'rcp' ); ?>"></span>
+									</p>
+								</td>
+							</tr>
+							<tr class="form-field" style="display: none;">
+								<th scope="row" valign="top">
+									<label for="rcp-after-final-payment"><?php _e( 'After Final Payment', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<select name="after_final_payment" id="rcp-after-final-payment">
+										<option value="lifetime"><?php _e( 'Grant Lifetime Access', 'rcp' ); ?></option>
+										<option value="expire_immediately"><?php _e( 'End Membership Immediately', 'rcp' ); ?></option>
+										<option value="expire_term_end"><?php _e( 'End Membership at End of Billing Period', 'rcp' ); ?></option>
+									</select>
+									<p class="description">
+										<?php _e( 'Action to take after the final payment has been received.', 'rcp'); ?>
+										<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php esc_attr_e( '<strong>Grant Lifetime Access</strong>: will update the member\'s expiration date to "none" to give them lifetime access to restricted content. <br/><br/><strong>End Membership Immediately</strong>: will make the user\'s membership expire immediately after the final payment is received and they will lose access to restricted content. <br/><br/><strong>End Membership at End of Billing Period</strong>: will allow the user to complete one more period after the final payment, after which their membership will expire. For example, if the membership duration is set to 1 month, the user will make their final payment then have access for 1 more month after that before expiring.', 'rcp' ); ?>"></span>
+									</p>
+								</td>
+							</tr>
+							<tr class="form-field">
+								<th scope="row" valign="top">
 									<label for="trial_duration"><?php _e('Free Trial Duration', 'rcp'); ?></label>
 								</th>
 								<td>
@@ -218,7 +253,7 @@ function rcp_member_levels_page() {
 									</select>
 									<p class="description">
 										<?php _e('Length of time the free trial should last. Enter 0 for no free trial.', 'rcp'); ?>
-										<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php _e( '<strong>Example</strong>: setting this to 7 days would give the member a 7-day free trial. The member would be billed at the end of the trial.<p><strong>Note:</strong> If you enable a free trial, the regular subscription duration and price must be greater than 0.</p>', 'rcp' ); ?>"></span>
+										<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php _e( '<strong>Example</strong>: setting this to 7 days would give the member a 7-day free trial. The member would be billed at the end of the trial.<p><strong>Note:</strong> If you enable a free trial, the regular membership duration and price must be greater than 0.</p>', 'rcp' ); ?>"></span>
 									</p>
 								</td>
 							</tr>
@@ -252,7 +287,7 @@ function rcp_member_levels_page() {
 										<option value="active"><?php _e('Active', 'rcp'); ?></option>
 										<option value="inactive"><?php _e('Inactive', 'rcp'); ?></option>
 									</select>
-									<p class="description"><?php _e('Members may only sign up for active subscription levels.', 'rcp'); ?></p>
+									<p class="description"><?php _e('Members may only sign up for active membership levels.', 'rcp'); ?></p>
 								</td>
 							</tr>
 							<tr class="form-field">

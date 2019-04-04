@@ -55,9 +55,14 @@ final class RCP_Reminders {
 			'-3months' => __( 'Three months after expiration', 'rcp' )
 		);
 
-		return $periods;
-
-		//return apply_filters( 'rcp_reminder_notice_periods', $periods );
+		/**
+		 * Filters the available notice periods.
+		 *
+		 * @param array $periods
+		 *
+		 * @since 2.9.8
+		 */
+		return apply_filters( 'rcp_reminder_notice_periods', $periods );
 
 	}
 
@@ -236,49 +241,73 @@ Your subscription for %subscription_name% will renew on %expiration%.';
 
 			foreach ( $notices as $notice_id => $notice ) {
 
+				rcp_log( sprintf( 'Processing %s reminder. ID: %d; Period: %s.', $type, $notice_id, $notice['send_period'] ) );
+
 				// Skip if this reminder isn't enabled.
 				if ( empty( $notice['enabled'] ) ) {
+					rcp_log( 'Reminder is not enabled - exiting.' );
+
 					continue;
 				}
 
 				// Skip if subject or message isn't filled out.
 				if ( empty( $notice['subject'] ) || empty( $notice['message'] ) ) {
+					rcp_log( 'Empty subject or message - exiting.' );
+
 					continue;
 				}
 
-				$members = $this->get_reminder_subscriptions( $notice['send_period'], $type );
+				$memberships = $this->get_reminder_subscriptions( $notice['send_period'], $type );
 
-				if ( ! $members ) {
+				if ( ! $memberships ) {
+					rcp_log( 'No memberships found for reminder - exiting.' );
+
 					continue;
 				}
 
-				foreach ( $members as $user ) {
+				foreach ( $memberships as $membership ) {
 
-					$member = new RCP_Member( $user );
+					rcp_log( sprintf( 'Processing %s reminder for membership #%d.', $type, $membership->get_id() ) );
 
-					// Ensure an expiration notice isn't sent to an auto-renew subscription
-					if ( $type == 'expiration' && $member->is_recurring() && $member->is_active() ) {
+					// Ensure an expiration notice isn't sent to an auto-renew membership.
+					if ( $type == 'expiration' && $membership->is_recurring() && $membership->is_active() ) {
+						rcp_log( sprintf( 'Skipping membership #%d - expiration reminder but membership is recurring and active.', $membership->get_id() ) );
+
 						continue;
 					}
 
-					// Ensure an expiration notice isn't sent to a still-trialling subscription
-					if ( $type == 'expiration' && $member->is_trialing() ) {
+					// Ensure an expiration notice isn't sent to a still-trialling membership.
+					if ( $type == 'expiration' && $membership->is_trialing() ) {
+						rcp_log( sprintf( 'Skipping membership #%d - expiration reminder but user is still trialing.', $membership->get_id() ) );
+
 						continue;
 					}
 
-					$sent_time = get_user_meta( $member->ID, sanitize_key( '_rcp_reminder_sent_' . $member->get_subscription_id() . '_' . $notice_id ), true );
+					$user_id = $membership->get_customer()->get_user_id();
+					$user    = get_userdata( $user_id );
+
+					// Deprecated meta.
+					$sent_time = get_user_meta( $user_id, sanitize_key( '_rcp_reminder_sent_' . $membership->get_object_id() . '_' . $notice_id ), true );
+
+					if ( empty( $sent_time ) ) {
+						// New meta.
+						$sent_time = get_user_meta( $user_id, sanitize_key( '_rcp_reminder_sent_' . $membership->get_id() . '_' . $notice_id ), true );
+					}
 
 					if ( $sent_time ) {
+						rcp_log( sprintf( 'Skipping membership #%d - reminder #%d has already been sent.', $membership->get_id(), $notice_id ) );
+
 						continue;
 					}
 
-					$rcp_email->member_id = $member->ID;
-					$rcp_email->send( $member->user_email, stripslashes( $notice['subject'] ), $notice['message'] );
+					$rcp_email->member_id = $user->ID;
+					$rcp_email->membership = $membership;
+					$rcp_email->send( $user->user_email, stripslashes( $notice['subject'] ), $notice['message'] );
 
-					$member->add_note( sprintf( __( '%s notice was emailed to the member - %s.', 'rcp' ), ucwords( $type ), $this->get_notice_period_label( $notice_id ) ) );
+					$membership->add_note( sprintf( __( '%s notice was emailed to the member - %s.', 'rcp' ), ucwords( $type ), $this->get_notice_period_label( $notice_id ) ) );
 
 					// Prevents reminder notices from being sent more than once.
-					add_user_meta( $member->ID, sanitize_key( '_rcp_reminder_sent_' . $member->get_subscription_id() . '_' . $notice_id ), time() );
+					add_user_meta( $user_id, sanitize_key( '_rcp_reminder_sent_' . $membership->get_id() . '_' . $notice_id ), time() );
 
 				}
 
@@ -305,69 +334,39 @@ Your subscription for %subscription_name% will renew on %expiration%.';
 		}
 
 		$args = array(
-			'number'      => 9999,
-			'count_total' => false,
-			'fields'      => 'ids',
-			'meta_query'  => array(
-				'relation' => 'AND'
-			)
+			'number' => 9999,
 		);
 
 		switch ( $type ) {
 
 			case 'renewal' :
-				$args['meta_query'][] = array(
-					'key'     => 'rcp_status',
-					'compare' => '=',
-					'value'   => 'active'
-				);
-				$args['meta_query'][] = array(
-					'key'   => 'rcp_recurring',
-					'value' => 'yes'
-				);
-				$args['meta_query'][] = array(
-					'key'     => 'rcp_expiration',
-					'value'   => array(
-						date( 'Y-m-d H:i:s', strtotime( $period . ' midnight', current_time( 'timestamp' ) ) ),
-						date( 'Y-m-d H:i:s', strtotime( $period . ' midnight', current_time( 'timestamp' ) ) + ( DAY_IN_SECONDS - 1 ) )
-					),
-					'type'    => 'DATETIME',
-					'compare' => 'between'
+				$args['status']          = 'active';
+				$args['auto_renew']      = 1;
+				$args['expiration_date'] = array(
+					'after'  => date( 'Y-m-d H:i:s', strtotime( $period . ' midnight', current_time( 'timestamp' ) ) ),
+					'before' => date( 'Y-m-d H:i:s', strtotime( $period . ' midnight', current_time( 'timestamp' ) ) + ( DAY_IN_SECONDS - 1 ) )
 				);
 				break;
 
 			case 'expiration' :
-				$args['meta_query'][] = array(
-					'key'     => 'rcp_recurring',
-					'compare' => 'NOT EXISTS'
-				);
+				$args['auto_renew'] = 0;
 
 				if ( 0 === strpos( $period, '-' ) ) {
-					$status = array( 'expired', 'cancelled' ); // If after expiration, their status may be expired.
+					$args['status__in'] = array( 'expired', 'cancelled' ); // If after expiration, their status may be expired.
 				} else {
-					$status = array( 'active', 'cancelled' );
+					$args['status__in'] = array( 'active', 'cancelled' );
 				}
 
-				$args['meta_query'][] = array(
-					'key'     => 'rcp_expiration',
-					'value'   => array(
-						date( 'Y-m-d H:i:s', strtotime( $period . ' midnight', current_time( 'timestamp' ) ) ),
-						date( 'Y-m-d H:i:s', strtotime( $period . ' midnight', current_time( 'timestamp' ) ) + ( DAY_IN_SECONDS - 1 ) )
-					),
-					'type'    => 'DATETIME',
-					'compare' => 'between'
-				);
-				$args['meta_query'][] = array(
-					'key'     => 'rcp_status',
-					'compare' => 'IN',
-					'value'   => $status
+				$args['expiration_date'] = array(
+					'after'  => date( 'Y-m-d H:i:s', strtotime( $period . ' midnight', current_time( 'timestamp' ) ) ),
+					'before' => date( 'Y-m-d H:i:s', strtotime( $period . ' midnight', current_time( 'timestamp' ) ) + ( DAY_IN_SECONDS - 1 ) )
 				);
 				break;
 
 		}
 
 		/**
-		 * Filters the WP_User_Query arguments for getting relevant subscriptions.
+		 * Filters the membership query arguments for getting relevant subscriptions.
 		 *
 		 * @param array  $args   Query arguments.
 		 * @param string $period Reminder period.
@@ -377,13 +376,54 @@ Your subscription for %subscription_name% will renew on %expiration%.';
 		 */
 		$args = apply_filters( 'rcp_reminder_subscription_args', $args, $period, $type );
 
-		$subscriptions = get_users( $args );
+		/*
+		 * Backwards compatibility for making this snippet still work:
+		 * https://github.com/restrictcontentpro/library/blob/master/rcp-limit-reminders-to-level.php
+		 */
+		if ( isset( $args['meta_query'] ) ) {
+			$args = $this->convert_user_meta_query_args( $args );
+		}
 
-		if ( ! empty( $subscriptions ) ) {
-			return $subscriptions;
+		$memberships = rcp_get_memberships( $args );
+
+		if ( ! empty( $memberships ) ) {
+			return $memberships;
 		}
 
 		return false;
+
+	}
+
+	/**
+	 * Convert old WP_User_Query args into an appropriate format for a memberships custom table query.
+	 *
+	 * @todo Consider adding support for more meta keys.
+	 *
+	 * @param array $args
+	 *
+	 * @access private
+	 * @since 3.0
+	 * @return array
+	 */
+	private function convert_user_meta_query_args( $args ) {
+
+		if ( ! isset( $args['meta_query'] ) || ! is_array( $args['meta_query'] ) ) {
+			return $args;
+		}
+
+		$meta_query = $args['meta_query'];
+
+		unset( $args['meta_query'] );
+
+		foreach ( $meta_query as $query ) {
+			switch ( $query['key'] ) {
+				case 'rcp_subscription_level' :
+					$args['object_id'] = absint( $query['value'] );
+					break;
+			}
+		}
+
+		return $args;
 
 	}
 

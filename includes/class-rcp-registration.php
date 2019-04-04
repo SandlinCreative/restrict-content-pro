@@ -38,7 +38,7 @@ class RCP_Registration {
 	/**
 	 * Get things started.
 	 *
-	 * @param int         $level_id ID of the subscription level for this registration.
+	 * @param int         $level_id ID of the membership level for this registration.
 	 * @param null|string $discount Discount code to apply to this registration.
 	 *
 	 * @return void
@@ -84,10 +84,24 @@ class RCP_Registration {
 	/**
 	 * Get registration subscription
 	 *
+	 * @deprecated 3.0 Use `RCP_Registration::get_membership_level_id()` instead.
+	 * @see RCP_Registration::get_membership_level_id()
+	 *
 	 * @since 2.5
 	 * @return int
 	 */
 	public function get_subscription() {
+		return $this->get_membership_level_id();
+	}
+
+	/**
+	 * Get the ID number of the membership level this registration is for.
+	 *
+	 * @access public
+	 * @since 3.0
+	 * @return int ID of the membership level.
+	 */
+	public function get_membership_level_id() {
 		return $this->subscription;
 	}
 

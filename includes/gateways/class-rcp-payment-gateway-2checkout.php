@@ -74,7 +74,7 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 		 */
 		global $rcp_payments_db;
 
-		$member = new RCP_Member( $this->user_id );
+		$member = new RCP_Member( $this->user_id ); // for backwards compatibility only
 
 		if( empty( $_POST['twoCheckoutToken'] ) ) {
 			rcp_errors()->add( 'missing_card_token', __( 'Missing 2Checkout token, please try again or contact support if the issue persists.', 'rcp' ), 'register' );
@@ -132,13 +132,6 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 
 			if( $charge['response']['responseCode'] == 'APPROVED' ) {
 
-				// Look to see if we have an existing subscription to cancel
-				if( $member->just_upgraded() && $member->can_cancel() ) {
-					$member->cancel_payment_profile( false );
-				}
-
-				$member->set_recurring( $this->auto_renew );
-
 				// This activates the user's account.
 				$rcp_payments_db->update( $this->payment->id, array(
 					'date'             => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
@@ -162,16 +155,8 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 
 		if ( $paid ) {
 
-			$member->add_note( __( 'Subscription started in 2Checkout', 'rcp' ) );
-
-			$member->set_payment_profile_id( '2co_' . $charge['response']['orderNumber'] );
-
-			if ( ! is_user_logged_in() ) {
-
-				// log the new user in
-				rcp_login_user_in( $this->user_id, $this->user_name, $_POST['rcp_user_pass'] );
-
-			}
+			$this->membership->add_note( __( 'Subscription started in 2Checkout', 'rcp' ) );
+			$this->membership->set_gateway_subscription_id( '2co_' . $charge['response']['orderNumber'] );
 
 			do_action( 'rcp_2co_signup', $this->user_id, $this );
 
@@ -199,41 +184,41 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 			$hash  = strtoupper( md5( $_POST['sale_id'] . $this->seller_id . $_POST['invoice_id'] . $this->secret_word ) );
 
 			if ( ! hash_equals( $hash, $_POST['md5_hash'] ) ) {
-				rcp_log( 'Exiting 2Checkout webhook - invalid MD5 hash.' );
+				rcp_log( 'Exiting 2Checkout webhook - invalid MD5 hash.', true );
 
 				die('-1');
 			}
 
 			if ( empty( $_POST['message_type'] ) ) {
-				rcp_log( 'Exiting 2Checkout webhook - empty message_type.' );
+				rcp_log( 'Exiting 2Checkout webhook - empty message_type.', true );
 
 				die( '-2' );
 			}
 
 			if ( empty( $_POST['vendor_id'] ) ) {
-				rcp_log( 'Exiting 2Checkout webhook - empty vendor_id.' );
+				rcp_log( 'Exiting 2Checkout webhook - empty vendor_id.', true );
 
 				die( '-3' );
 			}
 
 			$subscription_key = sanitize_text_field( $_POST['vendor_order_id'] );
-			$member_id        = $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM $wpdb->usermeta WHERE meta_key = 'rcp_subscription_key' AND meta_value = %s LIMIT 1", $subscription_key ) );
+			$this->membership = rcp_get_membership_by( 'subscription_key', $subscription_key );
 
-			if ( ! $member_id ) {
-				rcp_log( 'Exiting 2Checkout webhook - member ID not found.' );
+			if ( empty( $this->membership ) ) {
+				rcp_log( sprintf( 'Exiting 2Checkout webhook - membership not found from order ID %s.', $subscription_key ), true );
 
 				die( '-4' );
 			}
 
-			$member = new RCP_Member( $member_id );
+			$member = new RCP_Member( $this->membership->get_customer()->get_user_id() ); // for backwards compatibility
 
-			if( ! rcp_is_2checkout_subscriber( $member->ID ) ) {
-				rcp_log( 'Exiting 2Checkout webhook - member is not a 2Checkout subscriber.' );
+			if( 'twocheckout' != $this->membership->get_gateway() ) {
+				rcp_log( 'Exiting 2Checkout webhook - membership is not a 2Checkout subscription.' );
 
 				return;
 			}
 
-			rcp_log( sprintf( 'Processing webhook for member #%d.', $member->ID ) );
+			rcp_log( sprintf( 'Processing webhook for membership #%d.', $this->membership->get_id() ) );
 
 			$payments = new RCP_Payments();
 
@@ -253,8 +238,8 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 
 					if( ! empty( $_POST['recurring'] ) ) {
 
-						$member->cancel();
-						$member->add_note( __( 'Subscription cancelled via refund 2Checkout', 'rcp' ) );
+						$this->membership->cancel();
+						$this->membership->add_note( __( 'Membership cancelled via refund 2Checkout', 'rcp' ) );
 
 					}
 
@@ -262,22 +247,26 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 
 				case 'RECURRING_INSTALLMENT_SUCCESS' :
 
-					rcp_log( sprintf( 'Processing 2Checkout RECURRING_INSTALLMENT_SUCCESS webhook for member #%d.', $member->ID ) );
+					rcp_log( sprintf( 'Processing 2Checkout RECURRING_INSTALLMENT_SUCCESS webhook for membership #%d.', $this->membership->get_id() ) );
 
 					$payment_data = array(
 						'date'             => date( 'Y-m-d H:i:s', strtotime( $_POST['timestamp'], current_time( 'timestamp' ) ) ),
-						'subscription'     => $member->get_subscription_name(),
+						'subscription'     => rcp_get_subscription_name( $this->membership->get_object_id() ),
 						'payment_type'     => sanitize_text_field( $_POST['payment_type'] ),
+						'transaction_type' => 'renewal',
 						'subscription_key' => $subscription_key,
 						'amount'           => sanitize_text_field( $_POST['item_list_amount_1'] ), // don't have a total from this call, but this should be safe
-						'user_id'          => $member->ID,
-						'transaction_id'   => sanitize_text_field( $_POST['invoice_id'] )
+						'user_id'          => $this->membership->get_customer()->get_user_id(),
+						'customer_id'      => $this->membership->get_customer()->get_id(),
+						'membership_id'    => $this->membership->get_id(),
+						'transaction_id'   => sanitize_text_field( $_POST['invoice_id'] ),
+						'gateway'          => 'twocheckout'
 					);
 
 					$recurring = ! empty( $_POST['recurring'] );
-					$member->renew( $recurring );
+					$this->membership->renew( $recurring );
 					$payment_id = $payments->insert( $payment_data );
-					$member->add_note( __( 'Subscription renewed in 2Checkout', 'rcp' ) );
+					$this->membership->add_note( __( 'Membership renewed in 2Checkout', 'rcp' ) );
 
 					do_action( 'rcp_webhook_recurring_payment_processed', $member, $payment_id, $this );
 					do_action( 'rcp_gateway_payment_processed', $member, $payment_id, $this );
@@ -300,13 +289,17 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 
 					rcp_log( 'Processing 2Checkout RECURRING_STOPPED webhook.' );
 
-					if( ! $member->just_upgraded() ) {
-
-						$member->cancel();
-						$member->add_note( __( 'Subscription cancelled in 2Checkout', 'rcp' ) );
+					if ( $this->membership->has_payment_plan() && $this->membership->at_maximum_renewals() ) {
+						rcp_log( sprintf( 'Membership #%d has completed its payment plan - not cancelling.', $this->membership->get_id() ) );
+					} else {
+						if ( $this->membership->is_active() ) {
+							$this->membership->cancel();
+							$this->membership->add_note( __( 'Membership cancelled in 2Checkout', 'rcp' ) );
+						} else {
+							rcp_log( sprintf( 'Membership #%d is not active - not cancelling.', $this->membership->get_id() ) );
+						}
 
 						do_action( 'rcp_webhook_cancel', $member, $this );
-
 					}
 
 
@@ -322,8 +315,8 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 
 					rcp_log( 'Processing 2Checkout RECURRING_RESTARTED webhook.' );
 
-					$member->set_status( 'active' );
-					$member->add_note( __( 'Subscription restarted in 2Checkout', 'rcp' ) );
+					$this->membership->set_status( 'active' );
+					$this->membership->add_note( __( 'Subscription restarted in 2Checkout', 'rcp' ) );
 
 					do_action( 'rcp_webhook_recurring_payment_profile_created', $member, $this );
 
@@ -339,8 +332,8 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 							break;
 						case 'fail':
 
-							$member->set_status( 'pending' );
-							$member->add_note( __( 'Payment flagged as fraudulent in 2Checkout', 'rcp' ) );
+							$this->membership->set_status( 'pending' );
+							$this->membership->add_note( __( 'Payment flagged as fraudulent in 2Checkout', 'rcp' ) );
 
 							break;
 						case 'wait':

@@ -9,96 +9,9 @@
  */
 
 /**
- * Returns an array of all members, based on subscription status
- *
- * @param string $status       The subscription status of users to retrieve
- * @param int    $subscription The subscription ID to retrieve users from
- * @param int    $offset       The number of users to skip, used for pagination
- * @param int    $number       The total users to retrieve, used for pagination
- * @param string $order        The order in which to display users: ASC / DESC
- * @param string $recurring    Retrieve recurring (or non recurring) only
- * @param string $search       Seach parameter
- *
- * @return array|bool          Array of users or false if none.
- */
-function rcp_get_members( $status = 'active', $subscription = null, $offset = 0, $number = 999999, $order = 'DESC', $recurring = null, $search = '' ) {
-
-	global $wpdb;
-
-	$args = array(
-		'offset' => $offset,
-		'number' => $number,
-		'count_total' => false,
-		'orderby' => 'ID',
-		'order' => $order,
-		'meta_query' => array(
-			array(
-				'key' => 'rcp_status',
-				'value' => $status
-			)
-		)
-	);
-
-	if( ! empty( $subscription ) ) {
-		$args['meta_query'][] = array(
-			'key'   => 'rcp_subscription_level',
-			'value' => $subscription
-		);
-	}
-
-	if( ! empty( $recurring ) ) {
-		if( $recurring == 1 ) {
-			// find non recurring users
-
-			$args['meta_query'][] = array(
-				'key'     => 'rcp_recurring',
-				'compare' => 'NOT EXISTS'
-			);
-		} else {
-			// find recurring users
-			$args['meta_query'][] = array(
-				'key'     => 'rcp_recurring',
-				'value'   => 'yes'
-			);
-		}
-	}
-
-	if( ! empty( $search ) ) {
-		if( false !== strpos( $search, 'first_name:' ) ) {
-			$args['meta_query'][] = array(
-				'key'     => 'first_name',
-				'value'   => sanitize_text_field( trim( str_replace( 'first_name:', '', $search ) ) ),
-				'compare' => 'LIKE'
-			);
-		} elseif( false !== strpos( $search, 'last_name:' ) ) {
-			$args['meta_query'][] = array(
-				'key'     => 'last_name',
-				'value'   => sanitize_text_field( trim( str_replace( 'last_name:', '', $search ) ) ),
-				'compare' => 'LIKE'
-			);
-		} elseif( false !== strpos( $search, 'payment_profile:' ) ) {
-			$args['meta_query'][] = array(
-				'key'     => 'rcp_payment_profile_id',
-				'value'   => sanitize_text_field( trim( str_replace( 'payment_profile:', '', $search ) ) ),
-				'compare' => 'LIKE'
-			);
-		} else {
-			$args['search'] = sanitize_text_field( $search );
-		}
-	}
-
-	$members = get_users( $args );
-
-	if( !empty( $members ) )
-		return $members;
-
-	return false;
-}
-
-/**
  * Retrieves the total member counts for a status
  *
- * This retrieves the count for each subscription level and them sums the results.
+ * This retrieves the count for each membership level and them sums the results.
  *
  * Use rcp_count_members() to retrieve a count based on level, status, recurring, and search terms.
  *
@@ -127,127 +40,6 @@ function rcp_get_member_count( $status = 'active' ) {
 }
 
 /**
- * Counts the number of members by subscription level and status
- *
- * @param int    $level ID of the subscription level to count the members of.
- * @param string $status The status to count.
- * @param string $recurring    Retrieve recurring (or non recurring) only
- * @param string $search       Seach parameter
- *
- * @return int The number of members for the specified subscription level and status
- */
-function rcp_count_members( $level = '', $status = 'active', $recurring = null, $search = '' ) {
-	global $wpdb;
-
-	if( $status == 'free' ) {
-
-		if ( ! empty( $level ) ) :
-
-			$args = array(
-				'meta_query' => array(
-					array(
-						'key' => 'rcp_subscription_level',
-						'value' => $level,
-					),
-					array(
-						'key'   => 'rcp_status',
-						'value' => 'free'
-					)
-				)
-			);
-
-		else :
-
-			$args = array(
-				'meta_query' => array(
-					array(
-						'key'   => 'rcp_status',
-						'value' => 'free'
-					)
-				)
-			);
-
-		endif;
-
-	} else {
-
-		if ( ! empty( $level ) ) :
-
-			$args = array(
-				'meta_query' => array(
-					array(
-						'key'   => 'rcp_subscription_level',
-						'value' =>  $level
-					),
-					array(
-						'key'   => 'rcp_status',
-						'value' => $status
-					)
-				)
-			);
-
-		else :
-
-			$args = array(
-				'meta_query' => array(
-					array(
-						'key'   => 'rcp_status',
-						'value' => $status
-					)
-				)
-			);
-
-		endif;
-
-	}
-
-	if( ! empty( $recurring ) ) {
-		if( $recurring == 1 ) {
-			// find non recurring users
-
-			$args['meta_query'][] = array(
-				'key'     => 'rcp_recurring',
-				'compare' => 'NOT EXISTS'
-			);
-		} else {
-			// find recurring users
-			$args['meta_query'][] = array(
-				'key'     => 'rcp_recurring',
-				'value'   => 'yes'
-			);
-		}
-	}
-
-	if( ! empty( $search ) ) {
-		if( false !== strpos( $search, 'first_name:' ) ) {
-			$args['meta_query'][] = array(
-				'key'     => 'first_name',
-				'value'   => sanitize_text_field( trim( str_replace( 'first_name:', '', $search ) ) ),
-				'compare' => 'LIKE'
-			);
-		} elseif( false !== strpos( $search, 'last_name:' ) ) {
-			$args['meta_query'][] = array(
-				'key'     => 'last_name',
-				'value'   => sanitize_text_field( trim( str_replace( 'last_name:', '', $search ) ) ),
-				'compare' => 'LIKE'
-			);
-		} elseif( false !== strpos( $search, 'payment_profile:' ) ) {
-			$args['meta_query'][] = array(
-				'key'     => 'rcp_payment_profile_id',
-				'value'   => sanitize_text_field( trim( str_replace( 'payment_profile:', '', $search ) ) ),
-				'compare' => 'LIKE'
-			);
-		} else {
-			$args['search'] = sanitize_text_field( $search );
-		}
-	}
-
-	$args['fields'] = 'ID';
-	$users = new WP_User_Query( $args );
-	return $users->get_total();
-}
-
-/**
  * Retrieves the total number of members by subscription status
  *
  * @uses   rcp_count_members()
@@ -266,173 +58,23 @@ function rcp_count_all_members() {
 }
 
 /**
- * Gets all members of a particular subscription level
- *
- * @param int          $id     The ID of the subscription level to retrieve users for.
- * @param string|array $fields String or array of the user fields to retrieve.
- *
- * @return array An array of user objects
- */
-function rcp_get_members_of_subscription( $id = 1, $fields = 'ID') {
-	$members = get_users(array(
-			'meta_key' 		=> 'rcp_subscription_level',
-			'meta_value' 	=> $id,
-			'number' 		=> 0,
-			'fields' 		=> $fields,
-			'count_total' 	=> false
-		)
-	);
-	return $members;
-}
-
-/**
- * Gets a user's subscription level ID
- *
- * @param int $user_id The ID of the user to return the subscription level of, or 0 for current user.
- *
- * @return int|false The ID of the user's subscription level or false if none.
- */
-function rcp_get_subscription_id( $user_id = 0 ) {
-
-	if( empty( $user_id ) && is_user_logged_in() ) {
-		$user_id = get_current_user_id();
-	}
-
-	$member = new RCP_Member( $user_id );
-	return $member->get_subscription_id();
-
-}
-
-/**
- * Gets a user's subscription level name
- *
- * @param int $user_id The ID of the user to return the subscription level of, or 0 for current user.
- *
- * @return string The name of the user's subscription level
- */
-function rcp_get_subscription( $user_id = 0 ) {
-
-	if( empty( $user_id ) && is_user_logged_in() ) {
-		$user_id = get_current_user_id();
-	}
-
-	$member = new RCP_Member( $user_id );
-	return $member->get_subscription_name();
-
-}
-
-
-/**
- * Checks whether a user has a recurring subscription
- *
- * @param int $user_id The ID of the user to return the subscription level of, or 0 for current user.
- *
- * @return bool True if the user is recurring, false otherwise
- */
-function rcp_is_recurring( $user_id = 0 ) {
-
-	if( empty( $user_id ) && is_user_logged_in() ) {
-		$user_id = get_current_user_id();
-	}
-
-	$member = new RCP_Member( $user_id );
-	return $member->is_recurring();
-
-}
-
-
-/**
- * Checks whether a user is expired
- *
- * @param int $user_id The ID of the user to return the subscription level of, or 0 for current user.
- *
- * @return bool True if the user is expired, false otherwise
- */
-function rcp_is_expired( $user_id = 0 ) {
-
-	if( empty( $user_id ) && is_user_logged_in() ) {
-		$user_id = get_current_user_id();
-	}
-
-	$member = new RCP_Member( $user_id );
-	return $member->is_expired();
-
-}
-
-/**
- * Checks whether a user has an active subscription
- *
- * @param int $user_id The ID of the user to return the subscription level of, or 0 for current user.
- *
- * @return bool True if the user has an active, paid subscription (or is trialing), false otherwise
- */
-function rcp_is_active( $user_id = 0 ) {
-
-	if( empty( $user_id ) && is_user_logged_in() ) {
-		$user_id = get_current_user_id();
-	}
-
-	$member = new RCP_Member( $user_id );
-	return $member->is_active();
-
-}
-
-/**
- * Just a wrapper function for rcp_is_active()
- *
- * @param int $user_id - the ID of the user to return the subscription level of, or 0 for current user.
- *
- * @return bool True if the user has an active, paid subscription (or is trialing), false otherwise
- */
-function rcp_is_paid_user( $user_id = 0) {
-
-	$ret = false;
-
-	if( empty( $user_id ) && is_user_logged_in() ) {
-		$user_id = get_current_user_id();
-	}
-
-	if( rcp_is_active( $user_id ) ) {
-		$ret = true;
-	}
-	return apply_filters( 'rcp_is_paid_user', $ret, $user_id );
-}
-
-/**
- * Checks if a user's subscription grants access to the provided access level.
- *
- * @param int $user_id             ID of the user to check, or 0 for the current user.
- * @param int $access_level_needed Access level needed.
- *
- * @return bool True if they have access, false if not.
- */
-function rcp_user_has_access( $user_id = 0, $access_level_needed ) {
-
-	$subscription_level = rcp_get_subscription_id( $user_id );
-	$user_access_level = rcp_get_subscription_access_level( $subscription_level );
-
-	if( ( $user_access_level >= $access_level_needed ) || $access_level_needed == 0 || current_user_can( 'manage_options' ) ) {
-		// the user has access
-		return true;
-	}
-
-	// the user does not have access
-	return false;
-}
-
-/**
  * Wrapper function for RCP_Member->can_access()
  *
  * Returns true if user can access the current content
+ *
+ * @param int $user_id
+ * @param int $post_id
  *
  * @since  2.1
  * @return bool
  */
 function rcp_user_can_access( $user_id = 0, $post_id = 0 ) {
 
-	if( empty( $user_id ) ) {
+	if ( empty( $user_id ) ) {
 		$user_id = get_current_user_id();
 	}
+
+	$customer = rcp_get_customer_by_user_id( $user_id );
 
 	if( empty( $post_id ) ) {
 		global $post;
@@ -445,175 +87,41 @@ function rcp_user_can_access( $user_id = 0, $post_id = 0 ) {
 		$post_id = $post->ID;
 	}
 
-	$member = new RCP_Member( $user_id );
-	return $member->can_access( $post_id );
-}
+	// If there is no customer then it depends on whether or not the post has restrictions.
+	if ( empty( $customer ) ) {
+		$member = new RCP_Member( $user_id ); // need for backwards compat in the filter
 
-/**
- * Gets the date of a user's expiration in a nice format
- *
- * @param int $user_id The ID of the user to return the subscription level of, or 0 for the current user.
- *
- * @return string The date of the user's expiration, in the format specified in settings
- */
-function rcp_get_expiration_date( $user_id = 0 ) {
+		if ( user_can( $user_id, 'manage_options' ) ) {
+			// Admins always get access.
+			$can_access = true;
+		} else {
+			$can_access = ! rcp_is_restricted_content( $post_id );
+		}
 
-	if( empty( $user_id ) ) {
-		$user_id = get_current_user_id();
+		// We need to apply the filter here so that it can be used on logged-out users, like in IP Restriction.
+		$can_access = apply_filters( 'rcp_member_can_access', $can_access, $member->ID, $post_id, $member );
+	} else {
+		$can_access = $customer->can_access( $post_id );
 	}
 
-	$member = new RCP_Member( $user_id );
-	return $member->get_expiration_date( true, false );
-}
-
-/**
- * Sets the users expiration date
- *
- * @param int    $user_id The ID of the user to return the subscription level of, or 0 for the current user.
- * @param string $date    The expiration date in YYYY-MM-DD H:i:s
- *
- * @since 2.0
- * @return string The date of the user's expiration, in the format specified in settings
- */
-function rcp_set_expiration_date( $user_id = 0, $new_date = '' ) {
-
-	if( empty( $user_id ) ) {
-		$user_id = get_current_user_id();
+	/*
+	 * If they can't access, let's do some more digging. This is to ensure that if a post is
+	 * just restricted to a certain role, a user with that role can access the content even
+	 * if they don't have a membership.
+	 */
+	if ( is_user_logged_in() && ! $can_access ) {
+		$restrictions = rcp_get_post_restrictions( $post_id );
+		if ( empty( $restrictions['membership_levels'] ) && empty( $restrictions['access_level'] ) && ! empty( $restrictions['user_level'] ) ) {
+			foreach ( $restrictions['user_level'] as $role ) {
+				if ( user_can( $user_id, $role ) ) {
+					$can_access = true;
+					break;
+				}
+			}
+		}
 	}
 
-	$member = new RCP_Member( $user_id );
-	return $member->set_expiration_date( $new_date );
-}
-
-/**
- * Gets the date of a user's expiration in a unix time stamp
- *
- * @param int $user_id The ID of the user to return the subscription level of
- *
- * @return int|false Timestamp of expiration of false if no expiration
- */
-function rcp_get_expiration_timestamp( $user_id = 0 ) {
-
-	if( empty( $user_id ) ) {
-		$user_id = get_current_user_id();
-	}
-
-	$member = new RCP_Member( $user_id );
-
-	return $member->get_expiration_time();
-
-}
-
-/**
- * Gets the status of a user's subscription. If a user is expired, this will update their status to "expired".
- *
- * @param int $user_id The ID of the user to return the subscription level of, or 0 for the current user.
- *
- * @return string The status of the user's subscription
- */
-function rcp_get_status( $user_id = 0 ) {
-
-	if( empty( $user_id ) ) {
-		$user_id = get_current_user_id();
-	}
-
-	$member = new RCP_Member( $user_id );
-	return $member->get_status();
-}
-
-/**
- * Gets a user's subscription status in a nice format that is localized
- *
- * @param int $user_id The ID of the user to return the subscription level of, or 0 for the current user.
- *
- * @return string The user's subscription status
- */
-function rcp_print_status( $user_id = 0, $echo = true  ) {
-
-	if( empty( $user_id ) ) {
-		$user_id = get_current_user_id();
-	}
-
-	$status = rcp_get_status( $user_id );
-	switch ( $status ) :
-
-		case 'active';
-			$print_status = __( 'Active', 'rcp' );
-		break;
-		case 'expired';
-			$print_status = __( 'Expired', 'rcp' );
-		break;
-		case 'pending';
-			$print_status = __( 'Pending', 'rcp' );
-		break;
-		case 'cancelled';
-			$print_status = __( 'Cancelled', 'rcp' );
-		break;
-		default:
-			$print_status = __( 'Free', 'rcp' );
-		break;
-
-	endswitch;
-
-	if( $echo ) {
-		echo $print_status;
-	}
-
-	return $print_status;
-}
-
-/**
- * Sets a user's status to the specified status
- *
- * @param int    $user_id    The ID of the user to return the subscription level of
- * @param string $new_status The status to set the user to
- *
- * @return bool True on a successful status change, false otherwise
- */
-function rcp_set_status( $user_id = 0, $new_status = '' ) {
-
-	if( empty( $user_id ) || empty( $new_status ) ) {
-		return false;
-	}
-
-	$member = new RCP_Member( $user_id );
-	return $member->set_status( $new_status );
-
-}
-
-/**
- * Gets the user's unique subscription key
- *
- * @param int $user_id The ID of the user to return the subscription level of, or 0 for the current user
- *
- * @return string/bool Key string if it is retrieved successfully, false on failure
- */
-function rcp_get_subscription_key( $user_id = 0 ) {
-
-	if( empty( $user_id ) ) {
-		$user_id = get_current_user_id();
-	}
-
-	$member = new RCP_Member( $user_id );
-	return $member->get_subscription_key();
-}
-
-/**
- * Checks whether a user has trialed
- *
- * @param int $user_id The ID of the user to return the subscription level of, or 0 for the current user
- *
- * @return bool True if the user has trialed, false otherwise
- */
-function rcp_has_used_trial( $user_id = 0) {
-
-	if( empty( $user_id ) ) {
-		$user_id = get_current_user_id();
-	}
-
-	$member = new RCP_Member( $user_id );
-	return $member->has_trialed();
-
+	return $can_access;
 }
 
 
@@ -703,30 +211,7 @@ function rcp_print_user_payments_formatted( $user_id ) {
 }
 
 /**
- * Retrieve the payments for a specific user
- *
- * @param int   $user_id The ID of the user to get payments for
- * @param array $args    Override the default query args.
- *
- * @since  1.5
- * @return array
-*/
-function rcp_get_user_payments( $user_id = 0, $args = array() ) {
-
-	if( empty( $user_id ) ) {
-		$user_id = get_current_user_id();
-	}
-
-	$args = wp_parse_args( $args, array(
-		'user_id' => $user_id
-	) );
-
-	$payments = new RCP_Payments;
-	return $payments->get_payments( $args );
-}
-
-/**
- * Returns the role of the specified user
+ * Returns the slug of the role for the specified user.
  *
  * @param int $user_id The ID of the user to get the role of
  *
@@ -758,27 +243,39 @@ function rcp_get_user_role( $user_id ) {
 }
 
 /**
- * Inserts a new note for a user
+ * Returns the name of the role for the specified user.
  *
- * @param int    $user_id ID of the user to add a note to.
- * @param string $note    Note to add.
+ * @param int $user_id The ID of the user to get the role of
  *
- * @since  2.0
- * @return void
+ * @since 3.0
+ * @return string
  */
-function rcp_add_member_note( $user_id = 0, $note = '' ) {
-	$notes = get_user_meta( $user_id, 'rcp_notes', true );
-	if( ! $notes ) {
-		$notes = '';
-	}
-	$notes .= "\n\n" . date_i18n( 'F j, Y H:i:s', current_time( 'timestamp' ) ) . ' - ' . $note;
+function rcp_get_user_role_name( $user_id ) {
 
-	update_user_meta( $user_id, 'rcp_notes', wp_kses( $notes, array() ) );
+	if ( ! isset( $wp_roles ) ) {
+		$wp_roles = new WP_Roles();
+	}
+
+	$role_slug = rcp_get_user_role( $user_id );
+	$role_name = '';
+
+	if ( empty( $role_slug ) ) {
+		return $role_name;
+	}
+
+	if ( array_key_exists( $role_slug, $wp_roles->role_names ) ) {
+		$role_name = $wp_roles->role_names[ $role_slug ];
+	}
+
+	return $role_name;
 }
 
 
 /**
  * Determine if it's possible to upgrade a user's subscription
+ *
+ * @deprecated 3.0 Use `RCP_Membership::upgrade_possible()` instead.
+ * @see RCP_Membership::upgrade_possible()
  *
  * @param int $user_id The ID of the user to check, or 0 for the current user.
  *
@@ -788,19 +285,23 @@ function rcp_add_member_note( $user_id = 0, $note = '' ) {
 
 function rcp_subscription_upgrade_possible( $user_id = 0 ) {
 
-	if( empty( $user_id ) )
+	if( empty( $user_id ) ) {
 		$user_id = get_current_user_id();
-
-	$ret = false;
-
-	if( ( ! rcp_is_active( $user_id ) || ! rcp_is_recurring( $user_id ) ) && rcp_has_paid_levels() )
-		$ret = true;
-
-	if ( rcp_has_upgrade_path( $user_id ) ) {
-		$ret = true;
 	}
 
-	return (bool) apply_filters( 'rcp_can_upgrade_subscription', $ret, $user_id );
+	$customer = rcp_get_customer_by_user_id( $user_id );
+
+	if ( empty( $customer ) ) {
+		return (bool) apply_filters( 'rcp_can_upgrade_subscription', false, $user_id );
+	}
+
+	$membership = rcp_get_customer_single_membership( $customer->get_id() );
+
+	if ( empty( $membership ) ) {
+		return (bool) apply_filters( 'rcp_can_upgrade_subscription', false, $user_id );
+	}
+
+	return $membership->upgrade_possible();
 }
 
 /**
@@ -831,18 +332,20 @@ function rcp_get_upgrade_paths( $user_id = 0 ) {
 		$user_id = get_current_user_id();
 	}
 
-	// make sure the user is active and get the subscription ID
-	$user_subscription = ( rcp_is_recurring( $user_id ) && rcp_is_active( $user_id ) && 'cancelled' !== rcp_get_status() ) ? rcp_get_subscription_id( $user_id ) : '';
-	$subscriptions     = rcp_get_subscription_levels( 'active' );
+	$subscriptions = array_values( rcp_get_subscription_levels( 'active' ) );
+	$customer      = rcp_get_customer_by_user_id( $user_id );
 
-	// remove the user's current subscription from the list
-	foreach( $subscriptions as $key => $subscription ) {
-		if ( $user_subscription == $subscription->id ) {
-			unset( $subscriptions[ $key ] );
-		}
+	if ( empty( $customer ) ) {
+		return apply_filters( 'rcp_get_upgrade_paths', $subscriptions, $user_id );
 	}
 
-	return apply_filters( 'rcp_get_upgrade_paths', array_values( $subscriptions ), $user_id );
+	$membership = rcp_get_customer_single_membership( $customer->get_id() );
+
+	if ( empty( $membership ) ) {
+		return apply_filters( 'rcp_get_upgrade_paths', $subscriptions, $user_id );
+	}
+
+	return $membership->get_upgrade_paths();
 }
 
 /**
@@ -984,66 +487,6 @@ function rcp_change_password() {
 add_action( 'init', 'rcp_change_password' );
 
 /**
- * Process a member cancellation request
- *
- * @access  public
- * @since   2.1
- * @return  void
- */
-function rcp_process_member_cancellation() {
-
-	if( ! isset( $_GET['rcp-action'] ) || $_GET['rcp-action'] !== 'cancel' ) {
-		return;
-	}
-
-	if( ! is_user_logged_in() ) {
-		return;
-	}
-
-	if( wp_verify_nonce( $_GET['_wpnonce'], 'rcp-cancel-nonce' ) ) {
-
-		global $rcp_options;
-
-		$success  = rcp_cancel_member_payment_profile( get_current_user_id() );
-		$redirect = remove_query_arg( array( 'rcp-action', '_wpnonce', 'member-id' ), rcp_get_current_url() );
-
-		if( ! $success && rcp_is_paypal_subscriber() ) {
-			// No profile ID stored, so redirect to PayPal to cancel manually
-			$redirect = 'https://www.paypal.com/cgi-bin/customerprofileweb?cmd=_manage-paylist';
-		}
-
-		if( $success ) {
-
-			do_action( 'rcp_process_member_cancellation', get_current_user_id() );
-
-			$redirect = add_query_arg( 'profile', 'cancelled', $redirect );
-
-		}
-
-		wp_redirect( $redirect ); exit;
-
-	}
-}
-add_action( 'template_redirect', 'rcp_process_member_cancellation' );
-
-/**
- * Cancel a member's payment profile
- *
- * @param int  $member_id  ID of the member to cancel.
- * @param bool $set_status Whether or not to update the status to 'cancelled'.
- *
- * @access  public
- * @since   2.1
- * @return  bool Whether or not the cancellation was successful.
- */
-function rcp_cancel_member_payment_profile( $member_id = 0, $set_status = true ) {
-
-	$member = new RCP_Member( $member_id );
-
-	return $member->cancel_payment_profile( $set_status );
-}
-
-/**
  * Updates member payment profile ID meta keys with old versions from pre 2.1 gateways
  *
  * @param string     $profile_id
@@ -1085,7 +528,7 @@ function rcp_backfill_payment_profile_ids( $profile_id, $user_id, $member_object
 add_filter( 'rcp_member_get_payment_profile_id', 'rcp_backfill_payment_profile_ids', 10, 3 );
 
 /**
- * Retrieves the member's ID from their payment profile ID
+ * Retrieves the user account ID from a payment profile ID
  *
  * @param   string $profile_id Profile ID.
  *
@@ -1109,6 +552,9 @@ function rcp_get_member_id_from_profile_id( $profile_id = '' ) {
 /**
  * Determines if a member can renew their subscription
  *
+ * @deprecated 3.0 Use `RCP_Membership::can_renew()` instead.
+ * @see RCP_Membership::can_renew()
+ *
  * @param int $user_id The user ID to check, or 0 for the current user.
  *
  * @access public
@@ -1121,72 +567,26 @@ function rcp_can_member_renew( $user_id = 0 ) {
 		$user_id = get_current_user_id();
 	}
 
-	$ret    = true;
-	$member = new RCP_Member( $user_id );
+	$customer = rcp_get_customer_by_user_id( $user_id );
 
-	if( $member->is_recurring() && $member->is_active() && 'cancelled' !== $member->get_status() ) {
-		$ret = false;
-
+	if ( empty( $customer ) ) {
+		return apply_filters( 'rcp_member_can_renew', false, $user_id );
 	}
 
-	if( 'free' == $member->get_status() ) {
+	$membership = rcp_get_customer_single_membership( $customer->get_id() );
 
-		$ret = false;
-
+	if ( empty( $membership ) ) {
+		return apply_filters( 'rcp_member_can_renew', false, $user_id );
 	}
 
-	return apply_filters( 'rcp_member_can_renew', $ret, $user_id );
-}
-
-/**
- * Determines if a member can cancel their subscription on site
- *
- * @param int $user_id The user ID to check, or 0 for the current user.
- *
- * @access  public
- * @since   2.1
- * @return  bool True if the member can cancel, false if not.
- */
-function rcp_can_member_cancel( $user_id = 0 ) {
-
-	if( empty( $user_id ) ) {
-		$user_id = get_current_user_id();
-	}
-
-	$member = new RCP_Member( $user_id );
-
-	return $member->can_cancel();
-}
-
-/**
- * Gets the cancellation URL for a member
- *
- * @param int $user_id The user ID to get the link for, or 0 for the current user.
- *
- * @access  public
- * @since   2.1
- * @return  string Cancellation URL.
- */
-function rcp_get_member_cancel_url( $user_id = 0 ) {
-
-	if( empty( $user_id ) ) {
-		$user_id = get_current_user_id();
-	}
-
-	$url    = '';
-	$member = new RCP_Member( $user_id );
-
-	if( $member->is_recurring() ) {
-
-		$url = wp_nonce_url( add_query_arg( array( 'rcp-action' => 'cancel', 'member-id' => $user_id ) ), 'rcp-cancel-nonce' );
-
-	}
-
-	return apply_filters( 'rcp_member_cancel_url', $url, $user_id );
+	return $membership->can_renew();
 }
 
 /**
  * Determines if a member can update the credit / debit card attached to their account
+ *
+ * @deprecated 3.0 Use `rcp_can_update_membership_billing_card()` instead.
+ * @see rcp_can_update_membership_billing_card()
  *
  * @param int $user_id The ID of the user to check, or 0 for the current user.
  *
@@ -1204,19 +604,14 @@ function rcp_member_can_update_billing_card( $user_id = 0 ) {
 
 	$ret = false;
 
-	// Check if the member is a Stripe customer
-	if( rcp_is_stripe_subscriber( $user_id ) ) {
+	$customer = rcp_get_customer_by_user_id( $user_id );
 
-		$ret = true;
+	if ( ! empty( $customer ) ) {
+		$membership = rcp_get_customer_single_membership( $customer->get_id() );
 
-	} elseif ( rcp_is_paypal_subscriber( $user_id ) && rcp_has_paypal_api_access() ) {
-
-		$ret = true;
-
-	} elseif ( rcp_is_authnet_subscriber( $user_id ) && rcp_has_authnet_api_access() ) {
-
-		$ret = true;
-
+		if ( ! empty( $membership ) && rcp_can_update_membership_billing_card( $membership->get_id() ) ) {
+			$ret = true;
+		}
 	}
 
 	return apply_filters( 'rcp_member_can_update_billing_card', $ret, $user_id );
@@ -1258,24 +653,6 @@ function rcp_validate_username( $username = '' ) {
 }
 
 /**
- * Get the prorate amount for this member
- *
- * @param int $user_id
- *
- * @since 2.5
- * @return int
- */
-function rcp_get_member_prorate_credit( $user_id = 0 ) {
-	if( empty( $user_id ) ) {
-		$user_id = get_current_user_id();
-	}
-
-	$member = new RCP_Member( $user_id );
-
-	return $member->get_prorate_credit_amount();
-}
-
-/**
  * Disable toolbar for non-admins if option is enabled
  *
  * @since 2.7
@@ -1286,38 +663,11 @@ function rcp_maybe_disable_toolbar() {
 
 	global $rcp_options;
 
-	if ( isset( $rcp_options['disable_toolbar'] ) && ! current_user_can( 'manage_options' ) ) {
+	if ( isset( $rcp_options['disable_toolbar'] ) && ! current_user_can( 'edit_posts' ) ) {
 		add_filter( 'show_admin_bar', '__return_false' );
 	}
 }
 add_action( 'init', 'rcp_maybe_disable_toolbar', 9999 );
-
-/**
- * Removes the subscription-assigned role from a member when the member expires.
- *
- * @param string     $status     Status that was just set.
- * @param int        $member_id  ID of the member.
- * @param string     $old_status Previous status.
- * @param RCP_Member $member     Member object.
- *
- * @since  2.7
- * @return void
- */
-function rcp_update_expired_member_role( $status, $member_id, $old_status, $member ) {
-
-	if ( 'expired' !== $status ) {
-		return;
-	}
-
-	$subscription = rcp_get_subscription_details( $member->get_subscription_id() );
-
-	$default_role = get_option( 'default_role', 'subscriber' );
-
-	if ( ! empty( $subscription ) && is_object( $subscription ) && $subscription->role !== $default_role ) {
-		$member->remove_role( $subscription->role );
-	}
-}
-add_action( 'rcp_set_status', 'rcp_update_expired_member_role', 10, 4 );
 
 /**
  * Determines if a member is pending email verification.
@@ -1332,9 +682,13 @@ function rcp_is_pending_verification( $user_id = 0 ) {
 		$user_id = get_current_user_id();
 	}
 
-	$member = new RCP_Member( $user_id );
+	$customer = rcp_get_customer_by_user_id( $user_id );
 
-	return $member->is_pending_verification();
+	if ( empty( $customer ) ) {
+		return false;
+	}
+
+	return $customer->is_pending_verification();
 
 }
 
@@ -1390,8 +744,14 @@ function rcp_confirm_email_verification() {
 		return;
 	}
 
-	$member = new RCP_Member( $user->ID );
-	$member->verify_email();
+	$member   = new RCP_Member( $user ); // for backwards compatibility
+	$customer = rcp_get_customer_by_user_id( $user->ID );
+
+	if ( empty( $customer ) ) {
+		return;
+	}
+
+	$customer->verify_email();
 
 	global $rcp_options;
 
@@ -1424,14 +784,18 @@ function rcp_resend_email_verification() {
 		return;
 	}
 
-	$member = new RCP_Member( get_current_user_id() );
+	$customer = rcp_get_customer_by_user_id();
 
-	// Not pending verification.
-	if ( ! $member->is_pending_verification() ) {
+	if ( empty( $customer ) ) {
 		return;
 	}
 
-	rcp_send_email_verification( $member->ID );
+	// Not pending verification.
+	if ( ! $customer->is_pending_verification() ) {
+		return;
+	}
+
+	rcp_send_email_verification( $customer->get_user_id() );
 
 	// Redirect back to Edit Profile page with success message.
 	global $rcp_options;
@@ -1448,27 +812,6 @@ function rcp_resend_email_verification() {
 add_action( 'init', 'rcp_resend_email_verification' );
 
 /**
- * Retrieves the member's ID from their payment processor's subscription ID
- *
- * @param   string $subscription_id
- *
- * @since   2.8
- * @return  int|false User ID if found, false if not.
- */
-function rcp_get_member_id_from_subscription_id( $subscription_id = '' ) {
-
-	global $wpdb;
-
-	$user_id = $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM $wpdb->usermeta WHERE meta_key = 'rcp_merchant_subscription_id' AND meta_value = %s LIMIT 1", $subscription_id ) );
-
-	if ( $user_id != NULL ) {
-		return $user_id;
-	}
-
-	return false;
-}
-
-/**
  * Add a note to the member when a recurring charge fails.
  *
  * @param RCP_Member          $member
@@ -1479,6 +822,8 @@ function rcp_get_member_id_from_subscription_id( $subscription_id = '' ) {
  */
 function rcp_add_recurring_payment_failure_note( $member, $gateway ) {
 
+	$membership = $gateway->membership;
+
 	$gateway_classes = wp_list_pluck( rcp_get_payment_gateways(), 'class' );
 	$gateway_name    = array_search( get_class( $gateway ), $gateway_classes );
 
@@ -1488,15 +833,17 @@ function rcp_add_recurring_payment_failure_note( $member, $gateway ) {
 		$note .= sprintf( __( ' Event ID: %s', 'rcp' ), $gateway->webhook_event_id );
 	}
 
-	$member->add_note( $note );
+	$membership->add_note( $note );
 
-	rcp_log( sprintf( 'Recurring payment failed for user #%d. Gateway: %s; Subscription Level: %s; Expiration Date: %s', $member->ID, ucwords( $gateway_name ), $member->get_subscription_name(), $member->get_expiration_date() ) );
+	rcp_log( sprintf( 'Recurring payment failed for membership #%d. Gateway: %s; Membership Level: %s; Expiration Date: %s', $membership->get_id(), ucwords( $gateway_name ), $member->get_subscription_name(), $membership->get_expiration_date() ) );
 
 }
 add_action( 'rcp_recurring_payment_failed', 'rcp_add_recurring_payment_failure_note', 10, 2 );
 
 /**
  * Adds a note to the member when a subscription is started, renewed, or changed.
+ *
+ * @deprecated 3.0
  *
  * @param string     $subscription_id The member's new subscription ID.
  * @param int        $member_id       The member ID.
@@ -1526,4 +873,4 @@ function rcp_add_subscription_change_note( $subscription_id, $member_id, $member
 	}
 
 }
-add_action( 'rcp_member_pre_set_subscription_id', 'rcp_add_subscription_change_note', 10, 3 );
+//add_action( 'rcp_member_pre_set_subscription_id', 'rcp_add_subscription_change_note', 10, 3 );

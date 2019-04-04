@@ -224,7 +224,7 @@ class RCP_Payment_Gateway_Authorizenet extends RCP_Payment_Gateway {
 
 				// Delay start date for free trials.
 				if ( $this->is_trial() ) {
-					$payment_schedule->setStartDate( new DateTime( date( 'Y-m-d' ), strtotime( $this->subscription_data['trial_duration'] . ' ' . $this->subscription_data['trial_duration_unit'], current_time( 'timestamp' ) ) ) );
+					$payment_schedule->setStartDate( new DateTime( date( 'Y-m-d', strtotime( $this->subscription_data['trial_duration'] . ' ' . $this->subscription_data['trial_duration_unit'], current_time( 'timestamp' ) ) ) ) );
 				}
 
 				$subscription->setPaymentSchedule( $payment_schedule );
@@ -265,47 +265,20 @@ class RCP_Payment_Gateway_Authorizenet extends RCP_Payment_Gateway {
 
 				if ( $response != null && $response->getMessages()->getResultCode() == "Ok" ) {
 
-					// If the customer has an existing subscription, we need to cancel it
-					if ( $member->just_upgraded() && $member->can_cancel() ) {
-						$cancelled = $member->cancel_payment_profile( false );
-					}
+					$this->membership->set_recurring( $this->auto_renew );
+					$this->membership->set_gateway_subscription_id( 'anet_' . $response->getSubscriptionId() );
 
-					$member->set_recurring( $this->auto_renew );
-					$member->set_payment_profile_id( 'anet_' . $response->getSubscriptionId() );
+					/*
+					 * Complete payment and activate account.
+					 * Note: Payment hasn't actually been collected yet, but it takes ages to do so we're doing it now
+					 * anyway. If payment ends up failing we'll pick that up in the webhook and disable the account.
+					 */
+					$rcp_payments_db->update( $this->payment->id, array(
+						'payment_type' => 'Credit Card',
+						'status'       => 'complete'
+					) );
 
-					if ( $this->is_trial() ) {
-
-						// Complete $0 payment and activate account.
-						$rcp_payments_db->update( $this->payment->id, array(
-							'payment_type' => 'Credit Card',
-							'status'       => 'complete'
-						) );
-
-					} else {
-
-						// Manually set these values because webhook has a big delay and we want to activate the account ASAP.
-						$force_now  = $this->auto_renew || ( $member->get_subscription_id() != $this->subscription_id );
-						$expiration = $member->calculate_expiration( $force_now );
-						$member->set_subscription_id( $this->subscription_id );
-						$member->set_expiration_date( $expiration );
-						$member->set_status( 'active' );
-
-						/*
-						 * Set pending expiration date so this will be used in rcp_add_user_to_subscription() when the webhook
-						 * gets the transaction ID and completes the payment, which may take several hours.
-						 */
-						update_user_meta( $this->user_id, 'rcp_pending_expiration_date', $expiration );
-
-					}
-
-					$member->add_note( __( 'Subscription started in Authorize.net', 'rcp' ) );
-
-					if ( ! is_user_logged_in() ) {
-
-						// log the new user in
-						rcp_login_user_in( $this->user_id, $this->user_name, $_POST['rcp_user_pass'] );
-
-					}
+					$this->membership->add_note( __( 'Subscription started in Authorize.net', 'rcp' ) );
 
 					do_action( 'rcp_authorizenet_signup', $this->user_id, $this, $response );
 
@@ -465,35 +438,38 @@ class RCP_Payment_Gateway_Authorizenet extends RCP_Payment_Gateway {
 			$response_code = intval( $_POST['x_response_code'] );
 			$reason_code   = intval( $_POST['x_response_reason_code'] );
 
-			$member_id = rcp_get_member_id_from_profile_id( 'anet_' . $anet_subscription_id );
+			$this->membership = rcp_get_membership_by( 'gateway_subscription_id', 'anet_' . $anet_subscription_id );
 
-			if( empty( $member_id ) ) {
-				rcp_log( 'Exiting Authorize.net webhook - member ID not found.' );
+			if( empty( $this->membership ) ) {
+				rcp_log( 'Exiting Authorize.net webhook - membership not found.' );
 
-				die( 'no member found' );
+				die( 'no membership found' );
 			}
 
-			$member   = new RCP_Member( $member_id );
+			$member   = new RCP_Member( $this->membership->get_customer()->get_user_id() ); // for backwards compatibility only
 			$payments = new RCP_Payments();
 
-			rcp_log( sprintf( 'Processing webhook for member #%d.', $member->ID ) );
+			rcp_log( sprintf( 'Processing webhook for membership #%d.', $this->membership->get_id() ) );
 
 			if ( 1 == $response_code ) {
 
 				// Approved
 				$renewal_amount = sanitize_text_field( $_POST['x_amount'] );
 				$transaction_id = sanitize_text_field( $_POST['x_trans_id'] );
-				$is_trialing    = $member->is_trialing();
+				$is_trialing    = $this->membership->is_trialing();
 
 				$payment_data = array(
 					'date'             => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
-					'subscription'     => $member->get_subscription_name(),
+					'subscription'     => rcp_get_subscription_name( $this->membership->get_object_id() ),
 					'payment_type'     => 'Credit Card',
-					'subscription_key' => $member->get_subscription_key(),
+					'subscription_key' => $this->membership->get_subscription_key(),
 					'amount'           => $renewal_amount,
-					'user_id'          => $member->ID,
+					'user_id'          => $this->membership->get_customer()->get_user_id(),
+					'customer_id'      => $this->membership->get_customer_id(),
+					'membership_id'    => $this->membership->get_id(),
 					'transaction_id'   => 'anet_' . $transaction_id,
-					'status'           => 'complete'
+					'status'           => 'complete',
+					'gateway'          => 'authorizenet'
 				);
 
 				$pending_payment_id = $member->get_pending_payment_id();
@@ -505,28 +481,33 @@ class RCP_Payment_Gateway_Authorizenet extends RCP_Payment_Gateway {
 					$rcp_payments_db->update( absint( $pending_payment_id ), $payment_data );
 					$payment_id = $pending_payment_id;
 
-				} else {
+					if ( $member->is_recurring() ) {
+						// Recurring profile first created.
+						do_action( 'rcp_webhook_recurring_payment_profile_created', $member, $this );
+					}
+
+				} elseif ( ! $payments->payment_exists( 'anet_' . $transaction_id ) ) {
+
+					if ( intval( $_POST['x_subscription_paynum'] ) > 1 || $is_trialing ) {
+						// Renewal payment.
+						$this->membership->renew( $this->membership->is_recurring() );
+					}
 
 					rcp_log( 'Processing approved Authorize.net payment via webhook - inserting new payment.' );
 
+					$payment_data['transaction_type'] = 'renewal';
+
 					$payment_id = $payments->insert( $payment_data );
 
+					if ( intval( $_POST['x_subscription_paynum'] ) > 1 || $is_trialing ) {
+						do_action( 'rcp_webhook_recurring_payment_processed', $member, $payment_id, $this );
+					}
+
+				} else {
+					rcp_log( 'Payment %s already exists.', 'anet_' . $transaction_id );
 				}
 
-				if ( intval( $_POST['x_subscription_paynum'] ) > 1 || $is_trialing ) {
-
-					// Renewal payment.
-					$member->renew( $member->is_recurring() );
-					do_action( 'rcp_webhook_recurring_payment_processed', $member, $payment_id, $this );
-
-				} elseif ( $member->is_recurring() ) {
-
-					// Recurring profile first created.
-					do_action( 'rcp_webhook_recurring_payment_profile_created', $member, $this );
-
-				}
-
-				$member->add_note( __( 'Subscription processed in Authorize.net', 'rcp' ) );
+				$this->membership->add_note( __( 'Subscription processed in Authorize.net', 'rcp' ) );
 
 				do_action( 'rcp_authorizenet_silent_post_payment', $member, $this );
 				do_action( 'rcp_gateway_payment_processed', $member, $payment_id, $this );
@@ -568,9 +549,16 @@ class RCP_Payment_Gateway_Authorizenet extends RCP_Payment_Gateway {
 			 * we authorize cards beforehand, but just in case authorization was successful
 			 * but the actual charge fails a few hours later.
 			 */
-			if ( 1 != $response_code && 1 == intval( $_POST['x_subscription_paynum'] ) && ! $member->is_trialing() ) {
-				rcp_log( sprintf( 'Cancelling membership for user #%d, as initial charge from Authorize.net failed. Response code: %d', $member->ID, $response_code ) );
-				$member->set_status( 'expired' );
+			if ( 1 != $response_code && 1 == intval( $_POST['x_subscription_paynum'] ) && ! $this->membership->is_trialing() ) {
+				rcp_log( sprintf( 'Cancelling membership #%d, as initial charge from Authorize.net failed. Response code: %d', $this->membership->get_id(), $response_code ) );
+				$this->membership->set_status( 'pending' );
+
+				// Get the payment and update the status.
+				$payment = $payments->get_payment_by( 'transaction_id', 'anet_' . sanitize_text_field( $_POST['x_trans_id'] ) );
+
+				if ( $payment ) {
+					$payments->update( $payment->id, array( 'status' => 'failed' ) );
+				}
 			}
 		}
 

@@ -12,12 +12,15 @@
  * @copyright   Copyright (c) 2017, Restrict Content Pro
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU Public License
  */
-?>
 
-<?php $member = new RCP_Member( get_current_user_id() ); ?>
+/**
+ * @var RCP_Membership $rcp_membership
+ */
+global $rcp_membership;
+?>
 <form id="rcp_update_card_form" class="rcp_form" action="" method="POST">
 
-	<?php $cards = $member->get_card_details(); ?>
+	<?php $cards = $rcp_membership->get_card_details(); ?>
 
 	<?php if( ! empty( $cards ) ) : ?>
 		<h3><?php _e( 'Your Cards', 'rcp' ); ?></h3>
@@ -70,7 +73,8 @@
 	<div class="rcp_message error">
 	</div>
 	<p id="rcp_submit_wrap">
+		<input type="hidden" name="rcp_membership_id" value="<?php echo esc_attr( $rcp_membership->get_id() ); ?>"/>
 		<input type="hidden" name="rcp_update_card_nonce" value="<?php echo wp_create_nonce( 'rcp-update-card-nonce' ); ?>"/>
-		<input type="submit" name="rcp_submit_card_update" id="rcp_submit" value="<?php esc_attr_e( 'Update Card', 'rcp' ); ?>"/>
+		<input type="submit" name="rcp_submit_card_update" id="rcp_submit" class="rcp-button" value="<?php esc_attr_e( 'Update Card', 'rcp' ); ?>"/>
 	</p>
 </form>

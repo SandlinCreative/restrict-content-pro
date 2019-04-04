@@ -87,6 +87,15 @@ class RCP_Emails {
 	private $payment_id;
 
 	/**
+	 * Membership object
+	 *
+	 * @var RCP_Membership
+	 *
+	 * @since 3.0
+	 */
+	private $membership;
+
+	/**
 	 * Container for storing all tags
 	 *
 	 * @since 2.7
@@ -165,6 +174,17 @@ class RCP_Emails {
 		}
 
 		return apply_filters( 'rcp_email_content_type', $this->content_type, $this );
+	}
+
+	/**
+	 * Get the corresponding membership object.
+	 *
+	 * @access public
+	 * @since 3.0
+	 * @return RCP_Membership
+	 */
+	public function get_membership() {
+		return $this->membership;
 	}
 
 	/**
@@ -292,6 +312,11 @@ class RCP_Emails {
 	 */
 	public function send( $to, $subject, $message, $attachments = '' ) {
 
+		if ( defined( 'RCP_DISABLE_EMAILS' ) && RCP_DISABLE_EMAILS ) {
+			rcp_log( 'Email not sent - detected RCP_DISABLE_EMAILS constant.', true );
+			return true;
+		}
+
 		if ( ! did_action( 'init' ) && ! did_action( 'admin_init' ) ) {
 			_doing_it_wrong( __FUNCTION__, __( 'You cannot send emails with rcp_Emails until init/admin_init has been reached', 'rcp' ), null );
 			return false;
@@ -322,10 +347,27 @@ class RCP_Emails {
 		do_action( 'rcp_email_send_after', $this );
 
 		if ( false === $sent ) {
-			rcp_log( 'wp_mail() failure in RCP_Emails class.' );
+			rcp_log( 'wp_mail() failure in RCP_Emails class.', true );
 		}
 
 		return $sent;
+	}
+
+	/**
+	 * Generate preview by setting up email tags and inserting message inside email template.
+	 *
+	 * @param string $message
+	 *
+	 * @return string
+	 */
+	public function generate_preview( $message = '' ) {
+
+		$this->setup_email_tags();
+
+		$message = $this->build_email( $message );
+
+		return $message;
+
 	}
 
 	/**
@@ -362,6 +404,7 @@ class RCP_Emails {
 	public function text_to_html( $message ) {
 		if ( 'text/html' === $this->content_type || true === $this->html ) {
 			$message = wpautop( make_clickable( $message ) );
+			$message = str_replace( '&#038;', '&amp;', $message );
 		}
 
 		return $message;
@@ -454,12 +497,12 @@ class RCP_Emails {
 			),
 			array(
 				'tag'         => 'subscription_name',
-				'description' => __( 'The name of the subscription level the member is subscribed to', 'rcp' ),
+				'description' => __( 'The name of the membership level the member is subscribed to', 'rcp' ),
 				'function'    => 'rcp_email_tag_subscription_name'
 			),
 			array(
 				'tag'         => 'subscription_key',
-				'description' => __( 'The unique key of the subscription level the member is subscribed to', 'rcp' ),
+				'description' => __( 'The unique key of the membership level the member is subscribed to', 'rcp' ),
 				'function'    => 'rcp_email_tag_subscription_key'
 			),
 			array(
@@ -514,7 +557,7 @@ class RCP_Emails {
 			return $m[0];
 		}
 
-		return call_user_func( $this->tags[$tag]['function'], $this->member_id, $this->payment_id, $tag );
+		return call_user_func( $this->tags[$tag]['function'], $this->member_id, $this->payment_id, $tag, $this->membership );
 	}
 
 	/**

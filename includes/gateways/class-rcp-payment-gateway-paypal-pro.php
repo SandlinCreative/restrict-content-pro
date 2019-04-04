@@ -79,6 +79,16 @@ class RCP_Payment_Gateway_PayPal_Pro extends RCP_Payment_Gateway {
 			$last_name  = $_POST['rcp_user_last'];
 		}
 
+		$descriptor = get_bloginfo( 'name' ) . ' - ' . $this->subscription_name;
+		if ( strlen( $descriptor ) > 23 ) {
+			$descriptor = substr( $descriptor, 0, 23 );
+		}
+
+		$descriptor_city = get_bloginfo( 'admin_email' );
+		if ( strlen( $descriptor_city ) > 13 ) {
+			$descriptor_city = substr( $descriptor_city, 0, 13 );
+		}
+
 		$args = array(
 			'USER'               => $this->username,
 			'PWD'                => $this->password,
@@ -90,9 +100,9 @@ class RCP_Payment_Gateway_PayPal_Pro extends RCP_Payment_Gateway {
 			'SHIPPINGAMT'        => 0,
 			'TAXAMT'             => 0,
 			'DESC'               => $this->subscription_name,
-			'SOFTDESCRIPTOR'     => get_bloginfo( 'name' ) . ' - ' . $this->subscription_name,
-			'SOFTDESCRIPTORCITY' => get_bloginfo( 'admin_email' ),
-			'CUSTOM'             => $this->user_id,
+			'SOFTDESCRIPTOR'     => $descriptor,
+			'SOFTDESCRIPTORCITY' => $descriptor_city,
+			'CUSTOM'             => $this->user_id . '|' . $this->membership->get_id(),
 			'NOTIFYURL'          => add_query_arg( 'listener', 'EIPN', home_url( 'index.php' ) ),
 			'EMAIL'              => $this->email,
 			'FIRSTNAME'          => sanitize_text_field( $first_name ),
@@ -166,16 +176,9 @@ class RCP_Payment_Gateway_PayPal_Pro extends RCP_Payment_Gateway {
 			} else {
 
 				// Successful signup
-				$member = new RCP_Member( $this->user_id );
-
-				if( $member->just_upgraded() && $member->can_cancel() ) {
-
-					$cancelled = $member->cancel_payment_profile( false );
-
-				}
 
 				if ( isset( $body['PROFILEID'] ) ) {
-					$member->set_payment_profile_id( $body['PROFILEID'] );
+					$this->membership->set_gateway_subscription_id( $body['PROFILEID'] );
 				}
 
 				if ( isset( $body['TRANSACTIONID'] ) && false !== strpos( strtolower( $body['ACK'] ), 'success' ) ) {

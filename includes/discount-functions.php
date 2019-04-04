@@ -68,7 +68,7 @@ function rcp_get_discount_details_by_code( $code ) {
  * Check whether a given discount code is valid.
  *
  * @param string $code            The discount code to validate.
- * @param int    $subscription_id ID of the subscription level you want to use the code for.
+ * @param int    $subscription_id ID of the membership level you want to use the code for.
  *
  * @return bool
  */
@@ -85,9 +85,11 @@ function rcp_validate_discount( $code, $subscription_id = 0 ) {
 			$ret = true;
 		}
 
-		// If the discount is restricted to a level, ensure that's the level being signed up for
-		if( $discounts->has_subscription_id( $discount->id ) ) {
-			if( $subscription_id != $discounts->get_subscription_id( $discount->id ) ) {
+		// If the discount is restricted to a level(s), ensure the level being signed up for is included.
+		if( $discounts->has_membership_level_ids( $discount->id ) ) {
+			$approved_ids = $discounts->get_membership_level_ids( $discount->id );
+
+			if( ! in_array( $subscription_id, $approved_ids ) ) {
 				$ret = false;
 			}
 		}
@@ -305,33 +307,3 @@ function rcp_discount_sign_filter( $amount, $type ) {
 	return $discount;
 }
 
-/**
- * Check PayPal return price after applying discount.
- *
- * @param float $price
- * @param float $amount
- * @param float $amount2
- * @param int $user_id
- *
- * @return bool
- */
-function rcp_check_paypal_return_price_after_discount( $price, $amount, $amount2, $user_id ) {
-	// get an array of all discount codes this user has used
-	$user_discounts = get_user_meta( $user_id, 'rcp_user_discounts', true );
-	if( !is_array( $user_discounts ) || $user_discounts == '' ) {
-		// this user has never used a discount code
-		return false;
-	}
-	foreach( $user_discounts as $discount_code ) {
-		if( !rcp_validate_discount( $discount_code ) ) {
-			// discount code is inactive
-			return false;
-		}
-		$code_details = rcp_get_discount_details_by_code( $discount_code );
-		$discounted_price = rcp_get_discounted_price( $price, $code_details->amount, $code_details->unit );
-		if( $discounted_price == $amount || $discounted_price == $amount2 ) {
-			return true;
-		}
-	}
-	return false;
-}

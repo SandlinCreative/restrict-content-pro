@@ -35,8 +35,8 @@ function rcp_get_error_messages_html( $error_id = '' ) {
 	$errors = rcp_errors()->get_error_codes();
 
 	if( $errors ) {
-		
-		$html .= '<div class="rcp_message error">';
+
+		$html .= '<div class="rcp_message error" role="list">';
 		// Loop error codes and display errors
 		foreach( $errors as $code ) {
 
@@ -44,7 +44,7 @@ function rcp_get_error_messages_html( $error_id = '' ) {
 
 				$message = rcp_errors()->get_error_message( $code );
 
-				$html .= '<p class="rcp_error ' . esc_attr( $code ) . '"><span>' . $message . '</span></p>';
+				$html .= '<p class="rcp_error ' . esc_attr( $code ) . '" role="listitem"><span>' . $message . '</span></p>';
 
 			}
 
@@ -54,7 +54,7 @@ function rcp_get_error_messages_html( $error_id = '' ) {
 
 	}
 
-	return apply_filters( 'rcp_error_messages_html', $html, $errors );
+	return apply_filters( 'rcp_error_messages_html', $html, $errors, $error_id );
 
 }
 
