@@ -61,6 +61,7 @@ function rcp_search_users() {
 	if( wp_verify_nonce( $_POST['rcp_nonce'], 'rcp_member_nonce' ) ) {
 
 		$search_query = trim( $_POST['user_name'] );
+		$return_field = ! empty( $_POST['return_field'] ) ? sanitize_text_field( $_POST['return_field'] ) : 'user_login';
 
 		$found_users = get_users( array(
 				'number' => 9999,
@@ -71,7 +72,7 @@ function rcp_search_users() {
 		if( $found_users ) {
 			$user_list = '<ul>';
 				foreach( $found_users as $user ) {
-					$user_list .= '<li><a href="#" data-login="' . esc_attr( $user->user_login ) . '">' . esc_html( $user->user_login ) . '</a></li>';
+					$user_list .= '<li><a href="#" data-login="' . esc_attr( $user->$return_field ) . '">' . esc_html( $user->$return_field ) . '</a></li>';
 				}
 			$user_list .= '</ul>';
 

@@ -14,7 +14,15 @@
 
 global $rcp_password_form_args; ?>
 
-<?php rcp_show_error_messages( 'password' ); ?>
+<?php
+rcp_show_error_messages( 'password' );
+
+// Bail if the reset link is invalid. This prevents the change password fields from showing.
+$errors = rcp_errors();
+if ( rcp_errors()->get_error_data( 'invalid_key' ) === 'password' ) {
+	return;
+}
+?>
 
 <?php if( isset( $_GET['password-reset']) && $_GET['password-reset'] == 'true') { ?>
 	<div class="rcp_message success">

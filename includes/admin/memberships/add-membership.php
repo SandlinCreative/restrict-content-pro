@@ -43,8 +43,9 @@ if ( ! isset( $_GET['view'] ) || 'add' != $_GET['view'] ) {
 									?>
 
 								<?php else : ?>
-									<input type="text" id="rcp-customer-email" name="user_email" placeholder="<?php esc_attr_e( 'Email', 'rcp' ); ?>" value="<?php echo ! empty( $_GET['email'] ) ? esc_attr( urldecode( $_GET['email'] ) ) : ''; ?>"/>
+									<input type="text" id="rcp-customer-email" class="rcp-user-search" data-return-field="user_email" name="user_email" placeholder="<?php esc_attr_e( 'Email', 'rcp' ); ?>" value="<?php echo ! empty( $_GET['email'] ) ? esc_attr( rawurldecode( $_GET['email'] ) ) : ''; ?>"/>
 									<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php esc_attr_e( 'Enter the email of an existing customer. If a customer doesn\'t exist with this email, a new one will be created.', 'rcp' ); ?>"></span>
+									<div id="rcp_user_search_results"></div>
 								<?php endif; ?>
 							</td>
 						</tr>
@@ -172,6 +173,14 @@ if ( ! isset( $_GET['view'] ) || 'add' != $_GET['view'] ) {
 								<input type="text" id="rcp-membership-gateway-subscription-id" name="gateway_subscription_id" value=""/>
 							</td>
 						</tr>
+						<?php
+						/**
+						 * Add additional fields to the Add Membership form.
+						 *
+						 * @since 3.0.5
+						 */
+						do_action( 'rcp_add_membership_after' );
+						?>
 						</tbody>
 					</table>
 				</div>

@@ -9,6 +9,37 @@
  */
 
 /**
+ * Generate an idempotency key.
+ *
+ * @since 3.5.0
+ *
+ * @param array $args Arguments used to create or update the current object.
+ * @param string $context The context in which the key was generated.
+ * @return string
+ */
+function rcp_stripe_generate_idempotency_key( $args, $context = 'new' ) {
+	$idempotency_key = md5( json_encode( $args ) );
+
+	/**
+	 * Filters the idempotency_key value sent with the Stripe charge options.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @param string $idempotency_key Value of the idempotency key.
+	 * @param array  $args            Arguments used to help generate the key.
+	 * @param string $context         Context under which the idempotency key is generated.
+	 */
+	$idempotency_key = apply_filters(
+		'rcp_stripe_generate_idempotency_key',
+		$idempotency_key,
+		$args,
+		$context
+	);
+	
+	return $idempotency_key;
+}
+
+/**
  * Determine if a member is a Stripe subscriber
  *
  * @deprecated 3.0 Use `rcp_is_stripe_membership()` instead.
@@ -87,77 +118,47 @@ function rcp_is_stripe_membership( $membership_object_or_id ) {
  * @return      void
  */
 function rcp_stripe_update_card_form_js() {
-	global $rcp_options;
+	global $rcp_options, $rcp_membership;
 
-	if( ! rcp_is_gateway_enabled( 'stripe' ) && ! rcp_is_gateway_enabled( 'stripe_checkout' ) ) {
+	if ( ! rcp_is_gateway_enabled( 'stripe' ) && ! rcp_is_gateway_enabled( 'stripe_checkout' ) ) {
 		return;
 	}
 
-	if( rcp_is_sandbox() ) {
+	if ( ! rcp_is_stripe_membership( $rcp_membership->get_id() ) ) {
+		return;
+	}
+
+	if ( rcp_is_sandbox() ) {
 		$key = trim( $rcp_options['stripe_test_publishable'] );
 	} else {
 		$key = trim( $rcp_options['stripe_live_publishable'] );
 	}
 
-	if( empty( $key ) ) {
+	if ( empty( $key ) ) {
 		return;
 	}
 
-	wp_enqueue_script( 'stripe-js', 'https://js.stripe.com/v2/', array( 'jquery' ) );
-?>
-	<script type="text/javascript">
+	$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
 
-		function rcp_stripe_response_handler(status, response) {
-			if (response.error) {
+	// Shared Stripe functionality.
+	rcp_stripe_enqueue_scripts(
+		array(
+			'keys' => array(
+				'publishable' => $key,
+			),
+		)
+	);
 
-				// re-enable the submit button
-				jQuery('#rcp_update_card_form #rcp_submit').attr("disabled", false);
-
-				jQuery('#rcp_ajax_loading').hide();
-
-				// show the errors on the form
-				jQuery(".rcp_message.error").html( '<p class="rcp_error"><span>' + response.error.message + '</span></p>');
-
-			} else {
-
-				var form$ = jQuery("#rcp_update_card_form");
-				// token contains id, last4, and card type
-				var token = response['id'];
-				// insert the token into the form so it gets submitted to the server
-				form$.append("<input type='hidden' name='stripeToken' value='" + token + "' />");
-
-				// and submit
-				form$.get(0).submit();
-
-			}
-		}
-
-		jQuery(document).ready(function($) {
-
-			Stripe.setPublishableKey('<?php echo trim( $key ); ?>');
-
-			$("#rcp_update_card_form").on('submit', function(event) {
-
-				event.preventDefault();
-
-				// disable the submit button to prevent repeated clicks
-				$('#rcp_update_card_form #rcp_submit').attr("disabled", "disabled");
-
-				// createToken returns immediately - the supplied callback submits the form if there are no errors
-				Stripe.createToken({
-					number: $('.card-number').val(),
-					name: $('.card-name').val(),
-					cvc: $('.card-cvc').val(),
-					exp_month: $('.card-expiry-month').val(),
-					exp_year: $('.card-expiry-year').val(),
-					address_zip: $('.card-zip').val()
-				}, rcp_stripe_response_handler);
-
-				return false;
-			});
-		});
-	</script>
-<?php
+	// Custom profile form handling.
+	wp_enqueue_script(
+		'rcp-stripe-profile', 
+		RCP_PLUGIN_URL . 'includes/gateways/stripe/js/profile' . $suffix . '.js',
+		array(
+			'jquery',
+			'rcp-stripe'
+		),
+		RCP_PLUGIN_VERSION
+	);
 }
 add_action( 'rcp_before_update_billing_card_form', 'rcp_stripe_update_card_form_js' );
 
@@ -387,22 +388,25 @@ function rcp_stripe_create_discount( $args ) {
 	try {
 
 		if ( $args['unit'] == '%' ) {
-			\Stripe\Coupon::create( array(
-					"percent_off" => sanitize_text_field( $args['amount'] ),
-					"duration"    => "forever",
-					"id"          => sanitize_text_field( $args['code'] ),
-					"currency"   => strtolower( rcp_get_currency() )
-				)
+			$coupon_args = array(
+				"percent_off" => sanitize_text_field( $args['amount'] ),
+				"duration"    => "forever",
+				"id"          => sanitize_text_field( $args['code'] ),
+				"name"        => sanitize_text_field( $args['name'] ),
+				"currency"    => strtolower( rcp_get_currency() )
 			);
+
 		} else {
-			\Stripe\Coupon::create( array(
-					"amount_off" => sanitize_text_field( $args['amount'] ) * rcp_stripe_get_currency_multiplier(),
-					"duration"   => "forever",
-					"id"         => sanitize_text_field( $args['code'] ),
-					"currency"   => strtolower( rcp_get_currency() )
-				)
+			$coupon_args = array(
+				"amount_off" => sanitize_text_field( $args['amount'] ) * rcp_stripe_get_currency_multiplier(),
+				"duration"   => "forever",
+				"id"         => sanitize_text_field( $args['code'] ),
+				"name"       => sanitize_text_field( $args['name'] ),
+				"currency"   => strtolower( rcp_get_currency() )
 			);
 		}
+
+		\Stripe\Coupon::create( $coupon_args );
 
 	} catch ( \Stripe\Error\Card $e ) {
 
@@ -567,22 +571,24 @@ function rcp_stripe_update_discount( $discount_id, $args ) {
 		try {
 
 			if ( $args['unit'] == '%' ) {
-				\Stripe\Coupon::create( array(
-						"percent_off" => sanitize_text_field( $args['amount'] ),
-						"duration"    => "forever",
-						"id"          => sanitize_text_field( $discount_name ),
-						"currency"    => strtolower( rcp_get_currency() )
-					)
+				$coupon_args = array(
+					"percent_off" => sanitize_text_field( $args['amount'] ),
+					"duration"    => "forever",
+					"id"          => sanitize_text_field( $discount_name ),
+					"name"        => sanitize_text_field( $args['name'] ),
+					"currency"    => strtolower( rcp_get_currency() )
 				);
 			} else {
-				\Stripe\Coupon::create( array(
-						"amount_off" => sanitize_text_field( $args['amount'] ) * rcp_stripe_get_currency_multiplier(),
-						"duration"   => "forever",
-						"id"         => sanitize_text_field( $discount_name ),
-						"currency"   => strtolower( rcp_get_currency() )
-					)
+				$coupon_args = array(
+					"amount_off" => sanitize_text_field( $args['amount'] ) * rcp_stripe_get_currency_multiplier(),
+					"duration"   => "forever",
+					"id"         => sanitize_text_field( $discount_name ),
+					"name"       => sanitize_text_field( $args['name'] ),
+					"currency"   => strtolower( rcp_get_currency() )
 				);
 			}
+
+			\Stripe\Coupon::create( $coupon_args );
 
 		} catch ( Exception $e ) {
 			wp_die( '<pre>' . $e . '</pre>', __( 'Error', 'rcp' ) );
@@ -602,22 +608,24 @@ function rcp_stripe_update_discount( $discount_id, $args ) {
 		try {
 
 			if ( $args['unit'] == '%' ) {
-				\Stripe\Coupon::create( array(
-						"percent_off" => sanitize_text_field( $args['amount'] ),
-						"duration"    => "forever",
-						"id"          => sanitize_text_field( $discount_name ),
-						"currency"    => strtolower( rcp_get_currency() )
-					)
+				$coupon_args = array(
+					"percent_off" => sanitize_text_field( $args['amount'] ),
+					"duration"    => "forever",
+					"id"          => sanitize_text_field( $discount_name ),
+					"name"        => sanitize_text_field( $args['name'] ),
+					"currency"    => strtolower( rcp_get_currency() )
 				);
 			} else {
-				\Stripe\Coupon::create( array(
-						"amount_off" => sanitize_text_field( $args['amount'] ) * rcp_stripe_get_currency_multiplier(),
-						"duration"   => "forever",
-						"id"         => sanitize_text_field( $discount_name ),
-						"currency"   => strtolower( rcp_get_currency() )
-					)
+				$coupon_args = array(
+					"amount_off" => sanitize_text_field( $args['amount'] ) * rcp_stripe_get_currency_multiplier(),
+					"duration"   => "forever",
+					"id"         => sanitize_text_field( $discount_name ),
+					"name"       => sanitize_text_field( $args['name'] ),
+					"currency"   => strtolower( rcp_get_currency() )
 				);
 			}
+
+			\Stripe\Coupon::create( $coupon_args );
 
 		} catch (\Stripe\Error\InvalidRequest $e) {
 
@@ -932,4 +940,55 @@ function rcp_stripe_cancel_membership( $payment_profile_id ) {
 
 	return $success;
 
+}
+
+/**
+ * Enqueue shared scripts.
+ *
+ * @since 3.1.0
+ */
+function rcp_stripe_enqueue_scripts( $localize = array() ) {
+	// Stripe API.
+	wp_enqueue_script(
+		'rcp-stripe-js-v3',
+		'https://js.stripe.com/v3/',
+		array(),
+		'3'
+	);
+
+	$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
+
+	wp_enqueue_script(
+		'rcp-stripe', 
+		RCP_PLUGIN_URL . 'includes/gateways/stripe/js/stripe' . $suffix . '.js',
+		array(
+			'rcp-stripe-js-v3'
+		),
+		RCP_PLUGIN_VERSION
+	);
+
+	$localize = wp_parse_args(
+		array(
+			'formatting'     => array(
+				'currencyMultiplier' => rcp_stripe_get_currency_multiplier(),
+			),
+			'elementsConfig' => null,
+		),
+		$localize
+	);
+
+	/**
+	 * Filter the data made available to the Stripe scripts.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param array $localize Localization data.
+	 */
+	$localize = apply_filters( 'rcp_stripe_scripts', $localize );
+
+	wp_localize_script(
+		'rcp-stripe',
+		'rcpStripe',
+		$localize
+	);
 }

@@ -57,7 +57,7 @@ abstract class Base_Object {
 				$value = null;
 			}
 			
-			$this->{$key} = $value;
+			$this->{$key} = maybe_unserialize( $value );
 		}
 	}
 

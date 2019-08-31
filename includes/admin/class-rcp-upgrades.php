@@ -41,6 +41,7 @@ class RCP_Upgrades {
 		$this->v29_upgrades();
 		$this->v30_upgrades();
 		$this->v304_upgrades();
+		$this->v31_upgrades();
 
 		// If upgrades have occurred or the DB version is differnt from the version constant
 		if ( $this->upgraded || $this->version <> RCP_PLUGIN_VERSION ) {
@@ -269,6 +270,31 @@ class RCP_Upgrades {
 		if( version_compare( $this->version, '3.0.4', '<' ) ) {
 			rcp_log( 'Performing version 3.0.4 upgrades: options install.', true );
 			@rcp_options_install();
+		}
+
+	}
+
+	/**
+	 * Process 3.1 upgrades.
+	 *
+	 * @access private
+	 * @return void
+	 */
+	private function v31_upgrades() {
+
+		if( version_compare( $this->version, '3.1', '<' ) ) {
+			rcp_log( 'Performing version 3.1 upgrades: options install.', true );
+			@rcp_options_install();
+
+			global $rcp_options, $wpdb;
+
+			if ( ! empty( $rcp_options['one_time_discounts'] ) ) {
+				rcp_log( 'Performing version 3.1 upgrades: setting all discounts to one time.', true );
+
+				$discounts_table_name = rcp_get_discounts_db_name();
+
+				$wpdb->query( "UPDATE {$discounts_table_name} SET one_time = 1" );
+			}
 		}
 
 	}

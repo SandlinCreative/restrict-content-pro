@@ -314,6 +314,35 @@ class Customers_Table extends List_Table {
 			}
 		}
 
+		$this->show_admin_notice( $this->current_action() );
+
+	}
+
+	/**
+	 * Show admin notice for bulk actions.
+	 *
+	 * @param string $action The action to show the notice for.
+	 *
+	 * @access private
+	 * @since 3.0.8
+	 * @return void
+	 */
+	private function show_admin_notice( $action ) {
+
+		$message = '';
+
+		switch ( $action ) {
+			case 'delete' :
+				$message = __( 'Customer(s) deleted.', 'rcp' );
+				break;
+		}
+
+		if ( empty( $message ) ) {
+			return;
+		}
+
+		echo '<div class="updated"><p>' . $message . '</p></div>';
+
 	}
 
 	/**

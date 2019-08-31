@@ -230,51 +230,12 @@ class RCP_WooCommerce {
 	 */
 	public function is_purchasable( $ret, $product ) {
 
-		if( $ret ) {
-
-			$customer     = rcp_get_customer(); // current customer
-			$has_access   = true;
-			$active_only  = get_post_meta( $product->get_id(), '_rcp_woo_active_to_purchase', true );
-			$levels       = (array) get_post_meta( $product->get_id(), '_rcp_woo_subscription_levels_to_purchase', true );
-			$access_level = get_post_meta( $product->get_id(), '_rcp_woo_access_level_to_purchase', true );
-
-			if ( ! empty( $active_only ) || ! empty( $levels ) || ! empty( $access_level ) ) {
-				// Product has some kind of restrictions.
-				if ( ! empty( $customer ) && $customer->is_pending_verification() ) {
-					// Customer is pending email verification so they should not get access.
-					$has_access = false;
-				}
-			}
-
-			if( $active_only ) {
-
-				if( empty( $customer ) || ! $customer->has_active_membership() ) {
-					$has_access = false;
-				}
-
-			}
-
-			if( is_array( $levels ) && ! empty( $levels[0] ) ) {
-
-				if( empty( $customer ) || ! count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $levels ) ) ) {
-					$has_access = false;
-				}
-
-			}
-
-			if( $access_level ) {
-
-				if ( empty( $customer ) || ! $customer->has_access_level( $access_level  ) ) {
-					$has_access = false;
-				}
-
-			}
-
-			$ret = $has_access;
-
+		if ( ! $ret ) {
+			return $ret;
 		}
 
-		return $ret;
+		return rcp_user_can_purchase_woocommerce_product( get_current_user_id(), $product->get_id() );
+
 	}
 
 	/**
@@ -297,52 +258,8 @@ class RCP_WooCommerce {
 			return true;
 		}
 
-		$customer     = rcp_get_customer(); // current customer
-		$active_only  = get_post_meta( $product_id, '_rcp_woo_active_to_view', true );
-		$levels       = (array) get_post_meta( $product_id, '_rcp_woo_subscription_levels_to_view', true );
-		$access_level = get_post_meta( $product_id, '_rcp_woo_access_level_to_view', true );
+		return rcp_user_can_view_woocommerce_product( get_current_user_id(), $product_id );
 
-		if ( ! empty( $active_only ) || ! empty( $levels ) || ! empty( $access_level ) ) {
-			// Product has some kind of restrictions.
-			if ( ! empty( $customer ) && $customer->is_pending_verification() ) {
-				// Customer is pending email verification so they should not get access.
-				$ret = false;
-			}
-		}
-
-		if( $active_only ) {
-
-			if( empty( $customer ) || ! $customer->has_active_membership() ) {
-				$ret = false;
-			}
-
-		}
-
-		if( is_array( $levels ) && ! empty( $levels[0] ) ) {
-
-			if( empty( $customer ) || ! count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $levels ) ) ) {
-				$ret = false;
-			}
-
-		}
-
-		if( $access_level ) {
-
-			if ( empty( $customer ) || ! $customer->has_access_level( $access_level ) ) {
-				$ret = false;
-			}
-
-		}
-
-		if ( true === rcp_is_post_taxonomy_restricted( $product_id, 'product_cat' ) ) {
-			$ret = false;
-		}
-
-		if ( true === rcp_is_post_taxonomy_restricted( $product_id, 'product_tag' ) ) {
-			$ret = false;
-		}
-
-		return $ret;
 	}
 
 	/**
@@ -372,55 +289,7 @@ class RCP_WooCommerce {
 			return $template;
 		}
 
-		$customer = rcp_get_customer(); // current customer
-
-
-		$active_only    = get_post_meta( $product_id, '_rcp_woo_active_to_view', true );
-		$levels         = get_post_meta( $product_id, '_rcp_woo_subscription_levels_to_view', true );
-		$access_level   = get_post_meta( $product_id, '_rcp_woo_access_level_to_view', true );
-
-		$product_cat    = rcp_is_post_taxonomy_restricted( $product_id, 'product_cat' );
-		$product_tag    = rcp_is_post_taxonomy_restricted( $product_id, 'product_tag' );
-
-		/**
-		 * rcp_is_post_taxonomy_restricted() returns:
-		 * - true when restrictions are found for the current user
-		 * - false when restrictions are not found for the current user
-		 * - -1 when no terms are assigned, for which we don't care.
-		 * We're normalizing the value here. If the value is false,
-		 * the user has already passed the restriction checks.
-		 */
-		$cat_restricted = true === $product_cat ? true : false;
-		$tag_restricted = true === $product_tag ? true : false;
-
-		// Return early if no restrictions
-		if ( ! $active_only && empty( $levels[0] ) && ! $access_level && ! $cat_restricted && ! $tag_restricted ) {
-			return $template;
-		}
-
-		$visible = ( $cat_restricted || $tag_restricted ) ? false : true;
-
-		// Active subscription setting
-		if ( $active_only && ( empty( $customer ) || ! $customer->has_active_membership() ) ) {
-			$visible = false;
-		}
-
-		// Membership level setting
-		if ( is_array( $levels ) && ( empty( $customer ) || ! count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $levels ) ) ) ) {
-			$visible = false;
-		}
-
-		// User level setting
-		if ( $access_level && ( empty( $customer ) || ! $customer->has_access_level( $access_level ) ) ) {
-			$visible = false;
-		}
-
-		// Customer pending email verification.
-		if ( ! empty( $customer ) && $customer->is_pending_verification() ) {
-			$visible = false;
-		}
-
-		if ( $visible ) {
+		if ( rcp_user_can_view_woocommerce_product( get_current_user_id(), $product_id ) ) {
 			return $template;
 		}
 
@@ -429,3 +298,125 @@ class RCP_WooCommerce {
 
 }
 new RCP_WooCommerce;
+
+/**
+ * Determines whether or not a user is allowed to purchase a WooCommerce product.
+ *
+ * @param int $user_id    ID of the user to check.
+ * @param int $product_id ID of the WooCommerce product.
+ *
+ * @since 3.0.6
+ * @return bool
+ */
+function rcp_user_can_purchase_woocommerce_product( $user_id, $product_id ) {
+
+	$customer     = rcp_get_customer_by_user_id( $user_id );
+	$can_purchase = true;
+	$active_only  = get_post_meta( $product_id, '_rcp_woo_active_to_purchase', true );
+	$levels       = (array) get_post_meta( $product_id, '_rcp_woo_subscription_levels_to_purchase', true );
+	$access_level = get_post_meta( $product_id, '_rcp_woo_access_level_to_purchase', true );
+
+	if ( ! empty( $active_only ) || ! empty( $levels ) || ! empty( $access_level ) ) {
+		// Product has some kind of restrictions.
+		if ( ! empty( $customer ) && $customer->is_pending_verification() ) {
+			// Customer is pending email verification so they should not get access.
+			$can_purchase = false;
+		}
+	}
+
+	// Requires an active membership.
+	if ( $active_only ) {
+		if ( empty( $customer ) || ! $customer->has_active_membership() ) {
+			$can_purchase = false;
+		}
+	}
+
+	// Requires a specific membership level.
+	if ( is_array( $levels ) && ! empty( $levels[0] ) ) {
+		if ( empty( $customer ) || ! count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $levels ) ) ) {
+			$can_purchase = false;
+		}
+	}
+
+	if ( $access_level ) {
+		if ( empty( $customer ) || ! $customer->has_access_level( $access_level  ) ) {
+			$can_purchase = false;
+		}
+	}
+
+	/**
+	 * Filters whether or not the user has permission to purchase this product.
+	 *
+	 * @param bool $can_purchase Whether or not the user is allowed to purchase the product.
+	 * @param int  $user_id      ID of the user being checked.
+	 * @param int  $product_id   ID of the product being checked.
+	 *
+	 * @since 3.0.6
+	 */
+	return apply_filters( 'rcp_user_can_purchase_woocommerce_product', $can_purchase, $user_id, $product_id );
+
+}
+
+/**
+ * Determines whether or not a user is allowed to view a WooCommerce product.
+ *
+ * @param int $user_id    ID of the user to check.
+ * @param int $product_id ID of the WooCommerce product.
+ *
+ * @since 3.0.6
+ * @return bool
+ */
+function rcp_user_can_view_woocommerce_product( $user_id, $product_id ) {
+
+	$customer     = rcp_get_customer_by_user_id( $user_id );
+	$can_view     = true;
+	$active_only  = get_post_meta( $product_id, '_rcp_woo_active_to_view', true );
+	$levels       = (array) get_post_meta( $product_id, '_rcp_woo_subscription_levels_to_view', true );
+	$access_level = get_post_meta( $product_id, '_rcp_woo_access_level_to_view', true );
+
+	if ( ! empty( $active_only ) || ! empty( $levels ) || ! empty( $access_level ) ) {
+		// Product has some kind of restrictions.
+		if ( ! empty( $customer ) && $customer->is_pending_verification() ) {
+			// Customer is pending email verification so they should not get access.
+			$can_view = false;
+		}
+	}
+
+	if ( $active_only ) {
+		if ( empty( $customer ) || ! $customer->has_active_membership() ) {
+			$can_view = false;
+		}
+	}
+
+	if ( is_array( $levels ) && ! empty( $levels[0] ) ) {
+		if ( empty( $customer ) || ! count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $levels ) ) ) {
+			$can_view = false;
+		}
+	}
+
+	if ( $access_level ) {
+		if ( empty( $customer ) || ! $customer->has_access_level( $access_level ) ) {
+			$can_view = false;
+		}
+	}
+
+	if ( true === rcp_is_post_taxonomy_restricted( $product_id, 'product_cat', $user_id ) ) {
+		$can_view = false;
+	}
+
+	if ( true === rcp_is_post_taxonomy_restricted( $product_id, 'product_tag', $user_id ) ) {
+		$can_view = false;
+	}
+
+	/**
+	 * Filters whether or not the user has permission to view this product.
+	 *
+	 * @param bool $can_view  Whether or not the user is allowed to view the product.
+	 * @param int  $user_id    ID of the user being checked.
+	 * @param int  $product_id ID of the product being checked.
+	 *
+	 * @since 3.0.6
+	 */
+	return apply_filters( 'rcp_user_can_view_woocommerce_product', $can_view, $user_id, $product_id );
+
+}

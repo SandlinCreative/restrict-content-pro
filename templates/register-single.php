@@ -77,6 +77,8 @@ rcp_show_error_messages( 'register' ); ?>
 	</fieldset>
 	<?php } ?>
 
+	<?php do_action( 'rcp_before_subscription_form_fields' ); ?>
+
 	<?php if( rcp_has_discounts() && $level->price > '0' ) : ?>
 	<fieldset class="rcp_discounts_fieldset">
 		<p id="rcp_discount_code_wrap">

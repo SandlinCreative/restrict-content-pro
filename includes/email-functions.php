@@ -212,10 +212,10 @@ function rcp_send_membership_email( $membership_id_or_object, $status = '' ) {
 			if( ! isset( $rcp_options['disable_expired_email'] ) ) {
 
 				$message = isset( $rcp_options['expired_email'] ) ? $rcp_options['expired_email'] : '';
-				$message = apply_filters( 'rcp_subscription_expired_email', $message, $user_id, $status );
+				$message = apply_filters( 'rcp_subscription_expired_email', $message, $user_id, $status, $membership );
 
 				$subject = isset( $rcp_options['expired_subject'] ) ? $rcp_options['expired_subject'] : '';
-				$subject = apply_filters( 'rcp_subscription_expired_subject', $subject, $user_id, $status );
+				$subject = apply_filters( 'rcp_subscription_expired_subject', $subject, $user_id, $status, $membership );
 
 				add_user_meta( $user_id, '_rcp_expired_email_sent', 'yes' );
 
@@ -235,8 +235,8 @@ function rcp_send_membership_email( $membership_id_or_object, $status = '' ) {
 					$admin_subject = sprintf( __( 'Expired membership on %s', 'rcp' ), $site_name );
 				}
 
-				$admin_subject = apply_filters( 'rcp_email_admin_membership_expired_subject', $admin_subject, $user_id, $status );
-				$admin_message = apply_filters( 'rcp_email_admin_membership_expired_message', $admin_message, $user_id, $status );
+				$admin_subject = apply_filters( 'rcp_email_admin_membership_expired_subject', $admin_subject, $user_id, $status, $membership );
+				$admin_message = apply_filters( 'rcp_email_admin_membership_expired_message', $admin_message, $user_id, $status, $membership );
 			}
 			break;
 
@@ -336,7 +336,7 @@ add_action( 'rcp_membership_post_cancel', 'rcp_email_on_membership_cancellation'
  */
 function rcp_email_on_membership_expiration( $old_status, $membership_id ) {
 
-	if ( 'expired' == $old_status ) {
+	if ( 'expired' == $old_status || 'new' == $old_status ) {
 		return;
 	}
 
@@ -360,7 +360,7 @@ function rcp_email_payment_received( $payment_id ) {
 
 	global $rcp_options;
 
-	if ( isset( $rcp_options['disable_payment_received_email'] ) ) {
+	if ( isset( $rcp_options['disable_payment_received_email'] ) && isset( $rcp_options['disable_payment_received_email_admin'] ) ) {
 		return;
 	}
 
@@ -387,28 +387,53 @@ function rcp_email_payment_received( $payment_id ) {
 
 	$payment = (array) $payment;
 
+	$admin_emails  = ! empty( $rcp_options['admin_notice_emails'] ) ? $rcp_options['admin_notice_emails'] : get_option('admin_email');
+	$admin_emails  = apply_filters( 'rcp_admin_notice_emails', explode( ',', $admin_emails ) );
+	$admin_emails  = array_map( 'sanitize_email', $admin_emails );
+
+	/*
+	 * Configure member message.
+	 */
 	$message = ! empty( $rcp_options['payment_received_email'] ) ? $rcp_options['payment_received_email'] : false;
 	$message = apply_filters( 'rcp_payment_received_email', $message, $payment_id, $payment );
+	$subject = ! empty( $rcp_options['payment_received_subject'] ) ? $rcp_options['payment_received_subject'] : false;
+	$subject = apply_filters( 'rcp_email_payment_received_subject', $subject, $payment_id, $payment );
 
-	if( ! $message ) {
-		rcp_log( sprintf( 'Payment Received email not sent to user #%d - message is empty.', $user_info->ID ) );
-
-		return;
-	}
-
-	$subject = apply_filters( 'rcp_email_payment_received_subject', $rcp_options['payment_received_subject'], $payment_id, $payment );
+	/*
+	 * Configure admin message.
+	 */
+	$admin_message = ! empty( $rcp_options['payment_received_email_admin'] ) ? $rcp_options['payment_received_email_admin'] : false;
+	$admin_subject = ! empty( $rcp_options['payment_received_subject_admin'] ) ? $rcp_options['payment_received_subject_admin'] : false;
 
 	$emails = new RCP_Emails;
 	$emails->member_id = $payment['user_id'];
 	$emails->payment_id = $payment_id;
 
-	if ( ! empty( $payment->membership_id ) ) {
-		$emails->membership = rcp_get_membership( $payment->membership_id );
+	if ( ! empty( $payment['membership_id'] ) ) {
+		$emails->membership = rcp_get_membership( $payment['membership_id'] );
 	}
 
-	$emails->send( $user_info->user_email, $subject, $message );
+	/*
+	 * Send member email.
+	 */
+	if ( ! isset( $rcp_options['disable_payment_received_email'] ) && ! empty( $message ) && ! empty( $subject ) ) {
+		$emails->send( $user_info->user_email, $subject, $message );
 
-	rcp_log( sprintf( 'Payment Received email sent to user #%d.', $user_info->ID ) );
+		rcp_log( sprintf( 'Payment Received email sent to user #%d for payment ID #%d.', $user_info->ID, $payment_id ) );
+	} else {
+		rcp_log( sprintf( 'Payment Received email not sent to user #%d for payment ID #%d - message is empty or disabled.', $user_info->ID, $payment_id ) );
+	}
+
+	/*
+	 * Send admin email.
+	 */
+	if ( ! isset( $rcp_options['disable_payment_received_email_admin'] ) && ! empty( $admin_message ) && ! empty( $admin_subject ) ) {
+		$emails->send( $admin_emails, $admin_subject, $admin_message );
+
+		rcp_log( sprintf( 'Payment Received email sent to admin(s) for payment ID #%d.', $payment_id ) );
+	} else {
+		rcp_log( sprintf( 'Payment Received email not sent to admin(s) for payment ID #%d - message is empty or disabled.', $payment_id ) );
+	}
 
 }
 add_action( 'rcp_update_payment_status_complete', 'rcp_email_payment_received', 100 );
@@ -503,6 +528,7 @@ function rcp_email_admin_on_manual_payment( $member, $payment_id, $gateway ) {
 	$emails             = new RCP_Emails;
 	$emails->member_id  = $member->ID;
 	$emails->payment_id = $payment_id;
+	$emails->membership = $gateway->membership;
 
 	$site_name = stripslashes_deep( html_entity_decode( get_bloginfo( 'name' ), ENT_COMPAT, 'UTF-8' ) );
 

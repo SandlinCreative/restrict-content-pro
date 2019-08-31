@@ -87,6 +87,10 @@ function rcp_admin_scripts( $hook ) {
 				'job_retry'   => __( 'Try again.', 'rcp' )
 			)
 		) );
+		wp_enqueue_script( 'rcp-csv-import', RCP_PLUGIN_URL . 'includes/js/admin-csv-import.js', array( 'jquery', 'jquery-form', 'rcp-batch' ), RCP_PLUGIN_VERSION );
+		wp_localize_script( 'rcp-csv-import', 'rcp_csv_import_vars', array(
+			'unsupported_browser' => __( 'Unfortunately your browser is not compatible with this kind of file upload. Please upgrade your browser.', 'rcp' )
+		) );
 	}
 }
 add_action( 'admin_enqueue_scripts', 'rcp_admin_scripts' );

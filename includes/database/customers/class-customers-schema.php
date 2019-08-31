@@ -78,6 +78,16 @@ class Customers extends Schema {
 			'sortable'   => true,
 		),
 
+		// has_trialed
+		array(
+			'name'       => 'has_trialed',
+			'type'       => 'smallint',
+			'length'     => '',
+			'unsigned'   => true,
+			'default'    => null,
+			'transition' => true
+		),
+
 		// ips
 		array(
 			'name'       => 'ips',

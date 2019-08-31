@@ -154,7 +154,8 @@ function rcp_get_customer_counts( $args = array() ) {
 function rcp_add_customer( $data = array() ) {
 
 	$data = wp_parse_args( $data, array(
-		'date_registered' => current_time( 'mysql' )
+		'date_registered' => current_time( 'mysql' ),
+		'has_trialed'     => 0
 	) );
 
 	rcp_log( sprintf( 'Adding a new customer. Args: %s', var_export( $data, true ) ) );
@@ -477,23 +478,36 @@ function rcp_customer_has_trialed( $customer_id = 0 ) {
  * Get the gateway customer ID for a given RCP customer and gateway.
  * This is useful if wanting to reuse the same gateway customer ID for a second subscription.
  *
- * @param int    $customer_id ID of the customer to get the ID for.
- * @param string $gateway     Gateway to get the ID for.
+ * @param int          $customer_id ID of the customer to get the ID for.
+ * @param string|array $gateways    Gateway(s) to get the ID for.
  *
  * @since  3.0
  * @return string|false Gateway customer ID on success, false on failure.
  */
-function rcp_get_customer_gateway_id( $customer_id, $gateway ) {
+function rcp_get_customer_gateway_id( $customer_id, $gateways ) {
 
 	global $wpdb;
 
 	$gateway_customer_id = false;
 	$memberships_table   = rcp_get_memberships_db_name();
 
+	$values = array(
+		absint( $customer_id )
+	);
+
+	if ( ! is_array( $gateways ) ) {
+		$gateways = array( $gateways );
+	}
+	$gateways            = array_map( 'sanitize_text_field', $gateways );
+	$gateway_count       = count( $gateways );
+	$gateway_placeholder = array_fill( 0, $gateway_count, '%s' );
+	$gateway_string      = implode( ', ', $gateway_placeholder );
+
+	$values = array_merge( $values, $gateways );
+
 	$query = $wpdb->prepare(
-		"SELECT gateway_customer_id FROM {$memberships_table} WHERE customer_id = %d AND gateway = %s and gateway_customer_id != '' LIMIT 1",
-		absint( $customer_id ),
-		sanitize_text_field( $gateway )
+		"SELECT gateway_customer_id FROM {$memberships_table} WHERE customer_id = %d AND gateway IN ( {$gateway_string} ) and gateway_customer_id != '' LIMIT 1",
+		$values
 	);
 
 	$result = $wpdb->get_var( $query );
@@ -503,5 +517,176 @@ function rcp_get_customer_gateway_id( $customer_id, $gateway ) {
 	}
 
 	return $gateway_customer_id;
+
+}
+
+/**
+ * Checks whether a user has an active membership.
+ *
+ * @param int $user_id User ID to check. Omit for currently logged in user.
+ *
+ * @since 3.0.5
+ * @return bool
+ */
+function rcp_user_has_active_membership( $user_id = 0 ) {
+
+	$customer              = rcp_get_customer_by_user_id( $user_id );
+	$has_active_membership = false;
+
+	if ( ! empty( $customer ) ) {
+		$has_active_membership = $customer->has_active_membership();
+	}
+
+	/**
+	 * Filters whether or not the customer has an active membership.
+	 *
+	 * @param bool               $has_active_membership Whether or not the user has an active membership.
+	 * @param int                $user_id               ID of the user to check.
+	 * @param RCP_Customer|false $customer              Customer object.
+	 *
+	 * @since 3.0.5
+	 */
+	return apply_filters( 'rcp_user_has_active_membership', $has_active_membership, $user_id, $customer );
+
+}
+
+/**
+ * Checks whether a user has an active paid membership.
+ *
+ * @param int $user_id User ID to check. Omit for currently logged in user.
+ *
+ * @since 3.0.5
+ * @return bool
+ */
+function rcp_user_has_paid_membership( $user_id = 0 ) {
+
+	$customer            = rcp_get_customer_by_user_id( $user_id );
+	$has_paid_membership = false;
+
+	if ( ! empty( $customer ) ) {
+		$has_paid_membership = $customer->has_paid_membership();
+	}
+
+	/**
+	 * Filters whether or not the customer has an active paid membership.
+	 *
+	 * @param bool               $has_paid_membership Whether or not the user has an active paid membership.
+	 * @param int                $user_id             ID of the user to check.
+	 * @param RCP_Customer|false $customer            Customer object.
+	 *
+	 * @since 3.0.5
+	 */
+	return apply_filters( 'rcp_user_has_paid_membership', $has_paid_membership, $user_id, $customer );
+
+}
+
+/**
+ * Checks whether a user has an active free membership.
+ *
+ * @param int $user_id User ID to check. Omit for currently logged in user.
+ *
+ * @since 3.0.5
+ * @return bool
+ */
+function rcp_user_has_free_membership( $user_id = 0 ) {
+
+	$customer            = rcp_get_customer_by_user_id( $user_id );
+	$has_free_membership = false;
+
+	if ( ! empty( $customer ) ) {
+		$memberships = $customer->get_memberships( array(
+			'status' => 'active'
+		) );
+
+		if ( $memberships ) {
+			foreach ( $memberships as $membership ) {
+				/**
+				 * @var RCP_Membership $membership
+				 */
+				if ( ! $membership->is_paid() ) {
+					$has_free_membership = true;
+					break;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Filters whether or not the customer has an active free membership.
+	 *
+	 * @param bool               $has_free_membership Whether or not the user has an active free membership.
+	 * @param int                $user_id             ID of the user to check.
+	 * @param RCP_Customer|false $customer            Customer object.
+	 *
+	 * @since 3.0.5
+	 */
+	return apply_filters( 'rcp_user_has_free_membership', $has_free_membership, $user_id, $customer );
+
+}
+
+/**
+ * Checks whether a user has an expired membership.
+ *
+ * @param int $user_id User ID to check. Omit for currently logged in user.
+ *
+ * @since 3.0.5
+ * @return bool
+ */
+function rcp_user_has_expired_membership( $user_id = 0 ) {
+
+	$customer               = rcp_get_customer_by_user_id( $user_id );
+	$has_expired_membership = false;
+
+	if ( ! empty( $customer ) ) {
+		$expired_membership     = $customer->get_memberships( array(
+			'status' => 'expired'
+		) );
+		$has_expired_membership = ! empty( $expired_membership );
+	}
+
+	/**
+	 * Filters whether or not the customer has an expired membership.
+	 *
+	 * @param bool               $has_expired_membership Whether or not the user has an expired membership.
+	 * @param int                $user_id                ID of the user to check.
+	 * @param RCP_Customer|false $customer               Customer object.
+	 *
+	 * @since 3.0.5
+	 */
+	return apply_filters( 'rcp_user_has_expired_membership', $has_expired_membership, $user_id, $customer );
+
+}
+
+/**
+ * Checks if a user has a certain access level (or higher) based on their active memberships.
+ *
+ * @param int $user_id             ID of the user to check, or 0 for the current user.
+ * @param int $access_level_needed Access level needed.
+ *
+ * @return bool True if they have access, false if not.
+ */
+function rcp_user_has_access( $user_id = 0, $access_level_needed = 0 ) {
+
+	if( empty( $user_id ) && is_user_logged_in() ) {
+		$user_id = get_current_user_id();
+	}
+
+	$has_access = false;
+	$customer   = rcp_get_customer_by_user_id( $user_id );
+
+	if ( ! empty( $customer ) ) {
+		$has_access = $customer->has_access_level( $access_level_needed );
+	}
+
+	/**
+	 * Filters whether or not the user has a certain access level.
+	 *
+	 * @param bool $has_access          Whether or not the user has the access level (or higher).
+	 * @param int  $user_id             ID of the user being checked.
+	 * @param int  $access_level_needed Numerical access level being compared.
+	 *
+	 * @since 3.0.6
+	 */
+	return apply_filters( 'rcp_user_has_access_level', $has_access, $user_id, $access_level_needed );
 
 }

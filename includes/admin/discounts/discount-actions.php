@@ -40,7 +40,8 @@ function rcp_process_add_discount() {
 		'status'               => 'active',
 		'expiration'           => $_POST['expiration'],
 		'max_uses'             => $_POST['max'],
-		'membership_level_ids' => isset( $_POST['membership_levels'] ) ? $_POST['membership_levels'] : array()
+		'membership_level_ids' => isset( $_POST['membership_levels'] ) ? $_POST['membership_levels'] : array(),
+		'one_time'             => ! empty( $_POST['one_time'] ) ? 1 : 0,
 	);
 
 	$add = $discounts->insert( $data );
@@ -92,7 +93,8 @@ function rcp_process_edit_discount() {
 		'status'               => $_POST['status'],
 		'expiration'           => $_POST['expiration'],
 		'max_uses'             => $_POST['max'],
-		'membership_level_ids' => isset( $_POST['membership_levels'] ) ? $_POST['membership_levels'] : array()
+		'membership_level_ids' => isset( $_POST['membership_levels'] ) ? $_POST['membership_levels'] : array(),
+		'one_time'             => ! empty( $_POST['one_time'] ) ? 1 : 0,
 	);
 
 	$update = $discounts->update( $_POST['discount_id'], $data );

@@ -20,6 +20,22 @@ class RCP_Registration {
 	protected $subscription = 0;
 
 	/**
+	 * Type of registration: new, renewal, upgrade
+	 *
+	 * @since 3.1
+	 * @var string
+	 */
+	protected $registration_type = 'new';
+
+	/**
+	 * Current membership, if this is a renewal or upgrade
+	 *
+	 * @since 3.1
+	 * @var RCP_Membership|false
+	 */
+	protected $membership = false;
+
+	/**
 	 * Store the discounts for the registration
 	 *
 	 * @since 2.5
@@ -45,13 +61,14 @@ class RCP_Registration {
 	 */
 	public function __construct( $level_id = 0, $discount = null ) {
 
-		if ( ! $level_id ) {
-			return;
+		if ( $level_id ) {
+			$this->set_subscription( $level_id );
 		}
 
-		$this->set_subscription( $level_id );
+		$this->set_registration_type();
+		$this->maybe_add_signup_fee();
 
-		if ( $discount ) {
+		if ( $level_id && $discount ) {
 			$this->add_discount( strtolower( $discount ) );
 		}
 
@@ -73,12 +90,45 @@ class RCP_Registration {
 
 		$this->subscription = $subscription_id;
 
-		if ( $subscription->fee ) {
-			$description = ( $subscription->fee > 0 ) ? __( 'Signup Fee', 'rcp' ) : __( 'Signup Credit', 'rcp' );
-			$this->add_fee( $subscription->fee, $description );
+		return true;
+	}
+
+	/**
+	 * Add a signup fee if this is not a "renewal".
+	 *
+	 * @since 3.1
+	 * @return void
+	 */
+	protected function maybe_add_signup_fee() {
+
+		if ( empty( $this->subscription ) || ! $subscription = rcp_get_subscription_details( $this->subscription ) ) {
+			return;
 		}
 
-		return true;
+		if ( empty( $subscription->fee ) ) {
+			return;
+		}
+
+		$add_signup_fee = 'renewal' != $this->get_registration_type();
+
+		/**
+		 * Filters whether or not the signup fee should be applied.
+		 *
+		 * @param bool             $add_signup_fee Whether or not to add the signup fee.
+		 * @param object           $subscription   Membership level object.
+		 * @param RCP_Registration $this           Registration object.
+		 *
+		 * @since 3.1
+		 */
+		$add_signup_fee = apply_filters( 'rcp_apply_signup_fee_to_registration', $add_signup_fee, $subscription, $this );
+
+		if ( ! $add_signup_fee ) {
+			return;
+		}
+
+		$description = ( $subscription->fee > 0 ) ? __( 'Signup Fee', 'rcp' ) : __( 'Signup Credit', 'rcp' );
+		$this->add_fee( $subscription->fee, $description );
+
 	}
 
 	/**
@@ -103,6 +153,136 @@ class RCP_Registration {
 	 */
 	public function get_membership_level_id() {
 		return $this->subscription;
+	}
+
+	/**
+	 * Set registration type
+	 *
+	 * This is based on the following query strings:
+	 *
+	 *        - $_REQUEST['registration_type'] - Will either be "renewal" or "upgrade". If empty, we assume "new".
+	 *        - $_REQUEST['membership_id'] - This must be provided for renewals and upgrades so we know which membership
+	 *                                       to work with.
+	 *
+	 * @since 3.1
+	 * @return void
+	 */
+	public function set_registration_type() {
+
+		$this->registration_type = 'new'; // default;
+
+		if ( ! empty( $_REQUEST['registration_type'] ) && 'new' != $_REQUEST['registration_type'] && ! empty( $_REQUEST['membership_id'] ) ) {
+
+			/**
+			 * The `registration_type` query arg is set, it's NOT `new`, and we have a membership ID.
+			 */
+			$membership = rcp_get_membership( absint( $_REQUEST['membership_id'] ) );
+
+			if ( ! empty( $membership ) && $membership->get_customer()->get_user_id() == get_current_user_id() ) {
+				$this->membership        = $membership;
+				$this->registration_type = sanitize_text_field( $_REQUEST['registration_type'] );
+			}
+
+		} elseif ( ! rcp_multiple_memberships_enabled() && $this->get_membership_level_id() ) {
+
+			/**
+			 * Multiple memberships not enabled, and we have a selected membership level ID on the form.
+			 * We determine if it's a renewal or upgrade based on the user's current membership level and
+			 * the one they've selected on the registration form.
+			 */
+
+			$customer            = rcp_get_customer();
+			$previous_membership = ! empty( $customer ) ? rcp_get_customer_single_membership( $customer->get_id() ) : false;
+
+			if ( ! empty( $previous_membership ) ) {
+				$this->membership = $previous_membership;
+
+				if ( $this->membership->get_object_id() == $this->get_membership_level_id() ) {
+					$this->registration_type = 'renewal';
+				} else {
+					$this->registration_type = 'upgrade';
+				}
+			}
+
+		}
+
+		if ( 'upgrade' == $this->registration_type && is_object( $this->membership ) && $this->get_membership_level_id() ) {
+			/**
+			 * If we have the type listed as an "upgrade", we'll run a few extra checks to determine
+			 * if we should change this to "downgrade".
+			 */
+			// Figure out if this is a downgrade instead.
+			$membership_level          = rcp_get_subscription_details( $this->get_membership_level_id() );
+			$previous_membership_level = rcp_get_subscription_details( $this->membership->get_object_id() );
+
+			$days_in_old_cycle = rcp_get_days_in_cycle( $previous_membership_level->duration_unit, $previous_membership_level->duration );
+			$days_in_new_cycle = rcp_get_days_in_cycle( $membership_level->duration_unit, $membership_level->duration );
+
+			$old_price_per_day = $days_in_old_cycle > 0 ? $previous_membership_level->price / $days_in_old_cycle : $previous_membership_level->price;
+			$new_price_per_day = $days_in_new_cycle > 0 ? $this->get_recurring_total( true, false ) / $days_in_new_cycle : $this->get_recurring_total( true, false );
+
+			rcp_log( sprintf( 'Old price per day: %s (ID #%d); New price per day: %s (ID #%d)', $old_price_per_day, $previous_membership_level->id, $new_price_per_day, $membership_level->id ) );
+
+			if ( $old_price_per_day > $new_price_per_day ) {
+				$this->registration_type = 'downgrade';
+			}
+		}
+
+	}
+
+	/**
+	 * Get the registration type
+	 *
+	 * @since 3.1
+	 * @return string
+	 */
+	public function get_registration_type() {
+		return $this->registration_type;
+	}
+
+	/**
+	 * Get the existing membership object that is being renewed or upgraded
+	 *
+	 * @since 3.1
+	 * @return RCP_Membership|false
+	 */
+	public function get_membership() {
+		return $this->membership;
+	}
+
+	/**
+	 * Determine whether or not the level being registered for has a trial that the current user is eligible
+	 * for. This will return false if there is a trial but the user is not eligible for it.
+	 *
+	 * @access public
+	 * @since 3.0.6
+	 * @return bool
+	 */
+	public function is_trial() {
+
+		$membership_level = rcp_get_subscription_details( $this->get_membership_level_id() );
+
+		if ( empty( $membership_level ) ) {
+			return false;
+		}
+
+		$trial_duration = $membership_level->trial_duration;
+
+		if ( empty( $trial_duration ) ) {
+			return false;
+		}
+
+		// There is a trial, but let's check eligibility.
+
+		$customer = rcp_get_customer_by_user_id();
+
+		// No customer, which means they're brand new, which means they're eligible.
+		if ( empty( $customer ) ) {
+			return true;
+		}
+
+		return ! $customer->has_trialed();
+
 	}
 
 	/**
@@ -221,11 +401,10 @@ class RCP_Registration {
 	 * Get the signup fees
 	 *
 	 * @since 2.5
-	 * @param null $total
 	 *
 	 * @return float
 	 */
-	public function get_signup_fees( ) {
+	public function get_signup_fees() {
 
 		if ( ! $this->get_fees() ) {
 			return 0;
@@ -290,8 +469,6 @@ class RCP_Registration {
 	 */
 	public function get_total_discounts( $total = null, $only_recurring = false ) {
 
-		global $rcp_options;
-
 		if ( ! $registration_discounts = $this->get_discounts() ) {
 			return 0;
 		}
@@ -308,12 +485,12 @@ class RCP_Registration {
 				continue;
 			}
 
-			if( $only_recurring && isset( $rcp_options['one_time_discounts'] ) ) {
-				continue;
-			}
-
 			$discounts    = new RCP_Discounts();
 			$discount_obj = $discounts->get_by( 'code', $registration_discount );
+
+			if( $only_recurring && is_object( $discount_obj ) && ! empty( $discount_obj->one_time ) ) {
+				continue;
+			}
 
 			if ( is_object( $discount_obj ) ) {
 				// calculate the after-discount price
@@ -333,7 +510,7 @@ class RCP_Registration {
 	}
 
 	/**
-	 * Get the registration total
+	 * Get the registration total due today
 	 *
 	 * @param bool $discounts | Include discounts?
 	 * @param bool $fees      | Include fees?
@@ -343,11 +520,11 @@ class RCP_Registration {
 	 */
 	public function get_total( $discounts = true, $fees = true ) {
 
-		$total = rcp_get_subscription_price( $this->subscription );
-
-		if ( $fees ) {
-			$total += $this->get_proration_credits();
+		if ( $this->is_trial() ) {
+			return 0;
 		}
+
+		$total = rcp_get_subscription_price( $this->subscription );
 
 		if ( $discounts ) {
 			$total -= $this->get_total_discounts( $total );
@@ -358,7 +535,8 @@ class RCP_Registration {
 		}
 
 		if ( $fees ) {
-			$total += $this->get_signup_fees( $total );
+			$total += $this->get_signup_fees();
+			$total += $this->get_proration_credits();
 		}
 
 		if ( 0 > $total ) {
@@ -382,7 +560,13 @@ class RCP_Registration {
 	 */
 	public function get_recurring_total( $discounts = true, $fees = true  ) {
 
-		$total = rcp_get_subscription_price( $this->subscription );
+		$membership_level = rcp_get_subscription_details( $this->subscription );
+
+		if ( ! empty( $membership_level->duration ) ) {
+			$total = $membership_level->price;
+		} else {
+			$total = 0;
+		}
 
 		if ( $discounts ) {
 			$total -= $this->get_total_discounts( $total, true );

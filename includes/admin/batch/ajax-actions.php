@@ -28,9 +28,22 @@ function ajax_process_batch() {
 
 	$job = get_job( $job_id );
 
-	if ( ! $job_id || empty( $job ) || ! class_exists( $job->get_callback() ) ) {
+	if ( ! $job_id || empty( $job ) ) {
 		wp_send_json_error( array(
 			'message' => __( 'Invalid job ID provided.', 'rcp' )
+		) );
+	}
+
+	/**
+	 * Use this hook to include the job callback class file.
+	 *
+	 * @param string $job_callback Name of the class file.
+	 */
+	do_action( 'rcp_batch_processing_class_include', $job->get_callback() );
+
+	if ( ! class_exists( $job->get_callback() ) ) {
+		wp_send_json_error( array(
+			'message' => __( 'Job callback doesn\'t exist.', 'rcp' )
 		) );
 	}
 

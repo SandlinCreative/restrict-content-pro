@@ -16,43 +16,60 @@
  */
 function rcp_redirect_from_premium_post() {
 	global $rcp_options, $user_ID, $post, $wp_query;
-	if( empty( $rcp_options['hide_premium'] ) ) {
+	if ( empty( $rcp_options['hide_premium'] ) || current_user_can( 'manage_options' ) ) {
 		return;
 	}
 
 	$member   = new RCP_Member( $user_ID ); // for backwards compatibility
 	$customer = rcp_get_customer(); // currently logged in customer
+	$redirect = false;
 
 	if( is_singular() && ! rcp_user_can_access( get_current_user_id(), $post->ID ) ) {
-		$redirect_page_id = $rcp_options['redirect_from_premium'];
-		if( ! empty( $redirect_page_id ) ) {
-			// Bail without redirecting if we're already on this page.
-			if ( $redirect_page_id == $post->ID ) {
-				return;
-			}
-
-			$redirect = get_permalink( $redirect_page_id );
-		} else {
-			$redirect = home_url();
-		}
-
-		$redirect = apply_filters( 'rcp_restricted_post_redirect_url', $redirect, $member, $post, $customer );
-
-		wp_redirect( esc_url_raw( $redirect ) ); exit;
+		// Singular posts / pages.
+		$redirect = true;
 	} elseif( is_post_type_archive() && $wp_query->have_posts() && rcp_is_restricted_post_type( get_post_type() ) && ! rcp_user_can_access( get_current_user_id(), get_the_ID() ) ) {
-		if( isset( $rcp_options['redirect_from_premium'] ) ) {
-			$redirect = get_permalink( $rcp_options['redirect_from_premium'] );
-		} else {
-			// Avoid a crazy redirect loop.
-			$redirect = ! is_front_page() ? home_url() : false;
-		}
-
-		$redirect = apply_filters( 'rcp_restricted_post_redirect_url', $redirect, $member, $post, $customer );
-
-		if ( $redirect ) {
-			wp_redirect( esc_url_raw( $redirect ) ); exit;
-		}
+		// Post type archives where the whole post type is restricted.
+		$redirect = true;
+	} elseif ( ( is_category() || is_tag() || is_tax() ) && get_queried_object_id() && ! rcp_user_can_access_term( get_current_user_id(), get_queried_object_id() ) ) {
+		// Taxonomy archives where the term is restricted.
+		$redirect = true;
 	}
+
+	// Bail if we don't need to redirect.
+	if ( ! $redirect ) {
+		return;
+	}
+
+	// Figure out the redirect URL.
+	$redirect_page_id = $rcp_options['redirect_from_premium'];
+
+	// Bail if we're on the specified redirect page... oops!
+	if ( ! empty( $redirect_page_id ) && is_singular() && $redirect_page_id == $post->ID ) {
+		return;
+	}
+
+	if ( ! empty( $redirect_page_id ) ) {
+		$redirect_url = get_permalink( $rcp_options['redirect_from_premium'] );
+	} else {
+		$redirect_url = ! is_front_page() ? home_url() : false;
+	}
+
+	/**
+	 * Filters the URL to redirect unauthorized users to.
+	 *
+	 * @param string       $redirect_url URL to redirect unauthorized users to.
+	 * @param RCP_Member   $member       Deprecated member object.
+	 * @param WP_Post      $post         Global post object.
+	 * @param RCP_Customer $customer     Current customer object.
+	 */
+	$redirect_url = apply_filters( 'rcp_restricted_post_redirect_url', $redirect_url, $member, $post, $customer );
+
+	if ( empty( $redirect_url ) ) {
+		return;
+	}
+
+	wp_redirect( esc_url_raw( $redirect_url ) );
+	exit;
 }
 add_action( 'template_redirect', 'rcp_redirect_from_premium_post', 999 );
 

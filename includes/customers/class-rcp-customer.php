@@ -50,6 +50,13 @@ class RCP_Customer {
 	protected $last_login = '';
 
 	/**
+	 * Whether or not the customer has trialed before.
+	 *
+	 * @var null|int
+	 */
+	protected $has_trialed = null;
+
+	/**
 	 * Serialized array of all known IP addresses for this customer.
 	 *
 	 * @var string
@@ -325,31 +332,53 @@ class RCP_Customer {
 	 */
 	public function has_trialed() {
 
-		$memberships = $this->get_memberships( array(
-			'status__not_in' => array( 'pending' ), // exclude "pending"
-			'disabled'       => '' // include both enabled and disabled memberships
-		) );
+		$has_trialed = $this->has_trialed;
 
-		$has_trialed = false;
+		if ( ! is_null( $has_trialed ) ) {
 
-		if ( is_array( $memberships ) ) {
-			foreach ( $memberships as $membership ) {
-				if ( $membership->get_trial_end_date() ) {
-					$has_trialed = true;
-					break;
+			/*
+			 * As of RCP 3.1.2, we now store as `has_trialed` flag in the DB.
+			 * If this is set, the value will be `1` for yes, they have trialed; or `0` for no they have not.
+			 */
+			$has_trialed = (bool) $has_trialed;
+
+		} else {
+
+			/*
+			 * If `has_trialed` is `null` then that means we haven't set it yet post-upgrade. So let's backfill
+			 * the value by querying memberships directly.
+			 */
+			$memberships = $this->get_memberships( array(
+				'status__not_in' => array( 'pending' ), // exclude "pending"
+				'disabled'       => '' // include both enabled and disabled memberships
+			) );
+
+			$has_trialed = false;
+
+			if ( is_array( $memberships ) ) {
+				foreach ( $memberships as $membership ) {
+					if ( $membership->get_trial_end_date() ) {
+						$has_trialed = true;
+						break;
+					}
 				}
 			}
-		}
 
-		// Backwards compatibility - check user meta. We have to do this manually because get_user_meta() is routed here.
-		if ( ! $has_trialed ) {
-			global $wpdb;
+			// Backwards compatibility - check user meta. We have to do this manually because get_user_meta() is routed here.
+			if ( ! $has_trialed ) {
+				global $wpdb;
 
-			$results = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->usermeta} WHERE meta_key = 'rcp_has_trialed' AND user_id = %d", $this->get_user_id() ) );
+				$results = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->usermeta} WHERE meta_key = 'rcp_has_trialed' AND user_id = %d", $this->get_user_id() ) );
 
-			if ( ! empty( $results ) ) {
-				$has_trialed = true;
+				if ( ! empty( $results ) ) {
+					$has_trialed = true;
+				}
 			}
+
+			$this->update( array(
+				'has_trialed' => $has_trialed
+			) );
+
 		}
 
 		if ( has_filter( 'rcp_has_used_trial' ) ) {
@@ -621,11 +650,13 @@ class RCP_Customer {
 	/**
 	 * Determines whether the customer has at least one paid (and active) membership.
 	 *
+	 * @param bool $include_trial Whether or not to count trial memberships as paid.
+	 *
 	 * @access public
 	 * @since  3.0
 	 * @return bool
 	 */
-	public function has_paid_membership() {
+	public function has_paid_membership( $include_trial = true ) {
 
 		$memberships = $this->get_memberships( array(
 			'status' => array( 'active', 'cancelled' )
@@ -639,7 +670,7 @@ class RCP_Customer {
 			/**
 			 * @var RCP_Membership $membership
 			 */
-			if ( $membership->is_active() && $membership->is_paid() ) {
+			if ( $membership->is_active() && $membership->is_paid( $include_trial ) ) {
 				return true;
 			}
 		}
@@ -839,6 +870,9 @@ class RCP_Customer {
 
 	/**
 	 * Get the ID of this customer's currently pending payment.
+	 *
+	 * @deprecated 3.1 Pending payment IDs are now stored in membership meta with the key `pending_payment_id`.
+	 * @see rcp_get_membership_meta()
 	 *
 	 * @access public
 	 * @since  3.0

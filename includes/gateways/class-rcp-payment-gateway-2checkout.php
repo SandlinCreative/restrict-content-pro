@@ -256,6 +256,7 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 						'transaction_type' => 'renewal',
 						'subscription_key' => $subscription_key,
 						'amount'           => sanitize_text_field( $_POST['item_list_amount_1'] ), // don't have a total from this call, but this should be safe
+						'subtotal'         => sanitize_text_field( $_POST['item_list_amount_1'] ),
 						'user_id'          => $this->membership->get_customer()->get_user_id(),
 						'customer_id'      => $this->membership->get_customer()->get_id(),
 						'membership_id'    => $this->membership->get_id(),
@@ -294,7 +295,7 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 					} else {
 						if ( $this->membership->is_active() ) {
 							$this->membership->cancel();
-							$this->membership->add_note( __( 'Membership cancelled in 2Checkout', 'rcp' ) );
+							$this->membership->add_note( __( 'Membership cancelled via 2Checkout webhook.', 'rcp' ) );
 						} else {
 							rcp_log( sprintf( 'Membership #%d is not active - not cancelling.', $this->membership->get_id() ) );
 						}
@@ -411,13 +412,11 @@ class RCP_Payment_Gateway_2Checkout extends RCP_Payment_Gateway {
 
 					event.preventDefault();
 
-					if( jQuery('.rcp_level:checked').length ) {
-						var price = jQuery('.rcp_level:checked').closest('.rcp_subscription_level').find('span.rcp_price').attr('rel');
-					} else {
-						var price = jQuery('.rcp_level').attr('rel');
-					}
-
-					if( price > 0 && ! jQuery('.rcp_gateway_fields').hasClass('rcp_discounted_100') ) {
+					/*
+					 * Create token if the amount due today is greater than $0, or if the recurring
+					 * amount is greater than $0 and auto renew is enabled.
+					 */
+					if( response.total > 0 || ( response.recurring_total > 0 && true == response.auto_renew ) ) {
 
 
 						// Call our token request function

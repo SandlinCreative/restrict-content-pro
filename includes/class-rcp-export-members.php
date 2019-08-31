@@ -34,22 +34,24 @@ class RCP_Members_Export extends RCP_Export {
 	 */
 	public function csv_cols() {
 		$cols = array(
-			'id'                  => __( 'Membership ID', 'rcp' ),
-			'user_id'             => __( 'User ID', 'rcp' ),
-			'user_login'          => __( 'User Login', 'rcp' ),
-			'user_email'          => __( 'User Email', 'rcp' ),
-			'first_name'          => __( 'First Name', 'rcp' ),
-			'last_name'           => __( 'Last Name', 'rcp' ),
-			'subscription'        => __( 'Membership', 'rcp' ),
-			'subscription_key'    => __( 'Subscription Key', 'rcp' ),
-			'created_date'        => __( 'Created Date', 'rcp' ),
-			'expiration'          => __( 'Expiration', 'rcp' ),
-			'status'              => __( 'Status', 'rcp' ),
-			'discount_codes'      => __( 'Discount Codes', 'rcp' ),
-			'gateway'             => __( 'Gateway', 'rcp' ),
-			'gateway_customer_id' => __( 'Gateway Customer ID', 'rcp' ),
-			'profile_id'          => __( 'Gateway Subscription ID', 'rcp' ),
-			'is_recurring'        => __( 'Recurring', 'rcp' )
+			'id'                    => __( 'Membership ID', 'rcp' ),
+			'user_id'               => __( 'User ID', 'rcp' ),
+			'user_login'            => __( 'User Login', 'rcp' ),
+			'user_email'            => __( 'User Email', 'rcp' ),
+			'first_name'            => __( 'First Name', 'rcp' ),
+			'last_name'             => __( 'Last Name', 'rcp' ),
+			'subscription'          => __( 'Membership Level ID', 'rcp' ),
+			'membership_level_name' => __( 'Membership Level Name', 'rcp' ),
+			'subscription_key'      => __( 'Subscription Key', 'rcp' ),
+			'created_date'          => __( 'Created Date', 'rcp' ),
+			'expiration'            => __( 'Expiration Date', 'rcp' ),
+			'status'                => __( 'Status', 'rcp' ),
+			'times_billed'          => __( 'Times Billed', 'rcp' ),
+			'discount_codes'        => __( 'Discount Codes', 'rcp' ),
+			'gateway'               => __( 'Gateway', 'rcp' ),
+			'gateway_customer_id'   => __( 'Gateway Customer ID', 'rcp' ),
+			'profile_id'            => __( 'Gateway Subscription ID', 'rcp' ),
+			'is_recurring'          => __( 'Auto Renew', 'rcp' )
 		);
 		return $cols;
 	}
@@ -103,22 +105,24 @@ class RCP_Members_Export extends RCP_Export {
 				}
 
 				$membership_data = array(
-					'id'                  => $membership->get_id(),
-					'user_id'             => $membership->get_customer()->get_user_id(),
-					'user_login'          => $member->user_login,
-					'user_email'          => $member->user_email,
-					'first_name'          => $member->first_name,
-					'last_name'           => $member->last_name,
-					'subscription'        => $membership->get_object_id(),
-					'subscription_key'    => $membership->get_subscription_key(),
-					'created_date'        => $membership->get_created_date( false ),
-					'expiration'          => $membership->get_expiration_date( false ),
-					'status'              => $membership->get_status(),
-					'discount_codes'      => $discounts,
-					'gateway'             => $membership->get_gateway(),
-					'gateway_customer_id' => $membership->get_gateway_customer_id(),
-					'profile_id'          => $membership->get_gateway_subscription_id(),
-					'is_recurring'        => $membership->is_recurring()
+					'id'                    => $membership->get_id(),
+					'user_id'               => $membership->get_customer()->get_user_id(),
+					'user_login'            => $member->user_login,
+					'user_email'            => $member->user_email,
+					'first_name'            => $member->first_name,
+					'last_name'             => $member->last_name,
+					'subscription'          => $membership->get_object_id(),
+					'membership_level_name' => $membership->get_membership_level_name(),
+					'subscription_key'      => $membership->get_subscription_key(),
+					'created_date'          => $membership->get_created_date( false ),
+					'expiration'            => $membership->get_expiration_date( false ),
+					'status'                => $membership->get_status(),
+					'times_billed'          => $membership->get_times_billed(),
+					'discount_codes'        => $discounts,
+					'gateway'               => $membership->get_gateway(),
+					'gateway_customer_id'   => $membership->get_gateway_customer_id(),
+					'profile_id'            => $membership->get_gateway_subscription_id(),
+					'is_recurring'          => $membership->is_recurring()
 				);
 
 				/**

@@ -26,6 +26,11 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 	private $memberships;
 
 	/**
+	 * @var bool Whether or not RCP is network activated and using global tables.
+	 */
+	private $network_active = false;
+
+	/**
 	 * @inheritdoc
 	 */
 	public function execute() {
@@ -44,6 +49,14 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 
 		if ( 0 === $this->get_job()->get_step() ) {
 			$this->get_job()->clear_errors();
+		}
+
+		if (
+			is_multisite() &&
+			is_plugin_active_for_network( plugin_basename( RCP_PLUGIN_FILE ) ) &&
+			( ! defined( 'RCP_NETWORK_SEPARATE_SITES' ) || ! RCP_NETWORK_SEPARATE_SITES )
+		) {
+			$this->network_active = true;
 		}
 
 		$this->disable_membership_actions();
@@ -73,7 +86,9 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 		// Set job to complete.
 		$this->get_job()->set_status( 'complete' );
 
-		rcp_log( 'Batch Member Migration: Job complete.', true );
+		$errors = $this->get_job()->get_errors();
+
+		rcp_log( sprintf( 'Batch Member Migration: Job complete. Errors: %s', var_export( $errors, true ) ), true );
 	}
 
 	/**
@@ -95,6 +110,35 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 	}
 
 	/**
+	 * Count the total number of results and save the value.
+	 *
+	 * @since 3.1
+	 * @return int
+	 */
+	public function get_total_count() {
+
+		global $wpdb;
+
+		$usermeta_table = $wpdb->usermeta;
+		$total_count    = $this->get_job()->get_total_count();
+
+		if ( empty( $total_count ) ) {
+			if ( is_multisite() && ! $this->network_active ) {
+				$blog_id          = get_current_blog_id();
+				$capabilities_key = 1 == $blog_id ? $wpdb->base_prefix . 'capabilities' : $wpdb->base_prefix . $blog_id . '_capabilities';
+				$total_count      = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$usermeta_table} m1, {$usermeta_table} m2 WHERE m1.user_id = m2.user_id AND m1.meta_key = 'rcp_status' AND m2.meta_key = %s", $capabilities_key ) );
+			} else {
+				$total_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$usermeta_table} WHERE meta_key = 'rcp_status'" );
+			}
+			$this->get_job()->set_total_count( $total_count );
+
+			rcp_log( sprintf( 'Batch Member Migration: Total count: %d.', $total_count ), true );
+		}
+
+		return $total_count;
+	}
+
+	/**
 	 * Retrieves the batch of membership records from usermeta.
 	 *
 	 * @since 3.0
@@ -109,14 +153,15 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 
 		$usermeta_table = $wpdb->usermeta;
 
-		if ( empty( $this->get_job()->get_total_count() ) ) {
-			$total_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$usermeta_table} WHERE meta_key = 'rcp_status'" );
-			$this->get_job()->set_total_count( $total_count );
+		$this->get_total_count();
 
-			rcp_log( sprintf( 'Batch Member Migration: Total count: %d.', $total_count ), true );
+		if ( is_multisite() && ! $this->network_active ) {
+			$blog_id          = get_current_blog_id();
+			$capabilities_key = 1 == $blog_id ? $wpdb->base_prefix . 'capabilities' : $wpdb->base_prefix . $blog_id . '_capabilities';
+			$results          = $wpdb->get_results( $wpdb->prepare( "SELECT m1.* FROM {$usermeta_table} m1, {$usermeta_table} m2 WHERE m1.user_id = m2.user_id AND m1.meta_key = 'rcp_status' AND m2.meta_key = %s LIMIT %d OFFSET %d", $capabilities_key, $this->size, $this->offset ) );
+		} else {
+			$results = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$usermeta_table} WHERE meta_key = 'rcp_status' LIMIT %d OFFSET %d", $this->size, $this->offset ) );
 		}
-
-		$results = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$usermeta_table} WHERE meta_key = 'rcp_status' LIMIT %d OFFSET %d", $this->size, $this->offset ) );
 
 		rcp_log( sprintf( 'Batch Member Migration: %d results found in query for LIMIT %d OFFSET %d.', count( $results ), $this->size, $this->offset ) );
 
@@ -132,6 +177,10 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 	 */
 	private function process_batch() {
 
+		global $rcp_options;
+
+		$rcp_options['debug_mode'] = false;
+
 		global $wpdb;
 
 		$rcp_payments = new \RCP_Payments();
@@ -145,8 +194,6 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 
 		foreach ( $this->memberships as $key => $membership ) {
 
-			rcp_log( sprintf( 'Batch Member Migration: Processing membership for user ID #%d.', $membership->user_id ) );
-
 			$meta_items = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d", $membership->user_id ) );
 			$user_meta  = array();
 
@@ -154,9 +201,15 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 				$user_meta[$meta_item->meta_key] = maybe_unserialize( $meta_item->meta_value );
 			}
 
-			$user                = new \WP_User( $membership->user_id );
+			$user                = get_userdata( $membership->user_id );
 			$membership_level_id = 0;
 			$pending_payment     = false;
+
+			if ( empty( $user ) ) {
+				$this->get_job()->add_error( sprintf( __( 'Skipped user #%d - unable to locate user account. Possible orphaned user meta.', 'rcp' ), $membership->user_id ) );
+
+				continue;
+			}
 
 			if ( ! empty( $user_meta['rcp_subscription_level'] ) ) {
 				$membership_level_id = $user_meta['rcp_subscription_level'];
@@ -166,8 +219,6 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 			}
 
 			if ( empty( $membership_level_id ) ) {
-				rcp_log( sprintf( 'Batch Member Migration: Skipping import on user #%d - unable to determine membership level.', $user->ID ), true );
-
 				$this->get_job()->add_error( sprintf( __( 'Skipped user #%d - unable to determine membership level.', 'rcp' ), $user->ID ) );
 
 				continue;
@@ -176,14 +227,18 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 			// If a customer already exists with this ID, skip.
 			$existing_customer = rcp_get_customer_by_user_id( $user->ID );
 			if ( ! empty( $existing_customer ) ) {
-				rcp_log( sprintf( 'Batch Member Migration: Skipping import on user #%d - customer already exists as ID #%d.', $user->ID, $existing_customer->get_id() ), true );
-
 				$processed[] = $existing_customer->get_id();
 
 				continue;
 			}
 
 			$membership_level = rcp_get_subscription_details( $membership_level_id );
+
+			if ( empty( $membership_level ) ) {
+				$this->get_job()->add_error( sprintf( __( 'Skipped user #%d - unable to get membership level details for ID #%d.', 'rcp' ), $user->ID, $membership_level_id ) );
+
+				continue;
+			}
 
 			/**
 			 * First create a new customer record.
@@ -213,8 +268,6 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 			$customer_id = rcp_add_customer( $customer_data );
 
 			if ( empty( $customer_id ) ) {
-				rcp_log( sprintf( 'Batch Member Migration: Error inserting customer record. Data: %s', var_export( $customer_data, true ) ), true );
-
 				$this->get_job()->add_error( sprintf( __( 'Error inserting customer record for user #%d.', 'rcp' ), $user->ID ) );
 
 				continue;
@@ -223,7 +276,6 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 			/**
 			 * Update all this user's payments to add the new customer ID.
 			 */
-			rcp_log( sprintf( 'Batch Member Migration: Updating payments for user #%d to add customer ID #%d.', $user->ID, absint( $customer_id ) ) );
 			$wpdb->update(
 				rcp_get_payments_db_name(),
 				array( 'customer_id' => absint( $customer_id ) ),
@@ -272,7 +324,7 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 				$expiration_date = ! empty( $user_meta['rcp_expiration'] ) ? $user_meta['rcp_expiration'] : 'none';
 			}
 
-			if ( empty( $expiration_date ) || $expiration_date === 'none' ) {
+			if ( empty( $expiration_date ) || strtolower( $expiration_date ) === 'none' ) {
 				$expiration_date = '0000-00-00 00:00:00';
 			}
 
@@ -351,8 +403,6 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 			$membership_id = rcp_add_membership( $data );
 
 			if ( empty( $membership_id ) ) {
-				rcp_log( sprintf( 'Batch Member Migration: Error inserting membership. Data: %s', var_export( $data, true ) ), true );
-
 				$this->get_job()->add_error( sprintf( __( 'Error inserting membership record for user #%d.', 'rcp' ), $user->ID ) );
 
 				continue;
@@ -361,7 +411,6 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 			/**
 			 * Update all this user's payments to add this membership ID.
 			 */
-			rcp_log( sprintf( 'Batch Member Migration: Updating payments for user #%d to add membership ID #%d.', $membership->user_id, absint( $membership_id ) ) );
 			$wpdb->update(
 				rcp_get_payments_db_name(),
 				array( 'membership_id' => absint( $membership_id ) ),
@@ -377,8 +426,6 @@ final class RCP_Batch_Callback_Migrate_Memberships_v3 extends Abstract_Job_Callb
 
 			unset( $this->memberships[$key] );
 		}
-
-		rcp_log( sprintf( 'Batch Member Migration: Adjusting current count to %d.', count( $processed ) ), true );
 
 		$this->get_job()->adjust_current_count( count( $processed ) );
 

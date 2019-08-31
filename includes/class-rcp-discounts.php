@@ -60,7 +60,9 @@ class RCP_Discounts {
 		global $wpdb;
 
 		$defaults = array(
-			'status' => 'all'
+			'status' => 'all',
+			'number' => null,
+			'offset' => 0,
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -74,9 +76,19 @@ class RCP_Discounts {
 			$where = "WHERE `status` = 'disabled'";
 		}
 
-		// TODO: Add optional args for limit, order, etc
+		// Limit
+		if ( ! empty( $args['number'] ) ) {
+			$max    = absint( $args['number'] );
+			$offset = absint( $args['offset'] );
 
-		$discounts = $wpdb->get_results( "SELECT * FROM {$this->db_name} {$where};" );
+			$limit = " LIMIT {$offset},{$max}";
+		} else {
+			$limit = '';
+		}
+
+		// TODO: Add optional args for order, etc
+
+		$discounts = $wpdb->get_results( "SELECT * FROM {$this->db_name} {$where}{$limit};" );
 
 		if( $discounts )
 			return $discounts;
@@ -137,6 +149,10 @@ class RCP_Discounts {
 		global $wpdb;
 
 		$discount = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->db_name} WHERE id='%d';", $discount_id ) );
+
+		if ( isset( $discount->membership_level_ids ) ) {
+			$discount->membership_level_ids = maybe_unserialize( $discount->membership_level_ids );
+		}
 
 		return $discount;
 
@@ -435,7 +451,8 @@ class RCP_Discounts {
 			'expiration'           => '',
 			'max_uses' 	           => 0,
 			'use_count'            => '0',
-			'membership_level_ids' => array()
+			'membership_level_ids' => array(),
+			'one_time'             => 0
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -476,7 +493,8 @@ class RCP_Discounts {
 					`expiration`           = '%s',
 					`max_uses`             = '%d',
 					`use_count`            = '0',
-					`membership_level_ids` = '%s'
+					`membership_level_ids` = '%s',
+					`one_time`             = '%d'
 				;",
 				sanitize_text_field( $args['name'] ),
 				strip_tags( $args['description'] ),
@@ -485,7 +503,8 @@ class RCP_Discounts {
 				sanitize_text_field( $args['code'] ),
 				sanitize_text_field( $args['expiration'] ),
 				absint( $args['max_uses'] ),
-				maybe_serialize( $args['membership_level_ids'] )
+				maybe_serialize( $args['membership_level_ids'] ),
+				absint( $args['one_time'] )
 			)
 		);
 
@@ -525,7 +544,8 @@ class RCP_Discounts {
 
 		$args     = array_merge( $discount, $args );
 
-		$amount = $this->format_amount( $args['amount'], $args['unit'] );
+		$args['code'] = strtolower( $args['code'] );
+		$amount       = $this->format_amount( $args['amount'], $args['unit'] );
 
 		if ( is_wp_error( $amount ) ) {
 			return $amount;
@@ -547,7 +567,8 @@ class RCP_Discounts {
 					`expiration`           = '%s',
 					`max_uses`             = '%d',
 					`use_count`            = '%d',
-					`membership_level_ids` = '%s'
+					`membership_level_ids` = '%s',
+					`one_time`             = '%d'
 					WHERE `id`             = '%d'
 				;",
 				sanitize_text_field( $args['name'] ),
@@ -560,6 +581,7 @@ class RCP_Discounts {
 				absint( $args['max_uses'] ),
 				absint( $args['use_count'] ),
 				maybe_serialize( $args['membership_level_ids'] ),
+				absint( $args['one_time'] ),
 				absint( $discount_id )
 			)
 		);

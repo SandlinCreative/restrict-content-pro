@@ -185,16 +185,16 @@ function rcp_process_edit_membership() {
 		if ( ! empty( $new_level_id ) && $new_level_id != $old_level_id ) {
 			rcp_log( sprintf( '%s changing membership level for membership #%d. Old level ID: %d; New level ID: %d.', $current_user->user_login, $membership_id, $old_level_id, $new_level_id ) );
 
+			$new_status = $membership->get_status();
+
+			// Disable the old membership.
+			$membership->disable();
+
 			$new_membership_id = $membership->get_customer()->add_membership( array(
-				'status'        => $membership->get_status(), // keep the same status
+				'status'        => $new_status, // keep the same status
 				'object_id'     => $new_level_id,
 				'upgraded_from' => $membership->get_id()
 			) );
-
-			// Disable the old membership if it hasn't already been done automatically.
-			if ( ! $membership->is_disabled() ) {
-				$membership->disable();
-			}
 
 			if ( empty ( $new_membership_id ) ) {
 				wp_die( __( 'Error changing membership level.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 500 ) );
@@ -263,6 +263,12 @@ function rcp_process_edit_membership() {
 	$auto_renew = ! empty( $_POST['auto_renew'] ) ? true : false;
 	if ( $auto_renew != $membership->is_recurring() ) {
 		$args['auto_renew'] = (int) $auto_renew;
+	}
+
+	// Gateway
+	$gateway = ! empty( $_POST['gateway'] ) ? $_POST['gateway'] : '';
+	if ( ! empty( $gateway ) && $gateway != $membership->get_gateway() ) {
+		$args['gateway'] = sanitize_text_field( $gateway );
 	}
 
 	// Gateway Customer ID
@@ -419,6 +425,8 @@ function rcp_process_cancel_membership() {
 
 	rcp_log( sprintf( '%s is cancelling membership #%d.', $current_user->user_login, $membership_id ) );
 
+	$membership->add_note( sprintf( __( 'Membership cancelled via admin link by user %s (#%d).', 'rcp' ), $current_user->user_login, $current_user->ID ) );
+
 	// Cancel gateway subscription.
 	if ( $membership->can_cancel() ) {
 		$membership->cancel_payment_profile();
@@ -484,7 +492,7 @@ function rcp_process_add_membership_payment() {
 		'subscription'     => $membership->get_membership_level_name(),
 		'subscription_key' => $membership->get_subscription_key(),
 		'transaction_id'   => sanitize_text_field( $transaction_id ),
-		'status'           => 'complete',
+		'status'           => ! empty( $_POST['status'] ) ? sanitize_text_field( $_POST['status'] ) : 'complete',
 	);
 
 	$add = $rcp_payments_db->insert( $data );

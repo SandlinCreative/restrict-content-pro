@@ -34,7 +34,8 @@ function rcp_process_membership_cancellation() {
 		return;
 	}
 
-	$membership = false;
+	$membership   = false;
+	$current_user = wp_get_current_user();
 
 	if ( ! empty( $_GET['membership-id'] ) ) {
 		$membership = rcp_get_membership( absint( $_GET['membership-id'] ) );
@@ -49,6 +50,11 @@ function rcp_process_membership_cancellation() {
 		return;
 	}
 
+	// Bail if this user isn't actually the customer associated with this membership.
+	if ( $membership->get_customer()->get_user_id() != $current_user->ID ) {
+		wp_die( __( 'You do not have permission to perform this action.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 403 ) );
+	}
+
 	$success  = $membership->cancel_payment_profile();
 	$redirect = remove_query_arg( array( 'rcp-action', '_wpnonce', 'membership-id', 'member-id' ), rcp_get_current_url() );
 
@@ -60,6 +66,8 @@ function rcp_process_membership_cancellation() {
 	if ( true === $success ) {
 
 		do_action( 'rcp_process_member_cancellation', get_current_user_id() );
+
+		$membership->add_note( sprintf( __( 'Membership cancelled by customer %s (#%d).', 'rcp' ), $current_user->user_login, $current_user->ID ) );
 
 		$redirect = add_query_arg( array(
 			'profile'       => 'cancelled',
@@ -184,7 +192,7 @@ add_action( 'rcp_transition_membership_status_expired', 'rcp_update_expired_memb
  */
 function rcp_update_user_role_on_membership_object_id_transition( $old_object_id, $new_object_id, $membership_id ) {
 
-	if ( $old_object_id == $new_object_id ) {
+	if ( $old_object_id == $new_object_id || 'new' == $old_object_id ) {
 		return;
 	}
 
@@ -192,7 +200,12 @@ function rcp_update_user_role_on_membership_object_id_transition( $old_object_id
 	$new_membership_level = rcp_get_subscription_details( $new_object_id );
 	$membership           = rcp_get_membership( $membership_id );
 
-	if ( empty( $membership ) || empty( $old_membership_level ) || empty( $new_membership_level ) ) {
+	if ( empty( $membership ) || empty( $new_membership_level ) ) {
+		return;
+	}
+
+	// Don't try to change anything if the membership isn't active.
+	if ( ! $membership->is_active() ) {
 		return;
 	}
 
@@ -220,10 +233,13 @@ function rcp_update_user_role_on_membership_object_id_transition( $old_object_id
 	 * Add the new role.
 	 */
 	$new_role = ! empty( $new_membership_level->role ) ? $new_membership_level->role : get_option( 'default_role', 'subscriber' );
+	$new_role = apply_filters( 'rcp_default_user_level', $new_role, $new_membership_level->id );
 
-	rcp_log( sprintf( 'Adding role %s to user #%d.', $new_role, $user->ID ) );
+	if ( ! in_array( $new_role, $user->roles ) ) {
+		rcp_log( sprintf( 'Adding role %s to user #%d.', $new_role, $user->ID ) );
 
-	$user->add_role( apply_filters( 'rcp_default_user_level', $new_role, $new_membership_level->id ) );
+		$user->add_role( $new_role );
+	}
 
 }
 
@@ -287,12 +303,60 @@ add_action( 'rcp_new_membership_added', 'rcp_add_membership_level_change_note', 
 function rcp_disable_memberships_on_activate( $membership_id, $membership ) {
 
 	if ( ! rcp_multiple_memberships_enabled() ) {
+		/*
+		 * If multiple memberships is NOT enabled, then we always disable all other memberships
+		 * when a new one is activated. We only allow one at a time.
+		 */
 		$membership->get_customer()->disable_memberships( $membership_id );
+	} elseif ( $membership->was_upgrade() ) {
+		/*
+		 * If multiple memberships IS enabled, then we only disable the membership this new one
+		 * was upgraded/downgraded from.
+		 */
+		$previous_membership_id = $membership->get_upgraded_from();
+		$previous_membership    = rcp_get_membership( $previous_membership_id );
+
+		if ( ! empty( $previous_membership ) ) {
+			$previous_membership->disable();
+		}
 	}
 
 }
 
 add_action( 'rcp_membership_pre_activate', 'rcp_disable_memberships_on_activate', 10, 2 );
+
+/**
+ * Removes the expiration/renewal reminder flags when a membership is renewed. This allows the reminders to be re-sent
+ * for the next membership period.
+ *
+ * @param string         $expiration       New expiration date.
+ * @param int            $membership_id    ID of the membership.
+ * @param RCP_Membership $membership       Membership object.
+ *
+ * @since 3.0
+ * @return void
+ */
+function rcp_remove_membership_reminder_flags( $expiration, $membership_id, $membership ) {
+
+	global $wpdb;
+
+	$membership_meta_table = restrict_content_pro()->membership_meta_table->get_table_name();
+
+	$query = $wpdb->prepare( "DELETE FROM {$membership_meta_table} WHERE rcp_membership_id = %d AND meta_key LIKE %s", $membership->get_id(), '_reminder_sent_%' );
+	$wpdb->query( $query );
+
+	// Let's also remove our deprecated keys. We can remove this sometime in the future.
+
+	$user_id = $membership->get_customer()->get_user_id();
+
+	if ( ! empty( $user_id ) ) {
+		$query = $wpdb->prepare( "DELETE FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key LIKE %s", $user_id, '_rcp_reminder_sent_' . absint( $membership->get_id() ) . '_%' );
+		$wpdb->query( $query );
+	}
+
+
+}
+add_action( 'rcp_membership_post_renew', 'rcp_remove_membership_reminder_flags', 10, 3 );
 
 /**
  * Disable memberships when a user account is deleted. This cancels recurring billing and disables the

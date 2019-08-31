@@ -116,6 +116,32 @@ class Queue extends Schema {
 			'sortable' => true
 		),
 
+		// data
+		array(
+			'name'     => 'data',
+			'type'     => 'longtext',
+			'default'  => ''
+		),
+
+		// date_created
+		array(
+			'name'       => 'date_created',
+			'type'       => 'datetime',
+			'default'    => '0000-00-00 00:00:00',
+			'created'    => true,
+			'date_query' => true,
+			'sortable'   => true
+		),
+
+		// date_completed
+		array(
+			'name'       => 'date_completed',
+			'type'       => 'datetime',
+			'default'    => '0000-00-00 00:00:00',
+			'date_query' => true,
+			'sortable'   => true
+		),
+
 		// uuid
 		array(
 			'uuid' => true,

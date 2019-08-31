@@ -109,51 +109,66 @@ class RCP_Payment_Gateway_PayPal extends RCP_Payment_Gateway {
 			$paypal_args['src'] = '1';
 			$paypal_args['sra'] = '1';
 			$paypal_args['a3'] = $this->amount;
-			$paypal_args['a1'] = $this->initial_amount;
 
 			$paypal_args['p3'] = $this->length;
-			$paypal_args['p1'] = $this->length;
 
 			switch ( $this->length_unit ) {
 
 				case "day" :
 
 					$paypal_args['t3'] = 'D';
-					$paypal_args['t1'] = 'D';
 					break;
 
 				case "month" :
 
 					$paypal_args['t3'] = 'M';
-					$paypal_args['t1'] = 'M';
 					break;
 
 				case "year" :
 
 					$paypal_args['t3'] = 'Y';
-					$paypal_args['t1'] = 'Y';
 					break;
 
 			}
 
-			if ( $this->is_trial() ) {
+			// @todo subscription start date
+			if ( $this->initial_amount != $this->amount ) {
+				/*
+				 * Add a trial period to charge the different "initial amount".
+				 * This will be used for free trials, one-time discount codes, signup fees,
+				 * and prorated credits.
+				 */
 
-				$paypal_args['a1'] = 0;
-				$paypal_args['p1'] = $this->subscription_data['trial_duration'];
+				// By default we use the same values as the normal subscription period.
+				$paypal_args['a1'] = $this->initial_amount;
+				$paypal_args['p1'] = $this->length;
+				$paypal_args['t1'] = $paypal_args['t3'];
 
-				switch ( $this->subscription_data['trial_duration_unit'] ) {
+				/*
+				 * If this is not a free trial then the trial duration would have already been set above
+				 * using the normal duration fields.
+				 *
+				 * If this is a free trial, then we'll override the values using the trial duration fields.
+				 */
 
-					case 'day':
-						$paypal_args['t1'] = 'D';
-						break;
+				if ( $this->is_trial() ) {
+					$paypal_args['a1'] = 0;
+					$paypal_args['p1'] = $this->subscription_data['trial_duration'];
 
-					case 'month':
-						$paypal_args['t1'] = 'M';
-						break;
+					switch ( $this->subscription_data['trial_duration_unit'] ) {
 
-					case 'year':
-						$paypal_args['t1'] = 'Y';
-						break;
+						case 'day':
+							$paypal_args['t1'] = 'D';
+							break;
+
+						case 'month':
+							$paypal_args['t1'] = 'M';
+							break;
+
+						case 'year':
+							$paypal_args['t1'] = 'Y';
+							break;
+					}
 				}
 			}
 
@@ -261,30 +276,6 @@ class RCP_Payment_Gateway_PayPal extends RCP_Payment_Gateway {
 
 			}
 
-			if( empty( $this->membership ) && ! empty( $posted['custom'] ) && is_numeric( $posted['custom'] ) ) {
-
-				$user_id  = absint( $posted['custom'] );
-				$customer = rcp_get_customer_by_user_id( $user_id );
-
-				if ( ! empty( $customer ) ) {
-					$this->membership = rcp_get_customer_single_membership( $customer->get_id() );
-				}
-
-			}
-
-			if( empty( $this->membership ) && ! empty( $posted['payer_email'] ) ) {
-
-				$user    = get_user_by( 'email', $posted['payer_email'] );
-				$user_id = $user ? $user->ID : false;
-
-				$customer = rcp_get_customer_by_user_id( $user_id );
-
-				if ( ! empty( $customer ) ) {
-					$this->membership = rcp_get_customer_single_membership( $customer->get_id() );
-				}
-
-			}
-
 			if( empty( $this->membership ) ) {
 				rcp_log( sprintf( 'PayPal IPN Failed: unable to find associated membership in RCP. Item Name: %s; Item Number: %d; TXN Type: %s; TXN ID: %s', $posted['item_name'], $posted['item_number'], $posted['txn_type'], $posted['txn_id'] ), true );
 				die( 'no membership found' );
@@ -310,12 +301,19 @@ class RCP_Payment_Gateway_PayPal extends RCP_Payment_Gateway {
 
 			$subscription_key   = $posted['item_number'];
 			$has_trial          = isset( $posted['mc_amount1'] ) && '0.00' == $posted['mc_amount1'];
-			$amount             = ! $has_trial ? number_format( (float) $posted['mc_gross'], 2, '.', '' ) : number_format( (float) $posted['mc_amount1'], 2, '.', '' );
+
+			if ( ! $has_trial && isset( $posted['mc_gross'] ) ) {
+				$amount = number_format( (float) $posted['mc_gross'], 2, '.', '' );
+			} elseif ( $has_trial && isset( $posted['mc_amount1'] ) ) {
+				$amount = number_format( (float) $posted['mc_amount1'], 2, '.', '' );
+			} else {
+				$amount = false;
+			}
 
 			$payment_status     = ! empty( $posted['payment_status'] ) ? $posted['payment_status'] : false;
 			$currency_code      = $posted['mc_currency'];
 
-			$pending_payment_id = $member->get_pending_payment_id();
+			$pending_payment_id = rcp_get_membership_meta( $this->membership->get_id(), 'pending_payment_id', true );
 			$pending_payment    = ! empty( $pending_payment_id ) ? $rcp_payments->get_payment( $pending_payment_id ) : false;
 
 			// Check for invalid amounts in the IPN data
@@ -337,7 +335,6 @@ class RCP_Payment_Gateway_PayPal extends RCP_Payment_Gateway {
 				'subscription'     => $posted['item_name'],
 				'payment_type'     => $posted['txn_type'],
 				'subscription_key' => $subscription_key,
-				'amount'           => $amount,
 				'user_id'          => $this->membership->get_customer()->get_user_id(),
 				'customer_id'      => $this->membership->get_customer_id(),
 				'membership_id'    => $this->membership->get_id(),
@@ -345,6 +342,10 @@ class RCP_Payment_Gateway_PayPal extends RCP_Payment_Gateway {
 				'status'           => 'complete',
 				'gateway'          => 'paypal'
 			);
+
+			if ( false !== $amount ) {
+				$payment_data['amount'] = $amount;
+			}
 
 			// We don't want any empty values in the array in order to avoid deleting a transaction ID or other data.
 			foreach ( $payment_data as $payment_key => $payment_value ) {
@@ -440,15 +441,17 @@ class RCP_Payment_Gateway_PayPal extends RCP_Payment_Gateway {
 
 						$this->membership->renew( true );
 
+						$payment_data['subtotal']         = $payment_data['amount'];
 						$payment_data['transaction_type'] = 'renewal';
 
 						// record this payment in the database
 						$payment_id = $rcp_payments->insert( $payment_data );
 
+						do_action( 'rcp_webhook_recurring_payment_processed', $member, $payment_id, $this );
+
 					}
 
 					do_action( 'rcp_ipn_subscr_payment', $user_id );
-					do_action( 'rcp_webhook_recurring_payment_processed', $member, $payment_id, $this );
 					do_action( 'rcp_gateway_payment_processed', $member, $payment_id, $this );
 
 					die( 'successful subscr_payment' );
@@ -470,6 +473,7 @@ class RCP_Payment_Gateway_PayPal extends RCP_Payment_Gateway {
 						// user is marked as cancelled but retains access until end of term
 						if ( $this->membership->is_active() ) {
 							$this->membership->cancel();
+							$this->membership->add_note( __( 'Membership cancelled via PayPal Standard IPN.', 'rcp' ) );
 						} else {
 							rcp_log( sprintf( 'Membership #%d is not active - not cancelling.', $this->membership->get_id() ) );
 						}

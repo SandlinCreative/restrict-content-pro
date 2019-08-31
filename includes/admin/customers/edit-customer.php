@@ -106,6 +106,15 @@ $delete_customer_url   = wp_nonce_url( rcp_get_customers_admin_page( array(
 							</tr>
 							<tr>
 								<th scope="row" class="row-title">
+									<label for="tablecell"><?php _e( 'Has Trialed:', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<?php echo $customer->has_trialed() ? __( 'Yes', 'rcp' ) : __( 'No', 'rcp' ); ?>
+									<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php esc_attr_e( 'Each customer can only sign up for one free trial.', 'rcp' ); ?>"></span>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row" class="row-title">
 									<label for="rcp-customer-date-registered"><?php _e( 'Last Login:', 'rcp' ); ?></label>
 								</th>
 								<td>
@@ -256,7 +265,23 @@ $delete_customer_url   = wp_nonce_url( rcp_get_customers_admin_page( array(
 				<?php endif; ?>
 				</tbody>
 			</table>
+			<?php if ( rcp_multiple_memberships_enabled() ) : ?>
+				<div class="edit-item">
+					<a href="<?php echo esc_url( rcp_get_memberships_admin_page( array( 'view' => 'add', 'customer_id' => $customer->get_id() ) ) ); ?>" class="button"><?php _e( 'Add Membership', 'rcp' ); ?></a>
+				</div>
+			<?php endif; ?>
 		</div>
+
+		<?php
+		/**
+		 * Insert content after the "Memberships" section.
+		 *
+		 * @param RCP_Customer $customer
+		 *
+		 * @since 3.1.1
+		 */
+		do_action( 'rcp_edit_customer_after_memberships_section', $customer );
+		?>
 
 		<div id="rcp-customer-recent-payments-wrapper" class="rcp-item-section">
 			<h3><?php _e( 'Recent Payments:', 'rcp' ); ?></h3>

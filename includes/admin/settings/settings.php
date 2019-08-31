@@ -239,6 +239,15 @@ function rcp_settings_page() {
 						</tr>
 						<tr valign="top">
 							<th>
+								<?php _e( 'Multiple Memberships', 'rcp' ); ?>
+							</th>
+							<td>
+								<input type="checkbox" value="1" name="rcp_settings[multiple_memberships]" id="rcp_settings_multiple_memberships" <?php checked( isset( $rcp_options['multiple_memberships'] ) ); ?>/>
+								<label for="rcp_settings_multiple_memberships"><?php _e( 'Check this to allow customers to sign up for multiple memberships at a time. If unchecked, each customer will only be able to hold one active membership at a time.', 'rcp' ); ?></label>
+							</td>
+						</tr>
+						<tr valign="top">
+							<th>
 								<label for="rcp_settings_auto_renew"><?php _e( 'Auto Renew', 'rcp' ); ?></label>
 							</th>
 							<td>
@@ -425,6 +434,15 @@ function rcp_settings_page() {
 								<p class="description"><?php _e('Enter your live secret key.', 'rcp'); ?></p>
 							</td>
 						</tr>
+						<tr valign="top">
+							<th>
+								<label for="rcp_settings[disable_sitewide_scripts]"><?php _e( 'Disable Global Stripe.js', 'rcp' ); ?></label>
+							</th>
+							<td>
+								<input type="checkbox" value="1" name="rcp_settings[disable_sitewide_scripts]" id="rcp_settings[disable_sitewide_scripts]" <?php checked( ! empty( $rcp_options['disable_sitewide_scripts'] ) ); ?>/>
+								<span class="description"><?php printf( __( 'If left unchecked, the Stripe.js file will be loaded on every page of your website to allow them to <a href="%s" target="_blank">better detect anomalous behavior that may be indicative of fraud</a>. This is what Stripe recommends. If you check this option on, then Stripe.js will only be loaded when required for payment processing.', 'rcp' ), 'https://stripe.com/docs/stripe-js/v2#including-stripejs' ); ?></span>
+							</td>
+						</tr>
 						<tr>
 							<th colspan=2>
 								<p><?php printf( __( 'Have questions about connecting with Stripe? See the <a href="%s" target="_blank" rel="noopener noreferrer">documentation</a>.', 'rcp' ), 'https://docs.restrictcontentpro.com/article/2033-how-does-stripe-connect-affect-me' ); ?></p>
@@ -607,62 +625,6 @@ function rcp_settings_page() {
 							<td>
 								<input class="regular-text" id="rcp_settings[twocheckout_live_seller_id]" style="width: 300px;" name="rcp_settings[twocheckout_live_seller_id]" value="<?php if(isset($rcp_options['twocheckout_live_seller_id'])) { echo $rcp_options['twocheckout_live_seller_id']; } ?>"/>
 								<p class="description"><?php _e('Enter your live Seller ID. <a href="http://help.2checkout.com/articles/FAQ/Where-is-my-Seller-ID" target="_blank">Where is my Seller ID?</a>.', 'rcp'); ?></p>
-							</td>
-						</tr>
-
-						<tr valign="top">
-							<th colspan=2>
-								<h3><?php _e('Authorize.net Settings', 'rcp'); ?></h3>
-							</th>
-						</tr>
-						<?php // Authorize.net Test Login ID ?>
-						<tr>
-							<th>
-								<label for="rcp_settings[authorize_test_api_login]"><?php _e( 'Test API Login ID', 'rcp' ); ?></label>
-							</th>
-							<td>
-								<input class="regular-text" id="rcp_settings[authorize_test_api_login]" style="width: 300px;" name="rcp_settings[authorize_test_api_login]" value="<?php if(isset($rcp_options['authorize_test_api_login'])) { echo esc_attr( $rcp_options['authorize_test_api_login'] ); } ?>"/>
-								<p class="description"><?php _e('Enter your authorize.net test API login ID.', 'rcp'); ?></p>
-							</td>
-						</tr>
-						<?php // Authorize.net Test Transaction Key ?>
-						<tr>
-							<th>
-								<label for="rcp_settings[authorize_test_txn_key]"><?php _e( 'Test Transaction Key', 'rcp' ); ?></label>
-							</th>
-							<td>
-								<input class="regular-text" id="rcp_settings[authorize_test_txn_key]" style="width: 300px;" name="rcp_settings[authorize_test_txn_key]" value="<?php if(isset($rcp_options['authorize_test_txn_key'])) { echo esc_attr( $rcp_options['authorize_test_txn_key'] ); } ?>"/>
-								<p class="description"><?php _e('Enter your authorize.net test transaction key', 'rcp'); ?></p>
-							</td>
-						</tr>
-						<?php // Authorize.net Live Login ID ?>
-						<tr>
-							<th>
-								<label for="rcp_settings[authorize_api_login]"><?php _e( 'Live API Login ID', 'rcp' ); ?></label>
-							</th>
-							<td>
-								<input class="regular-text" id="rcp_settings[authorize_api_login]" style="width: 300px;" name="rcp_settings[authorize_api_login]" value="<?php if(isset($rcp_options['authorize_api_login'])) { echo esc_attr( $rcp_options['authorize_api_login'] ); } ?>"/>
-								<p class="description"><?php _e('Enter your authorize.net live API login ID.', 'rcp'); ?></p>
-							</td>
-						</tr>
-						<?php // Authorize.net Live Transaction Key ?>
-						<tr>
-							<th>
-								<label for="rcp_settings[authorize_txn_key]"><?php _e( 'Live Transaction Key', 'rcp' ); ?></label>
-							</th>
-							<td>
-								<input class="regular-text" id="rcp_settings[authorize_txn_key]" style="width: 300px;" name="rcp_settings[authorize_txn_key]" value="<?php if(isset($rcp_options['authorize_txn_key'])) { echo  esc_attr( $rcp_options['authorize_txn_key'] ); } ?>"/>
-								<p class="description"><?php _e('Enter your authorize.net live transaction key', 'rcp'); ?></p>
-							</td>
-						</tr>
-						<?php // Authorize.net MD5 Hash ?>
-						<tr>
-							<th>
-								<label for="rcp_settings[authorize_hash_value]"><?php _e( 'MD5-Hash Verification Key', 'rcp' ); ?></label>
-							</th>
-							<td>
-								<input class="regular-text" id="rcp_settings[authorize_hash_value]" style="width: 300px;" name="rcp_settings[authorize_hash_value]" value="<?php if(isset($rcp_options['authorize_hash_value'])) { echo esc_attr( $rcp_options['authorize_hash_value'] ); } ?>"/>
-								<p class="description"><?php _e('Enter the MD5 Hash verification key for your Silent Post URL.', 'rcp'); ?></p>
 							</td>
 						</tr>
 
@@ -874,7 +836,7 @@ function rcp_settings_page() {
 								</td>
 							</tr>
 							<tr>
-								<th colspan=2><h3><?php _e( 'Active Membership Email', 'rcp' ); ?></h3></th>
+								<th colspan=2><h3><?php _e( 'Paid Membership Activation Email', 'rcp' ); ?></h3></th>
 							</tr>
 							<tr>
 								<th>
@@ -941,6 +903,152 @@ function rcp_settings_page() {
 									<p>
 										<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => 'active_email_admin' ), home_url() ) ); ?>" class="button-secondary" target="_blank"><?php _e( 'Preview Email', 'rcp' ); ?></a>
 										<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-settings&rcp-action=send_test_email&email=active_admin' ), 'rcp_send_test_email' ) ); ?>" class="button-secondary"><?php _e( 'Send Test Email', 'rcp' ); ?></a>
+									</p>
+								</td>
+							</tr>
+							<tr valign="top">
+								<th colspan=2>
+									<h3><?php _e( 'Free Membership Activation Email', 'rcp' ); ?></h3>
+								</th>
+							</tr>
+							<tr>
+								<th>
+									<label for="rcp_settings[disable_free_email]"><?php _e( 'Disable for Member', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<input type="checkbox" value="1" name="rcp_settings[disable_free_email]" id="rcp_settings[disable_free_email]" class="rcp-disable-email" <?php checked( true, isset( $rcp_options['disable_free_email'] ) ); ?>/>
+									<span><?php _e( 'Check this to disable the email sent to a member when they register for a free membership.', 'rcp' ); ?></span>
+								</td>
+							</tr>
+							<tr valign="top"<?php echo ( isset( $rcp_options['disable_free_email'] ) ) ? ' style="display: none;"' : ''; ?>>
+								<th>
+									<label for="rcp_settings[free_subject]"><?php _e( 'Member Subject', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<input class="regular-text" id="rcp_settings[free_subject]" style="width: 300px;" name="rcp_settings[free_subject]" value="<?php if( isset( $rcp_options['free_subject'] ) ) { echo $rcp_options['free_subject']; } ?>"/>
+									<p class="description"><?php _e( 'The subject line for the email sent to users when they sign up for a free membership.', 'rcp' ); ?></p>
+								</td>
+							</tr>
+							<tr valign="top"<?php echo ( isset( $rcp_options['disable_free_email'] ) ) ? ' style="display: none;"' : ''; ?>>
+								<th>
+									<label for="rcp_settings[free_email]"><?php _e( 'Member Email Body', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<?php
+									$free_email = isset( $rcp_options['free_email'] ) ? wptexturize( $rcp_options['free_email'] ) : '';
+									wp_editor( $free_email, 'rcp_settings_free_email', array( 'textarea_name' => 'rcp_settings[free_email]', 'teeny' => true ) );
+									?>
+									<p class="description"><?php _e( 'This is the email message that is sent to users when they sign up for a free account.', 'rcp' ); ?></p>
+									<p>
+										<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => 'free_email' ), home_url() ) ); ?>" class="button-secondary" target="_blank"><?php _e( 'Preview Email', 'rcp' ); ?></a>
+										<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-settings&rcp-action=send_test_email&email=free' ), 'rcp_send_test_email' ) ); ?>" class="button-secondary"><?php _e( 'Send Test Email', 'rcp' ); ?></a>
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<th>
+									<label for="rcp_settings[disable_free_email_admin]"><?php _e( 'Disable for Admin', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<input type="checkbox" value="1" name="rcp_settings[disable_free_email_admin]" id="rcp_settings[disable_free_email_admin]" class="rcp-disable-email" <?php checked( true, isset( $rcp_options['disable_free_email_admin'] ) ); ?>/>
+									<span><?php _e( 'Check this to disable the email sent to the administrator when a member registers for a free membership.', 'rcp' ); ?></span>
+								</td>
+							</tr>
+							<tr valign="top"<?php echo ( isset( $rcp_options['disable_free_email_admin'] ) ) ? ' style="display: none;"' : ''; ?>>
+								<th>
+									<label for="rcp_settings[free_subject_admin]"><?php _e( 'Admin Subject', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<input class="regular-text" id="rcp_settings[free_subject_admin]" style="width: 300px;" name="rcp_settings[free_subject_admin]" value="<?php if( isset( $rcp_options['free_subject_admin'] ) ) { echo $rcp_options['free_subject_admin']; } ?>"/>
+									<p class="description"><?php _e( 'The subject line for the email sent to the admin when a user signs up for a free membership.', 'rcp' ); ?></p>
+								</td>
+							</tr>
+							<tr valign="top"<?php echo ( isset( $rcp_options['disable_free_email_admin'] ) ) ? ' style="display: none;"' : ''; ?>>
+								<th>
+									<label for="rcp_settings[free_email_admin]"><?php _e( 'Admin Email Body', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<?php
+									$free_email = isset( $rcp_options['free_email_admin'] ) ? wptexturize( $rcp_options['free_email_admin'] ) : '';
+									wp_editor( $free_email, 'rcp_settings_free_email_admin', array( 'textarea_name' => 'rcp_settings[free_email_admin]', 'teeny' => true ) );
+									?>
+									<p class="description"><?php _e( 'This is the email message that is sent to the admin when a user signs up for a free account.', 'rcp' ); ?></p>
+									<p>
+										<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => 'free_email_admin' ), home_url() ) ); ?>" class="button-secondary" target="_blank"><?php _e( 'Preview Email', 'rcp' ); ?></a>
+										<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-settings&rcp-action=send_test_email&email=free_admin' ), 'rcp_send_test_email' ) ); ?>" class="button-secondary"><?php _e( 'Send Test Email', 'rcp' ); ?></a>
+									</p>
+								</td>
+							</tr>
+							<tr valign="top">
+								<th colspan=2>
+									<h3><?php _e( 'Trial Membership Activation Email', 'rcp' ); ?></h3>
+								</th>
+							</tr>
+							<tr>
+								<th>
+									<label for="rcp_settings[disable_trial_email]"><?php _e( 'Disable for Member', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<input type="checkbox" value="1" name="rcp_settings[disable_trial_email]" id="rcp_settings[disable_trial_email]" class="rcp-disable-email" <?php checked( true, isset( $rcp_options['disable_trial_email'] ) ); ?>/>
+									<span><?php _e( 'Check this to disable the email sent to a member when they sign up with a trial.', 'rcp' ); ?></span>
+								</td>
+							</tr>
+							<tr valign="top"<?php echo ( isset( $rcp_options['disable_trial_email'] ) ) ? ' style="display: none;"' : ''; ?>>
+								<th>
+									<label for="rcp_settings[trial_subject]"><?php _e( 'Member Subject', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<input class="regular-text" id="rcp_settings[trial_subject]" style="width: 300px;" name="rcp_settings[trial_subject]" value="<?php if( isset( $rcp_options['trial_subject'] ) ) { echo $rcp_options['trial_subject']; } ?>"/>
+									<p class="description"><?php _e( 'The subject line for the email sent to users when they sign up for a free trial.', 'rcp' ); ?></p>
+								</td>
+							</tr>
+							<tr valign="top"<?php echo ( isset( $rcp_options['disable_trial_email'] ) ) ? ' style="display: none;"' : ''; ?>>
+								<th>
+									<label for="rcp_settings[trial_email]"><?php _e( 'Member Trial Email Message', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<?php
+									$trial_email = isset( $rcp_options['trial_email'] ) ? wptexturize( $rcp_options['trial_email'] ) : '';
+									wp_editor( $trial_email, 'rcp_settings_trial_email', array( 'textarea_name' => 'rcp_settings[trial_email]', 'teeny' => true ) );
+									?>
+									<p class="description"><?php _e( 'This is the email message that is sent to users when they sign up for a free trial.', 'rcp' ); ?></p>
+									<p>
+										<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => 'trial_email' ), home_url() ) ); ?>" class="button-secondary" target="_blank"><?php _e( 'Preview Email', 'rcp' ); ?></a>
+										<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-settings&rcp-action=send_test_email&email=trial' ), 'rcp_send_test_email' ) ); ?>" class="button-secondary"><?php _e( 'Send Test Email', 'rcp' ); ?></a>
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<th>
+									<label for="rcp_settings[disable_trial_email_admin]"><?php _e( 'Disable for Admin', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<input type="checkbox" value="1" name="rcp_settings[disable_trial_email_admin]" id="rcp_settings[disable_trial_email_admin]" class="rcp-disable-email" <?php checked( true, isset( $rcp_options['disable_trial_email_admin'] ) ); ?>/>
+									<span><?php _e( 'Check this to disable the email sent to the administrator when a member signs up with a trial.', 'rcp' ); ?></span>
+								</td>
+							</tr>
+							<tr valign="top"<?php echo ( isset( $rcp_options['disable_trial_email_admin'] ) ) ? ' style="display: none;"' : ''; ?>>
+								<th>
+									<label for="rcp_settings[trial_subject_admin]"><?php _e( 'Admin Subject', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<input class="regular-text" id="rcp_settings[trial_subject_admin]" style="width: 300px;" name="rcp_settings[trial_subject_admin]" value="<?php if( isset( $rcp_options['trial_subject_admin'] ) ) { echo $rcp_options['trial_subject_admin']; } ?>"/>
+									<p class="description"><?php _e( 'The subject line for the email sent to the admin when a user signs up for a free trial.', 'rcp' ); ?></p>
+								</td>
+							</tr>
+							<tr valign="top"<?php echo ( isset( $rcp_options['disable_trial_email_admin'] ) ) ? ' style="display: none;"' : ''; ?>>
+								<th>
+									<label for="rcp_settings[trial_email_admin]"><?php _e( 'Admin Trial Email Message', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<?php
+									$trial_email = isset( $rcp_options['trial_email_admin'] ) ? wptexturize( $rcp_options['trial_email_admin'] ) : '';
+									wp_editor( $trial_email, 'rcp_settings_trial_email_admin', array( 'textarea_name' => 'rcp_settings[trial_email_admin]', 'teeny' => true ) );
+									?>
+									<p class="description"><?php _e( 'This is the email message that is sent to the admin when a user signs up for a free trial.', 'rcp' ); ?></p>
+									<p>
+										<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => 'trial_email_admin' ), home_url() ) ); ?>" class="button-secondary" target="_blank"><?php _e( 'Preview Email', 'rcp' ); ?></a>
+										<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-settings&rcp-action=send_test_email&email=trial_admin' ), 'rcp_send_test_email' ) ); ?>" class="button-secondary"><?php _e( 'Send Test Email', 'rcp' ); ?></a>
 									</p>
 								</td>
 							</tr>
@@ -1113,152 +1221,6 @@ function rcp_settings_page() {
 								</td>
 							</tr>
 							<tr valign="top">
-								<th colspan=2>
-									<h3><?php _e( 'Free Membership Email', 'rcp' ); ?></h3>
-								</th>
-							</tr>
-							<tr>
-								<th>
-									<label for="rcp_settings[disable_free_email]"><?php _e( 'Disable for Member', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<input type="checkbox" value="1" name="rcp_settings[disable_free_email]" id="rcp_settings[disable_free_email]" class="rcp-disable-email" <?php checked( true, isset( $rcp_options['disable_free_email'] ) ); ?>/>
-									<span><?php _e( 'Check this to disable the email sent to a member when they register for a free membership.', 'rcp' ); ?></span>
-								</td>
-							</tr>
-							<tr valign="top"<?php echo ( isset( $rcp_options['disable_free_email'] ) ) ? ' style="display: none;"' : ''; ?>>
-								<th>
-									<label for="rcp_settings[free_subject]"><?php _e( 'Member Subject', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<input class="regular-text" id="rcp_settings[free_subject]" style="width: 300px;" name="rcp_settings[free_subject]" value="<?php if( isset( $rcp_options['free_subject'] ) ) { echo $rcp_options['free_subject']; } ?>"/>
-									<p class="description"><?php _e( 'The subject line for the email sent to users when they sign up for a free membership.', 'rcp' ); ?></p>
-								</td>
-							</tr>
-							<tr valign="top"<?php echo ( isset( $rcp_options['disable_free_email'] ) ) ? ' style="display: none;"' : ''; ?>>
-								<th>
-									<label for="rcp_settings[free_email]"><?php _e( 'Member Email Body', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<?php
-									$free_email = isset( $rcp_options['free_email'] ) ? wptexturize( $rcp_options['free_email'] ) : '';
-									wp_editor( $free_email, 'rcp_settings_free_email', array( 'textarea_name' => 'rcp_settings[free_email]', 'teeny' => true ) );
-									?>
-									<p class="description"><?php _e( 'This is the email message that is sent to users when they sign up for a free account.', 'rcp' ); ?></p>
-									<p>
-										<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => 'free_email' ), home_url() ) ); ?>" class="button-secondary" target="_blank"><?php _e( 'Preview Email', 'rcp' ); ?></a>
-										<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-settings&rcp-action=send_test_email&email=free' ), 'rcp_send_test_email' ) ); ?>" class="button-secondary"><?php _e( 'Send Test Email', 'rcp' ); ?></a>
-									</p>
-								</td>
-							</tr>
-							<tr>
-								<th>
-									<label for="rcp_settings[disable_free_email_admin]"><?php _e( 'Disable for Admin', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<input type="checkbox" value="1" name="rcp_settings[disable_free_email_admin]" id="rcp_settings[disable_free_email_admin]" class="rcp-disable-email" <?php checked( true, isset( $rcp_options['disable_free_email_admin'] ) ); ?>/>
-									<span><?php _e( 'Check this to disable the email sent to the administrator when a member registers for a free membership.', 'rcp' ); ?></span>
-								</td>
-							</tr>
-							<tr valign="top"<?php echo ( isset( $rcp_options['disable_free_email_admin'] ) ) ? ' style="display: none;"' : ''; ?>>
-								<th>
-									<label for="rcp_settings[free_subject_admin]"><?php _e( 'Admin Subject', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<input class="regular-text" id="rcp_settings[free_subject_admin]" style="width: 300px;" name="rcp_settings[free_subject_admin]" value="<?php if( isset( $rcp_options['free_subject_admin'] ) ) { echo $rcp_options['free_subject_admin']; } ?>"/>
-									<p class="description"><?php _e( 'The subject line for the email sent to the admin when a user signs up for a free membership.', 'rcp' ); ?></p>
-								</td>
-							</tr>
-							<tr valign="top"<?php echo ( isset( $rcp_options['disable_free_email_admin'] ) ) ? ' style="display: none;"' : ''; ?>>
-								<th>
-									<label for="rcp_settings[free_email_admin]"><?php _e( 'Admin Email Body', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<?php
-									$free_email = isset( $rcp_options['free_email_admin'] ) ? wptexturize( $rcp_options['free_email_admin'] ) : '';
-									wp_editor( $free_email, 'rcp_settings_free_email_admin', array( 'textarea_name' => 'rcp_settings[free_email_admin]', 'teeny' => true ) );
-									?>
-									<p class="description"><?php _e( 'This is the email message that is sent to the admin when a user signs up for a free account.', 'rcp' ); ?></p>
-									<p>
-										<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => 'free_email_admin' ), home_url() ) ); ?>" class="button-secondary" target="_blank"><?php _e( 'Preview Email', 'rcp' ); ?></a>
-										<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-settings&rcp-action=send_test_email&email=free_admin' ), 'rcp_send_test_email' ) ); ?>" class="button-secondary"><?php _e( 'Send Test Email', 'rcp' ); ?></a>
-									</p>
-								</td>
-							</tr>
-							<tr valign="top">
-								<th colspan=2>
-									<h3><?php _e( 'Trial Membership Email', 'rcp' ); ?></h3>
-								</th>
-							</tr>
-							<tr>
-								<th>
-									<label for="rcp_settings[disable_trial_email]"><?php _e( 'Disable for Member', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<input type="checkbox" value="1" name="rcp_settings[disable_trial_email]" id="rcp_settings[disable_trial_email]" class="rcp-disable-email" <?php checked( true, isset( $rcp_options['disable_trial_email'] ) ); ?>/>
-									<span><?php _e( 'Check this to disable the email sent to a member when they sign up with a trial.', 'rcp' ); ?></span>
-								</td>
-							</tr>
-							<tr valign="top"<?php echo ( isset( $rcp_options['disable_trial_email'] ) ) ? ' style="display: none;"' : ''; ?>>
-								<th>
-									<label for="rcp_settings[trial_subject]"><?php _e( 'Member Subject', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<input class="regular-text" id="rcp_settings[trial_subject]" style="width: 300px;" name="rcp_settings[trial_subject]" value="<?php if( isset( $rcp_options['trial_subject'] ) ) { echo $rcp_options['trial_subject']; } ?>"/>
-									<p class="description"><?php _e( 'The subject line for the email sent to users when they sign up for a free trial.', 'rcp' ); ?></p>
-								</td>
-							</tr>
-							<tr valign="top"<?php echo ( isset( $rcp_options['disable_trial_email'] ) ) ? ' style="display: none;"' : ''; ?>>
-								<th>
-									<label for="rcp_settings[trial_email]"><?php _e( 'Member Trial Email Message', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<?php
-									$trial_email = isset( $rcp_options['trial_email'] ) ? wptexturize( $rcp_options['trial_email'] ) : '';
-									wp_editor( $trial_email, 'rcp_settings_trial_email', array( 'textarea_name' => 'rcp_settings[trial_email]', 'teeny' => true ) );
-									?>
-									<p class="description"><?php _e( 'This is the email message that is sent to users when they sign up for a free trial.', 'rcp' ); ?></p>
-									<p>
-										<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => 'trial_email' ), home_url() ) ); ?>" class="button-secondary" target="_blank"><?php _e( 'Preview Email', 'rcp' ); ?></a>
-										<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-settings&rcp-action=send_test_email&email=trial' ), 'rcp_send_test_email' ) ); ?>" class="button-secondary"><?php _e( 'Send Test Email', 'rcp' ); ?></a>
-									</p>
-								</td>
-							</tr>
-							<tr>
-								<th>
-									<label for="rcp_settings[disable_trial_email_admin]"><?php _e( 'Disable for Admin', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<input type="checkbox" value="1" name="rcp_settings[disable_trial_email_admin]" id="rcp_settings[disable_trial_email_admin]" class="rcp-disable-email" <?php checked( true, isset( $rcp_options['disable_trial_email_admin'] ) ); ?>/>
-									<span><?php _e( 'Check this to disable the email sent to the administrator when a member signs up with a trial.', 'rcp' ); ?></span>
-								</td>
-							</tr>
-							<tr valign="top"<?php echo ( isset( $rcp_options['disable_trial_email_admin'] ) ) ? ' style="display: none;"' : ''; ?>>
-								<th>
-									<label for="rcp_settings[trial_subject_admin]"><?php _e( 'Admin Subject', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<input class="regular-text" id="rcp_settings[trial_subject_admin]" style="width: 300px;" name="rcp_settings[trial_subject_admin]" value="<?php if( isset( $rcp_options['trial_subject_admin'] ) ) { echo $rcp_options['trial_subject_admin']; } ?>"/>
-									<p class="description"><?php _e( 'The subject line for the email sent to the admin when a user signs up for a free trial.', 'rcp' ); ?></p>
-								</td>
-							</tr>
-							<tr valign="top"<?php echo ( isset( $rcp_options['disable_trial_email_admin'] ) ) ? ' style="display: none;"' : ''; ?>>
-								<th>
-									<label for="rcp_settings[trial_email_admin]"><?php _e( 'Admin Trial Email Message', 'rcp' ); ?></label>
-								</th>
-								<td>
-									<?php
-									$trial_email = isset( $rcp_options['trial_email_admin'] ) ? wptexturize( $rcp_options['trial_email_admin'] ) : '';
-									wp_editor( $trial_email, 'rcp_settings_trial_email_admin', array( 'textarea_name' => 'rcp_settings[trial_email_admin]', 'teeny' => true ) );
-									?>
-									<p class="description"><?php _e( 'This is the email message that is sent to the admin when a user signs up for a free trial.', 'rcp' ); ?></p>
-									<p>
-										<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => 'trial_email_admin' ), home_url() ) ); ?>" class="button-secondary" target="_blank"><?php _e( 'Preview Email', 'rcp' ); ?></a>
-										<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-settings&rcp-action=send_test_email&email=trial_admin' ), 'rcp_send_test_email' ) ); ?>" class="button-secondary"><?php _e( 'Send Test Email', 'rcp' ); ?></a>
-									</p>
-								</td>
-							</tr>
-							<tr valign="top">
 								<th colspan=2><h3><?php _e( 'Payment Received Email', 'rcp' ); ?></h3></th>
 							</tr>
 							<tr>
@@ -1292,6 +1254,40 @@ function rcp_settings_page() {
 									<p>
 										<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => 'payment_received_email' ), home_url() ) ); ?>" class="button-secondary" target="_blank"><?php _e( 'Preview Email', 'rcp' ); ?></a>
 										<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-settings&rcp-action=send_test_email&email=payment_received' ), 'rcp_send_test_email' ) ); ?>" class="button-secondary"><?php _e( 'Send Test Email', 'rcp' ); ?></a>
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<th>
+									<label for="rcp_settings[disable_payment_received_email_admin]"><?php _e( 'Disable for Admin', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<input type="checkbox" value="1" name="rcp_settings[disable_payment_received_email_admin]" id="rcp_settings[disable_payment_received_email_admin]" class="rcp-disable-email" <?php checked( true, isset( $rcp_options['disable_payment_received_email_admin'] ) ); ?>/>
+									<span><?php _e( 'Check this to disable the email sent out to the administrator when a payment is received.', 'rcp' ); ?></span>
+								</td>
+							</tr>
+							<tr valign="top"<?php echo ( isset( $rcp_options['disable_payment_received_email_admin'] ) ) ? ' style="display: none;"' : ''; ?>>
+								<th>
+									<label for="rcp_settings[payment_received_subject_admin]"><?php _e( 'Admin Subject', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<input class="regular-text" id="rcp_settings[payment_received_subject_admin]" style="width: 300px;" name="rcp_settings[payment_received_subject_admin]" value="<?php echo ! empty( $rcp_options['payment_received_subject_admin'] ) ? esc_attr( $rcp_options['payment_received_subject_admin'] ) : ''; ?>"/>
+									<p class="description"><?php _e( 'The subject line for the email sent to the admin upon a successful payment being received.', 'rcp' ); ?></p>
+								</td>
+							</tr>
+							<tr valign="top"<?php echo ( isset( $rcp_options['disable_payment_received_email_admin'] ) ) ? ' style="display: none;"' : ''; ?>>
+								<th>
+									<label for="rcp_settings[payment_received_email_admin]"><?php _e( 'Admin Email Body', 'rcp' ); ?></label>
+								</th>
+								<td>
+									<?php
+									$payment_received_email = isset( $rcp_options['payment_received_email_admin'] ) ? wptexturize( $rcp_options['payment_received_email_admin'] ) : '';
+									wp_editor( $payment_received_email, 'rcp_settings_payment_received_email_admin', array( 'textarea_name' => 'rcp_settings[payment_received_email_admin]', 'teeny' => true ) );
+									?>
+									<p class="description"><?php _e( 'This is the email message that is sent to the admin after a payment has been received.', 'rcp' ); ?></p>
+									<p>
+										<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => 'payment_received_email_admin' ), home_url() ) ); ?>" class="button-secondary" target="_blank"><?php _e( 'Preview Email', 'rcp' ); ?></a>
+										<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rcp-settings&rcp-action=send_test_email&email=payment_received_admin' ), 'rcp_send_test_email' ) ); ?>" class="button-secondary"><?php _e( 'Send Test Email', 'rcp' ); ?></a>
 									</p>
 								</td>
 							</tr>
@@ -1556,7 +1552,7 @@ function rcp_settings_page() {
 									<a href="<?php echo esc_url( get_edit_post_link( $rcp_options['login_redirect'] ) ); ?>" class="button-secondary"><?php _e( 'Edit Page', 'rcp' ); ?></a>
 									<a href="<?php echo esc_url( get_permalink( $rcp_options['login_redirect'] ) ); ?>" class="button-secondary"><?php _e( 'View Page', 'rcp' ); ?></a>
 								<?php endif; ?>
-								<p class="description"><?php _e( 'This is the page the default login URL redirects to, if the option above is checked. This should be the page that contains the [login_form] short code.', 'rcp' ); ?></p>
+								<p class="description"><?php _e( 'This is the page the default login URL redirects to, if the option above is checked. This page must contain the [login_form] shortcode.', 'rcp' ); ?></p>
 							</td>
 						</tr>
 						<tr valign="top">
@@ -1604,16 +1600,7 @@ function rcp_settings_page() {
 							</th>
 							<td>
 								<input type="number" value="<?php echo isset( $rcp_options['no_login_sharing'] ) ? intval( $rcp_options['no_login_sharing'] ) : '0'; ?>" name="rcp_settings[no_login_sharing]" id="rcp_settings[no_login_sharing]" min="0"/>
-								<p class="description"><?php _e( 'Set the default maximum number of simultaneous connections for each member (which can also be overwritten by subscription level).<br>Enter 0 to allow unlimited account sharing.', 'rcp' ); ?></p>
-							</td>
-						</tr>
-						<tr valign="top">
-							<th>
-								<label for="rcp_settings[one_time_discounts]"><?php _e( 'One Time Discounts', 'rcp' ); ?></label>
-							</th>
-							<td>
-								<input type="checkbox" value="1" name="rcp_settings[one_time_discounts]" id="rcp_settings[one_time_discounts]" <?php if( isset( $rcp_options['one_time_discounts'] ) ) checked('1', $rcp_options['one_time_discounts']); ?>/>
-								<span class="description"><?php _e( 'Check this to enable one time discounts. When this option is not enabled, discount codes will apply to all payments in a membership instead of just the initial payment.', 'rcp' ); ?></span>
+								<p class="description"><?php _e( 'Set the default maximum number of simultaneous connections for each member.<br>Enter 0 to allow unlimited simultaneous connections.', 'rcp' ); ?></p>
 							</td>
 						</tr>
 						<tr valign="top">
@@ -2166,6 +2153,10 @@ function rcp_process_send_test_email() {
 		case 'payment_received' :
 			$subject = $rcp_options['payment_received_subject'];
 			$message = $rcp_options['payment_received_email'];
+			break;
+		case 'payment_received_admin' :
+			$subject = $rcp_options['payment_received_subject_admin'];
+			$message = $rcp_options['payment_received_email_admin'];
 			break;
 		case 'renewal_payment_failed' :
 			$subject = $rcp_options['renewal_payment_failed_subject'];

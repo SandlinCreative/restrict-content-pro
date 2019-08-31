@@ -41,6 +41,8 @@ function rcp_tools_page() {
 			?>
 		</h2>
 
+		<?php do_action( 'rcp_tools_tab_subnav_' . $active_tab ); ?>
+
 		<div class="metabox-holder">
 			<?php do_action( 'rcp_tools_tab_' . $active_tab ); ?>
 		</div>
@@ -56,12 +58,14 @@ function rcp_tools_page() {
  */
 function rcp_get_tools_tabs() {
 
-	global $rcp_options;
-
 	$tabs = array(
 		'system_info' => __( 'System Info', 'rcp' ),
 		'debug'       => __( 'Debugging', 'rcp' )
 	);
+
+	if ( current_user_can( 'rcp_manage_settings' ) ) {
+		$tabs['import'] = __( 'Import', 'rcp' );
+	}
 
 	if ( ! empty( $_GET['tab'] ) && 'batch' === $_GET['tab'] ) {
 		$tabs['batch'] = __( 'Batch Processing', 'rcp' );
@@ -207,13 +211,24 @@ add_action( 'admin_init', 'rcp_submit_debug_log' );
  */
 function rcp_batch_processing_page() {
 
+	$job_id     = ! empty( $_GET['rcp-job-id'] ) ? absint( $_GET['rcp-job-id'] ) : 0;
 	$queue_name = ! empty( $_GET['rcp-queue'] ) ? sanitize_key( $_GET['rcp-queue'] ) : 'rcp_core';
+	$autostart  = ! empty( $_GET['rcp-job-autostart'] );
+	$jobs       = array();
 
-	if( ! empty( $queue_name ) ) {
+	if ( ! empty( $job_id ) ) {
+		$job = \RCP\Utils\Batch\get_job( $job_id );
+
+		if ( ! empty( $job ) ) {
+			$jobs = array( $job );
+		}
+	} elseif( ! empty( $queue_name ) ) {
 		$jobs = \RCP\Utils\Batch\get_jobs( array(
-			'queue' => $queue_name
+			'queue'  => $queue_name,
+			'status' => 'incomplete'
 		) );
-	} ?>
+	}
+	?>
 
 	<div class="wrap">
 
@@ -242,13 +257,19 @@ function rcp_batch_processing_page() {
 				</thead>
 				<tbody>
 				<tr>
-					<td><?php echo esc_html( $job->get_description() ); ?></td>
+					<td>
+						<?php echo esc_html( $job->get_description() ); ?> <br/>
+						<?php printf( __( 'WP-CLI command: %s', 'rcp' ), '<code>wp rcp batch --id=' . $job->get_id() . '</code>' ); ?>
+					</td>
 					<td>
 						<span class="rcp-batch-processing-job-progress-bar"><span style="width: <?php echo esc_attr( $job->get_percent_complete() ); ?>%;"></span></span>
 						<span class="rcp-batch-processing-job-progress-text description"><?php printf( __( '%s%% complete', 'rcp' ), '<span class="rcp-batch-processing-job-percent-complete">' . $job->get_percent_complete() . '</span>' ); ?></span>
 					</td>
 					<td>
 						<form class="rcp-batch-form">
+							<?php if ( 1 === count( $jobs ) && $autostart ) : ?>
+								<input type="hidden" id="rcp-job-autostart" value="1" />
+							<?php endif; ?>
 							<input type="hidden" name="rcp-job-step" class="rcp-batch-processing-job-step" value="<?php echo esc_attr( $job->get_step() ); ?>" />
 							<input type="hidden" name="rcp-job-id" class="rcp-batch-processing-job-id" value="<?php echo esc_attr( $job->get_id() ); ?>" />
 							<input type="submit" value="<?php echo $job->get_percent_complete() > 0 ? esc_attr( 'Continue Processing', 'rcp' ) : esc_attr( 'Start Processing', 'rcp' ); ?>" class="button-primary"/>
@@ -270,3 +291,162 @@ function rcp_batch_processing_page() {
 	<?php
 }
 add_action( 'rcp_tools_tab_batch', 'rcp_batch_processing_page' );
+
+/**
+ * Display importer subnavigation. This allows you to switch between importers.
+ *
+ * @since 3.1
+ * @return void
+ */
+function rcp_tools_display_import_subnav() {
+
+	$importers = rcp_get_csv_importers();
+
+	if ( empty( $importers ) ) {
+		return;
+	}
+
+	// If we only have one importer, don't bother showing the subnav.
+	if ( 1 === count( $importers ) ) {
+		return;
+	}
+
+	$current = ( isset( $_GET['rcp-csv-importer'] ) && array_key_exists( $_GET['rcp-csv-importer'], $importers ) ) ? urldecode( $_GET['rcp-csv-importer'] ) : '';
+
+	if ( empty( $current ) ) {
+		$first_importer = $importers;
+		reset( $first_importer );
+		$current = key( $first_importer );
+	}
+	?>
+	<ul class="subsubsub rcp-sub-nav">
+		<li>
+			<?php foreach ( $importers as $importer_key => $importer_details ) : ?>
+				<a href="<?php echo esc_url( add_query_arg( 'rcp-csv-importer', urlencode( $importer_key ), admin_url( 'admin.php?page=rcp-tools&tab=import' ) ) ); ?>"<?php echo ( $importer_key === $current ) ? ' class="current"' : ''; ?>><?php echo esc_html( $importer_details['name'] ); ?></a>
+			<?php endforeach; ?>
+		</li>
+	</ul>
+	<?php
+
+}
+
+add_action( 'rcp_tools_tab_subnav_import', 'rcp_tools_display_import_subnav' );
+
+/**
+ * Display import tab
+ *
+ * @since 3.1
+ * @return void
+ */
+function rcp_tools_display_import() {
+
+	if ( ! current_user_can( 'rcp_manage_settings' ) ) {
+		return;
+	}
+
+	$importers = rcp_get_csv_importers();
+
+	$current = ( isset( $_GET['rcp-csv-importer'] ) && array_key_exists( $_GET['rcp-csv-importer'], $importers ) ) ? urldecode( $_GET['rcp-csv-importer'] ) : '';
+
+	if ( empty( $current ) ) {
+		// If current one is not specified via query arg, default to the first one in the list.
+		$first_importer = $importers;
+		reset( $first_importer );
+		$current = key( $first_importer );
+	}
+
+	$importer = rcp_get_csv_importer( $current );
+	?>
+	<div class="postbox">
+		<h3><?php printf( __( 'Import %s', 'rcp' ), esc_html( $importer['name'] ) ); ?></h3>
+		<div class="inside">
+			<?php if ( ! empty( $importer['description'] ) ) : ?>
+				<p><?php echo wp_kses_post( $importer['description'] ); ?></p>
+			<?php endif; ?>
+			<form id="rcp-import-memberships" class="rcp-import-form" action="<?php echo esc_url( add_query_arg( 'rcp-action', 'upload_import_file', admin_url() ) ); ?>" method="POST" enctype="multipart/form-data">
+
+				<table class="form-table rcp-import-file-wrap">
+					<tbody>
+					<tr class="rcp-import-file">
+						<th>
+							<label for="rcp-<?php echo sanitize_html_class( $importer['key'] ); ?>-import-file"><?php _e( 'CSV File', 'rcp' ); ?></label>
+						</th>
+						<td>
+							<p>
+								<input id="rcp-<?php echo sanitize_html_class( $importer['key'] ); ?>-import-file" name="import_file" type="file"/>
+							</p>
+						</td>
+					</tr>
+					<?php
+					/**
+					 * Use this action hook to insert additional importer settings. All input names
+					 * should be an array with the key `import_settings`. Example:
+					 *
+					 * `import_settings[object_id]`
+					 * `import_settings[status]`
+					 */
+					do_action( 'rcp_csv_importer_settings_' . $importer['key'], $importer );
+					?>
+					</tbody>
+					<tfoot>
+					<tr>
+						<td colspan="2">
+							<p id="rcp-import-csv-errors" style="display:none"></p>
+
+							<p id="rcp-import-csv-button-wrap" class="submit">
+								<input type="submit" value="<?php _e( 'Upload CSV', 'rcp' ); ?>" class="button-secondary"/>
+								<span class="spinner"></span>
+							</p>
+						</td>
+					</tr>
+					</tfoot>
+				</table>
+
+				<div id="rcp-import-<?php echo sanitize_html_class( $importer['key'] ); ?>-options" class="rcp-import-options" style="display:none;">
+
+					<p>
+						<?php printf( __( 'Each column from your CSV file needs to be mapped to its corresponding Restrict Content Pro field. Select the column that should be mapped to each field below. Any columns not needed can be ignored.', 'rcp' ) ); ?>
+					</p>
+
+					<table class="widefat striped" width="100%" cellpadding="0" cellspacing="0">
+						<thead>
+						<tr>
+							<th><strong><?php _e( 'RCP Field', 'rcp' ); ?></strong></th>
+							<th><strong><?php _e( 'CSV Column', 'rcp' ); ?></strong></th>
+							<th><strong><?php _e( 'Data Preview', 'rcp' ); ?></strong></th>
+						</tr>
+						</thead>
+						<tbody>
+						<?php foreach ( $importer['columns'] as $column_key => $column_value ) : ?>
+							<tr>
+								<td><?php echo esc_html( $column_value ); ?></td>
+								<td>
+									<select name="rcp_import_field[<?php echo sanitize_html_class( $column_key ); ?>]" class="rcp-import-csv-column" data-field="<?php echo esc_attr( $column_value ); ?>">
+										<option value=""><?php _e( '- Ignore this field -', 'rcp' ); ?></option>
+									</select>
+								</td>
+								<td class="rcp-import-preview-field"><?php _e( '- select field to preview data -', 'rcp' ); ?></td>
+							</tr>
+						<?php endforeach; ?>
+						</tbody>
+					</table>
+
+					<p class="submit">
+						<button class="rcp-import-proceed button-primary"><?php _e( 'Process Import', 'rcp' ); ?></button>
+						<span class="spinner"></span>
+					</p>
+
+				</div>
+
+				<?php wp_nonce_field( 'rcp_ajax_import', 'rcp_ajax_import_nonce' ); ?>
+				<input type="hidden" name="rcp_import_job_callback" value="RCP_Batch_Callback_Import_Memberships"/>
+				<input type="hidden" name="importer" value="<?php echo esc_attr( $importer['key'] ); ?>" />
+				<input type="hidden" name="rcp-action" value="upload_import_file" />
+
+			</form>
+		</div>
+	</div>
+	<?php
+
+}
+add_action( 'rcp_tools_tab_import', 'rcp_tools_display_import' );

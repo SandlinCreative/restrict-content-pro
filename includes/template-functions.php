@@ -241,7 +241,12 @@ function rcp_pending_verification_notice() {
 		return;
 	}
 
-	printf( '<p class="rcp_error"><span>' . __( 'Your account is pending email verification. <a href="%s">Click here to re-send the verification email.</a>', 'rcp' ) . '</span></p>', esc_url( wp_nonce_url( add_query_arg( 'rcp_action', 'resend_verification', rcp_get_current_url() ), 'rcp-verification-nonce' ) ) );
+	$resend_url = wp_nonce_url( add_query_arg( array(
+		'rcp_action' => 'resend_verification',
+		'redirect'   => urlencode( rcp_get_current_url() )
+	) ), 'rcp-verification-nonce' );
+
+	printf( '<p class="rcp_error"><span>' . __( 'Your account is pending email verification. <a href="%s">Click here to re-send the verification email.</a>', 'rcp' ) . '</span></p>', esc_url( $resend_url ) );
 
 	$displayed = true;
 

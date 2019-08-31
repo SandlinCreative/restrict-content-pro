@@ -1012,54 +1012,6 @@ function rcp_is_paid_user( $user_id = 0) {
 }
 
 /**
- * Checks if a user's subscription grants access to the provided access level.
- *
- * @deprecated 3.0 Use `rcp_membership_has_access_leve()` instead.
- * @see rcp_membership_has_access_level()
- *
- * @param int $user_id             ID of the user to check, or 0 for the current user.
- * @param int $access_level_needed Access level needed.
- *
- * @return bool True if they have access, false if not.
- */
-function rcp_user_has_access( $user_id = 0, $access_level_needed = 0 ) {
-
-	if( empty( $user_id ) && is_user_logged_in() ) {
-		$user_id = get_current_user_id();
-	}
-
-	$customer = rcp_get_customer_by_user_id( $user_id );
-
-	if ( empty( $customer ) ) {
-		return false;
-	}
-
-	$memberships = $customer->get_memberships( array(
-		'status' => array( 'active', 'cancelled' )
-	) );
-
-	if ( empty( $memberships ) ) {
-		return false;
-	}
-
-	$has_access = false;
-
-	foreach ( $memberships as $membership ) {
-		/**
-		 * @var RCP_Membership $membership
-		 */
-
-		$has_access = $membership->has_access_level( $access_level_needed );
-
-		if ( $has_access ) {
-			break;
-		}
-	}
-
-	return $has_access;
-}
-
-/**
  * Returns an array of all members, based on subscription status
  *
  * @deprecated 3.0 Use either `rcp_get_memberships()` or `rcp_get_customers()`

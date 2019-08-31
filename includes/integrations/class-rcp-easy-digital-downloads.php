@@ -138,15 +138,23 @@ class RCP_EDD {
 	 */
 	public function edd_downloads_excerpt( $excerpt ) {
 
-		$post_id = get_the_ID();
+		global $rcp_options;
 
-		if ( rcp_user_can_access( $this->user->ID, $post_id ) || get_post_meta( $post_id, 'rcp_show_excerpt', true ) ) {
+		$post_id          = get_the_ID();
+		$content_excerpts = isset( $rcp_options['content_excerpts'] ) ? $rcp_options['content_excerpts'] : 'individual';
+
+		/*
+		 * Return excerpt if:
+		 *
+		 *      - User can access the post; or:
+		 *      - Content excerpts are set to "always"; or:
+		 *      - Content excerpts are set to "individual" and this download has excerpts enabled.
+		 */
+		if ( rcp_user_can_access( $this->user->ID, $post_id ) || 'always' == $content_excerpts || ( 'individual' == $content_excerpts && get_post_meta( $post_id, 'rcp_show_excerpt', true ) ) ) {
 			return $excerpt;
 		}
 
-		$excerpt = rcp_get_restricted_content_message();
-
-		return $excerpt;
+		return rcp_get_restricted_content_message();
 	}
 }
 

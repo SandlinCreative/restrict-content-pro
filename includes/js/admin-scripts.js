@@ -138,12 +138,26 @@ jQuery(document).ready(function($) {
 
 	if($('.rcp-datepicker').length > 0 ) {
 		var dateFormat = 'yy-mm-dd';
-		$('.rcp-datepicker').datepicker({dateFormat: dateFormat});
+		$('.rcp-datepicker').datepicker({
+			dateFormat: dateFormat,
+			beforeShow: function() {
+				$( this ).datepicker( 'widget' ).addClass( 'rcp-datepicker-wrap' );
+			},
+			onClose: function() {
+				$( this ).datepicker( 'widget' ).removeClass( 'rcp-datepicker-wrap' );
+			}
+		});
 	}
 	if($('.rcp-datetimepicker').length > 0 ) {
 		$('.rcp-datetimepicker').datetimepicker({
 			dateFormat: 'yy-mm-dd',
-			timeFormat: 'HH:mm:ss'
+			timeFormat: 'HH:mm:ss',
+			beforeShow: function( input_id, input_field, timepicker ) {
+				$('#ui-datepicker-div').addClass('rcp-datepicker-wrap');
+			},
+			onClose: function( dateText, instance ) {
+				$('#ui-datepicker-div').removeClass('rcp-datepicker-wrap');
+			}
 		});
 	}
 	$('.rcp_cancel').click(function() {
@@ -209,8 +223,13 @@ jQuery(document).ready(function($) {
 	});
 	// make columns sortable via drag and drop
 	if( $('.rcp-subscriptions tbody').length ) {
+		$('.rcp-subscriptions tbody tr').each( function() {
+			let id = $(this).find('.check-column input').val();
+			$(this).attr('id', 'recordsArray_' + id);
+			$(this).addClass('rcp-subscription rcp_row');
+		} );
 		$(".rcp-subscriptions tbody").sortable({
-			handle: '.rcp-drag-handle', items: '.rcp-subscription', opacity: 0.6, cursor: 'move', axis: 'y', update: function() {
+			handle: '.rcp-drag-handle', items: 'tr', opacity: 0.6, cursor: 'move', axis: 'y', update: function() {
 				var order = $(this).sortable("serialize") + '&action=update-subscription-order';
 				$.post(ajaxurl, order, function(response) {
 					// response here
@@ -246,6 +265,7 @@ jQuery(document).ready(function($) {
 		data = {
 			action: 'rcp_search_users',
 			user_name: user_search,
+			return_field: $(this).data('return-field'),
 			rcp_nonce: rcp_vars.rcp_member_nonce
 		};
 
@@ -258,20 +278,31 @@ jQuery(document).ready(function($) {
 
 				$('.rcp-ajax').hide();
 
-				$('#rcp_user_search_results').html('');
+				let search_results = $('#rcp_user_search_results');
+
+				search_results.html('');
 
 				if(search_response.id == 'found') {
 					$(search_response.results).appendTo('#rcp_user_search_results');
 				} else if(search_response.id == 'fail') {
-					$('#rcp_user_search_results').html(search_response.msg);
+					search_results.html(search_response.msg);
 				}
+
+				$(document).click( function ( e ) {
+					let target = $( e.target );
+
+					// Empty the search results if we didn't click inside the input or on a result.
+					if ( ! target.closest( '.rcp-user-search' ).length && ! target.closest( '#rcp_user_search_results' ).length ) {
+						search_results.html('');
+					}
+				} );
 			}
 		});
 	});
 	$('body').on('click.rcpSelectUser', '#rcp_user_search_results a', function(e) {
 		e.preventDefault();
 		var login = $(this).data('login');
-		$('#rcp-user').val(login);
+		$('.rcp-user-search').val(login);
 		$('#rcp_user_search_results').html('');
 	});
 
@@ -423,25 +454,52 @@ jQuery(document).ready(function($) {
 	var currencySelect = $('#rcp_settings\\[currency\\]');
 	if (currencySelect.length) {
 		var currencies = JSON.parse(rcp_vars.currencies);
-		var currentSymbol = currencies[currencySelect.val()].match(/\(([^)]+)\)/)[1];
+		var currentSymbol = currencies[currencySelect.val()].match(/\(([^)]+)\)/);
+		if ( null == currentSymbol ) {
+			currentSymbol = currencySelect.val();
+		} else {
+			currentSymbol = currentSymbol[1];
+		}
 		var currencyPositionBefore = $('#rcp_settings\\[currency_position\\] option[value="before"]');
 		var currencyPositionAfter = $('#rcp_settings\\[currency_position\\] option[value="after"]');
 
 		currencyPositionBefore.text(function () {
+			// If using kr, add a space after the symbol.
+			if ( 'NOK' === currencySelect.val() ) {
+				currentSymbol = currentSymbol + ' ';
+			}
 			return $(this).text().replace("$", currentSymbol);
 		});
 
 		currencyPositionAfter.text(function () {
+			// If using kr, add a space before the symbol.
+			if ( 'NOK' === currencySelect.val() ) {
+				currentSymbol = ' ' + currentSymbol;
+			}
 			return $(this).text().replace("$", currentSymbol);
 		});
 
 		$(currencySelect).on('change', function () {
-			var newCurrency = currencies[$(this).val()].match(/\(([^)]+)\)/)[1];
+			var currencyCode = $(this).val();
+			var newCurrency = currencies[$(this).val()].match(/\(([^)]+)\)/);
+			if ( null == newCurrency ) {
+				newCurrency = currencyCode;
+			} else {
+				newCurrency = newCurrency[1];
+			}
 
 			currencyPositionBefore.text(function () {
+				// If using kr, add a space after the symbol.
+				if ( 'NOK' === currencyCode ) {
+					newCurrency = newCurrency + ' ';
+				}
 				return $(this).text().replace(currentSymbol, newCurrency);
 			});
 			currencyPositionAfter.text(function () {
+				// If using kr, add a space before the symbol.
+				if ( 'NOK' === currencyCode ) {
+					newCurrency = ' ' + newCurrency;
+				}
 				return $(this).text().replace(currentSymbol, newCurrency);
 			});
 

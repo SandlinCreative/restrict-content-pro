@@ -204,6 +204,14 @@ class RCP_Payment_Gateway {
 	public $membership;
 
 	/**
+	 * Start date of the subscription in MySQL format. It starts today by default (empty string).
+	 *
+	 * @var string
+	 * @access public
+	 */
+	public $subscription_start_date;
+
+	/**
 	 * Used for saving an error message that occurs during registration.
 	 *
 	 * @var string
@@ -232,28 +240,33 @@ class RCP_Payment_Gateway {
 			 */
 			global $rcp_payments_db;
 
-			$this->email               = $subscription_data['user_email'];
-			$this->user_id             = $subscription_data['user_id'];
-			$this->user_name           = $subscription_data['user_name'];
-			$this->currency            = $subscription_data['currency'];
-			$this->amount              = round( $subscription_data['recurring_price'], 2 );
-			$this->initial_amount      = round( $subscription_data['price'] + $subscription_data['fee'], 2 );
-			$this->discount            = $subscription_data['discount'];
-			$this->discount_code       = $subscription_data['discount_code'];
-			$this->length              = $subscription_data['length'];
-			$this->length_unit         = $subscription_data['length_unit'];
-			$this->signup_fee          = $this->supports( 'fees' ) ? $subscription_data['fee'] : 0;
-			$this->subscription_key    = $subscription_data['key'];
-			$this->subscription_id     = $subscription_data['subscription_id'];
-			$this->subscription_name   = $subscription_data['subscription_name'];
-			$this->auto_renew          = $this->supports( 'recurring' ) ? $subscription_data['auto_renew'] : false;;
-			$this->return_url          = $subscription_data['return_url'];
-			$this->subscription_data   = $subscription_data;
-			$this->payment             = $rcp_payments_db->get_payment( $subscription_data['payment_id'] );
-			$this->customer            = $subscription_data['customer'];
-			$this->membership          = rcp_get_membership( $subscription_data['membership_id'] );
+			$this->email                   = $subscription_data['user_email'];
+			$this->user_id                 = $subscription_data['user_id'];
+			$this->user_name               = $subscription_data['user_name'];
+			$this->currency                = $subscription_data['currency'];
+			$this->amount                  = round( $subscription_data['recurring_price'], 2 );
+			$this->initial_amount          = round( $subscription_data['price'] + $subscription_data['fee'], 2 );
+			$this->discount                = $subscription_data['discount'];
+			$this->discount_code           = $subscription_data['discount_code'];
+			$this->length                  = $subscription_data['length'];
+			$this->length_unit             = $subscription_data['length_unit'];
+			$this->signup_fee              = $this->supports( 'fees' ) ? $subscription_data['fee'] : 0;
+			$this->subscription_key        = $subscription_data['key'];
+			$this->subscription_id         = $subscription_data['subscription_id'];
+			$this->subscription_name       = $subscription_data['subscription_name'];
+			$this->auto_renew              = $this->supports( 'recurring' ) ? $subscription_data['auto_renew'] : false;;
+			$this->return_url              = $subscription_data['return_url'];
+			$this->subscription_data       = $subscription_data;
+			$this->payment                 = $rcp_payments_db->get_payment( $subscription_data['payment_id'] );
+			$this->customer                = $subscription_data['customer'];
+			$this->membership              = rcp_get_membership( $subscription_data['membership_id'] );
+			$this->subscription_start_date = $subscription_data['subscription_start_date'];
 
-			rcp_log( sprintf( 'Registration for user #%d sent to gateway. Level ID: %d; Initial Amount: %.2f; Recurring Amount: %.2f; Auto Renew: %s; Trial: %s; Membership ID: %d', $this->user_id, $this->subscription_id, $this->initial_amount, $this->amount, var_export( $this->auto_renew, true ), var_export( $this->is_trial(), true ), $this->membership->get_id() ) );
+			if ( $this->is_trial() ) {
+				$this->initial_amount = 0;
+			}
+
+			rcp_log( sprintf( 'Registration for user #%d sent to gateway. Level ID: %d; Initial Amount: %.2f; Recurring Amount: %.2f; Auto Renew: %s; Trial: %s; Subscription Start: %s; Membership ID: %d', $this->user_id, $this->subscription_id, $this->initial_amount, $this->amount, var_export( $this->auto_renew, true ), var_export( $this->is_trial(), true ), $this->subscription_start_date, $this->membership->get_id() ) );
 
 		}
 
@@ -327,7 +340,7 @@ class RCP_Payment_Gateway {
 	 * Load any extra fields on the registration form
 	 *
 	 * @access public
-	 * @return void
+	 * @return string
 	 */
 	public function fields() {
 

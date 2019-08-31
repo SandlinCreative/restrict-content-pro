@@ -210,3 +210,30 @@ p.rcp_success {
 		width: auto;
 	}
 }
+
+/* Stripe Elements
+-------------------------------------------------------------- */
+
+.StripeElement {
+	box-sizing: border-box;
+	height: 40px;
+	padding: 10px 12px;
+	border: 1px solid #ccc;
+	background-color: white;
+}
+
+.StripeElement--focus {
+	border-color: #aaa;
+}
+
+.StripeElement--invalid {
+	border-color: #b01000;
+}
+
+.StripeElement--webkit-autofill {
+	background-color: #fefde5 !important;
+}
+
+#rcp-card-element-errors:not(:empty) {
+	margin-top: 10px;
+}

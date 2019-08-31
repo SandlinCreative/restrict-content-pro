@@ -245,10 +245,14 @@ function rcp_load_gateway_scripts() {
 	$load_scripts = rcp_is_registration_page() || defined( 'RCP_LOAD_SCRIPTS_GLOBALLY' );
 	$gateways     = new RCP_Payment_Gateways;
 
+	/*
+	 * Unless the option is disabled, Stripe.js is loaded on all pages for advanced fraud functionality.
+	 */
+	$global_scripts = empty( $rcp_options['disable_sitewide_scripts'] ) ? array( 'stripe', 'stripe_checkout' ) : array();
+
 	foreach( $gateways->enabled_gateways  as $key => $gateway ) {
 
-		// Stripe.js is loaded on all pages for advanced fraud functionality. Other scripts are only loaded on the registration page.
-		if( is_array( $gateway ) && isset( $gateway['class'] ) && ( $load_scripts || in_array( $key, array( 'stripe', 'stripe_checkout' ) ) ) ) {
+		if( is_array( $gateway ) && isset( $gateway['class'] ) && ( $load_scripts || in_array( $key, $global_scripts ) ) ) {
 
 			$gateway = new $gateway['class'];
 			$gateway->scripts();
@@ -294,6 +298,11 @@ function rcp_process_update_card_form_post() {
 
 	if ( ! is_object( $membership ) || 0 == $membership->get_id() ) {
 		wp_die( __( 'Invalid membership.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 500 ) );
+	}
+
+	// Bail if this user isn't actually the customer associated with this membership.
+	if ( $membership->get_customer()->get_user_id() != get_current_user_id() ) {
+		wp_die( __( 'You do not have permission to perform this action.', 'rcp' ), __( 'Error', 'rcp' ), array( 'response' => 403 ) );
 	}
 
 	if( ! $membership->can_update_billing_card() ) {
@@ -508,6 +517,47 @@ function rcp_log_gateway_payment_processed( $member, $payment_id, $gateway ) {
 add_action( 'rcp_gateway_payment_processed', 'rcp_log_gateway_payment_processed', 10, 3 );
 
 /**
+ * Update the membership's "recurring_amount" when a renewal payment is processed.
+ * This will correct any invalid recurring_amount values due to recurring discounts
+ * or level price changes.
+ *
+ * @param RCP_Member          $member     Member object.
+ * @param int                 $payment_id ID of the payment that was just inserted.
+ * @param RCP_Payment_Gateway $gateway    Gateway object.
+ *
+ * @since 3.0.5
+ * @return void
+ */
+function rcp_update_membership_recurring_amount_on_renewal( $member, $payment_id, $gateway ) {
+
+	$payments   = new RCP_Payments();
+	$payment    = $payments->get_payment( $payment_id );
+	$membership = false;
+
+	if ( empty( $payment ) || empty( $payment->amount ) ) {
+		return;
+	}
+
+	if ( ! empty( $gateway->membership ) ) {
+		$membership = $gateway->membership;
+	} elseif ( ! empty( $payment->membership_id ) ) {
+		$membership = rcp_get_membership( $payment->membership_id );
+	}
+
+	if ( ! is_a( $membership, 'RCP_Membership' ) ) {
+		return;
+	}
+
+	if ( $payment->amount != $membership->get_recurring_amount() ) {
+		$membership->update( array(
+			'recurring_amount' => $payment->amount
+		) );
+	}
+
+}
+add_action( 'rcp_webhook_recurring_payment_processed', 'rcp_update_membership_recurring_amount_on_renewal', 10, 3 );
+
+/**
  * Return the direct URL to manage a customer profile in the gateway.
  *
  * @param string $gateway     Gateway slug.
@@ -610,15 +660,6 @@ function rcp_get_gateway_subscription_id_url( $gateway, $subscription_id ) {
 		$twocheckout_id = str_replace( '2co_', '', $subscription_id );
 		$url            = add_query_arg( 'sale_id', urlencode( $twocheckout_id ), $base_url );
 
-	} elseif( 'authorizenet' == $gateway ) {
-
-		/**
-		 * Authorize.net
-		 */
-		$anet_id  = str_replace( 'anet_', '', $subscription_id );
-		$base_url = $sandbox ? 'https://sandbox.authorize.net/' : 'https://authorize.net/';
-		$url      = $base_url . 'ui/themes/sandbox/ARB/SubscriptionDetail.aspx?SubscrID=' . urlencode( $anet_id );
-
 	} elseif ( 'braintree' == $gateway ) {
 
 		/**
@@ -649,5 +690,67 @@ function rcp_get_gateway_subscription_id_url( $gateway, $subscription_id ) {
 	 * @since 3.0.4
 	 */
 	return apply_filters( 'rcp_gateway_subscription_id_url', $url, $gateway, $subscription_id );
+
+}
+
+/**
+ * Get payment gateway slug from gateway customer/subscription IDs.
+ *
+ * @param array $args                    {
+ *
+ * @type string $gateway_customer_id     Gateway customer ID.
+ * @type string $gateway_subscription_id Gateway subscription ID.
+ *                    }
+ *
+ * @since 3.1
+ * @return string|false Gateway slug on success, false if cannot be parsed.
+ */
+function rcp_get_gateway_slug_from_gateway_ids( $args ) {
+
+	$customer_id      = ! empty( $args['gateway_customer_id'] ) ? $args['gateway_customer_id'] : '';
+	$subscription_id  = ! empty( $args['gateway_subscription_id'] ) ? $args['gateway_subscription_id'] : '';
+	$enabled_gateways = rcp_get_enabled_payment_gateways();
+
+	// Check for Stripe.
+	if ( false !== strpos( $customer_id, 'cus_' ) || false !== strpos( $subscription_id, 'sub_' ) ) {
+		if ( array_key_exists( 'stripe', $enabled_gateways ) ) {
+			return 'stripe';
+		} elseif ( array_key_exists( 'stripe_checkout', $enabled_gateways ) ) {
+			return 'stripe_checkout';
+		}
+
+		return 'stripe';
+	}
+
+	// Check for 2Checkout.
+	if ( false !== strpos( $subscription_id, '2co_' ) ) {
+		return 'twocheckout';
+	}
+
+	// Check for Authorize.net.
+	if ( false !== strpos( $subscription_id, 'anet_' ) ) {
+		return 'authorizenet';
+	}
+
+	// Check for Braintree.
+	if ( false !== strpos( $customer_id, 'bt_' ) ) {
+		return 'braintree';
+	}
+
+	// Check for PayPal.
+	if ( false !== strpos( $subscription_id, 'I-' ) ) {
+		// Determine which PayPal gateway is activated.
+		if ( array_key_exists( 'paypal', $enabled_gateways ) ) {
+			return 'paypal';
+		} elseif ( array_key_exists( 'paypal_express', $enabled_gateways ) ) {
+			return 'paypal_express';
+		} elseif ( array_key_exists( 'paypal_express', $enabled_gateways ) ) {
+			return 'paypal_pro';
+		}
+
+		return 'paypal';
+	}
+
+	return false;
 
 }

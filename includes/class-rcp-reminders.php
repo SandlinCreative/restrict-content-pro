@@ -241,7 +241,10 @@ Your subscription for %subscription_name% will renew on %expiration%.';
 
 			foreach ( $notices as $notice_id => $notice ) {
 
-				rcp_log( sprintf( 'Processing %s reminder. ID: %d; Period: %s.', $type, $notice_id, $notice['send_period'] ) );
+				$levels     = ! empty( $notice['levels'] ) && is_array( $notice['levels'] ) ? $notice['levels'] : 'all';
+				$levels_log = is_array( $levels ) ? implode( ', ', $levels ) : $levels;
+
+				rcp_log( sprintf( 'Processing %s reminder. ID: %d; Period: %s; Levels: %s.', $type, $notice_id, $notice['send_period'], $levels_log ) );
 
 				// Skip if this reminder isn't enabled.
 				if ( empty( $notice['enabled'] ) ) {
@@ -257,7 +260,7 @@ Your subscription for %subscription_name% will renew on %expiration%.';
 					continue;
 				}
 
-				$memberships = $this->get_reminder_subscriptions( $notice['send_period'], $type );
+				$memberships = $this->get_reminder_subscriptions( $notice['send_period'], $type, $levels );
 
 				if ( ! $memberships ) {
 					rcp_log( 'No memberships found for reminder - exiting.' );
@@ -286,12 +289,16 @@ Your subscription for %subscription_name% will renew on %expiration%.';
 					$user_id = $membership->get_customer()->get_user_id();
 					$user    = get_userdata( $user_id );
 
-					// Deprecated meta.
-					$sent_time = get_user_meta( $user_id, sanitize_key( '_rcp_reminder_sent_' . $membership->get_object_id() . '_' . $notice_id ), true );
+					$sent_time = rcp_get_membership_meta( $membership->get_id(), '_reminder_sent_' . $notice_id, true );
 
 					if ( empty( $sent_time ) ) {
-						// New meta.
+						// Check deprecated meta. We have two of these... lol.
+
 						$sent_time = get_user_meta( $user_id, sanitize_key( '_rcp_reminder_sent_' . $membership->get_id() . '_' . $notice_id ), true );
+
+						if ( empty( $sent_time ) ) {
+							$sent_time = get_user_meta( $user_id, sanitize_key( '_rcp_reminder_sent_' . $membership->get_object_id() . '_' . $notice_id ), true );
+						}
 					}
 
 					if ( $sent_time ) {
@@ -306,8 +313,8 @@ Your subscription for %subscription_name% will renew on %expiration%.';
 
 					$membership->add_note( sprintf( __( '%s notice was emailed to the member - %s.', 'rcp' ), ucwords( $type ), $this->get_notice_period_label( $notice_id ) ) );
 
-					// Prevents reminder notices from being sent more than once.
-					add_user_meta( $user_id, sanitize_key( '_rcp_reminder_sent_' . $membership->get_id() . '_' . $notice_id ), time() );
+					// Prevents reminder notices from being sent more than once per membership.
+					rcp_update_membership_meta( $membership->get_id(), '_reminder_sent_' . $notice_id, current_time( 'mysql' ) );
 
 				}
 
@@ -319,15 +326,16 @@ Your subscription for %subscription_name% will renew on %expiration%.';
 	/**
 	 * Retrieve all members to send notices to
 	 *
-	 * @param string $period Reminder period.
-	 * @param string $type   Type of notice to get the subscriptions for (renewal or expiration).
+	 * @param string       $period Reminder period.
+	 * @param string       $type   Type of notice to get the subscriptions for (renewal or expiration).
+	 * @param string|array $levels Membership level ID(s) to filter by.
 	 *
 	 * @access public
 	 * @since  2.9
 	 * @return array|false Subscribers whose subscriptions are renewing or expiring within the defined period. False if
 	 *                     none are found.
 	 */
-	public function get_reminder_subscriptions( $period = '+1month', $type = false ) {
+	public function get_reminder_subscriptions( $period = '+1month', $type = 'renewal', $levels = 'all' ) {
 
 		if ( ! $type ) {
 			return false;
@@ -336,6 +344,13 @@ Your subscription for %subscription_name% will renew on %expiration%.';
 		$args = array(
 			'number' => 9999,
 		);
+
+		// Filter by membership level.
+		if ( is_array( $levels ) && count( $levels ) > 1 ) {
+			$args['object_id__in'] = $levels;
+		} elseif ( is_array( $levels ) && count( $levels ) === 1 ) {
+			$args['object_id'] = $levels[0];
+		}
 
 		switch ( $type ) {
 

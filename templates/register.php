@@ -79,7 +79,9 @@ rcp_show_error_messages( 'register' ); ?>
 	$levels = rcp_get_subscription_levels( 'active' );
 	$i      = 0;
 	if( $levels ) : ?>
-		<p class="rcp_subscription_message"><?php echo apply_filters ( 'rcp_registration_choose_subscription', __( 'Choose your membership level', 'rcp' ) ); ?></p>
+		<?php if ( count( $levels ) > 1 ) : ?>
+			<p class="rcp_subscription_message"><?php echo apply_filters ( 'rcp_registration_choose_subscription', __( 'Choose your membership level', 'rcp' ) ); ?></p>
+		<?php endif; ?>
 		<ul id="rcp_subscription_levels">
 			<?php foreach( $levels as $key => $level ) : ?>
 				<?php if( rcp_show_subscription_level( $level->id ) ) :

@@ -42,29 +42,27 @@ function rcp_restrict_shortcode( $atts, $content = null ) {
 	$subscriptions = array_map( 'trim', explode( ',', $atts['subscription'] ) );
 
 	$has_access = false;
+	$classes    = 'rcp_restricted';
 
 	$customer  = rcp_get_customer(); // currently logged in customer
-	$is_active = ! empty( $customer ) ? $customer->has_active_membership() : false;
+	$is_active = rcp_user_has_active_membership();
+	$has_access_level = rcp_user_has_access( get_current_user_id(), $atts['level'] );
 
 	if( $atts['paid'] ) {
 
-		if ( ! empty( $customer ) && $customer->has_paid_membership() && $customer->has_access_level( $atts['level'] ) ) {
+		if ( rcp_user_has_paid_membership() && $has_access_level ) {
 			$has_access = true;
 		}
 
 		$classes = 'rcp_restricted rcp_paid_only';
 
-	} else {
+	} elseif ( $has_access_level ) {
 
-		if ( ! empty( $customer ) && $customer->has_access_level( $atts['level'] ) ) {
-			$has_access = true;
-		}
-
-		$classes = 'rcp_restricted';
+		$has_access = true;
 	}
 
 	if ( ! empty( $subscriptions ) && ! empty( $subscriptions[0] ) ) {
-		if ( $is_active && count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $subscriptions ) ) ) {
+		if ( $is_active && ! empty( $customer ) && count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $subscriptions ) ) ) {
 			$has_access = true;
 		} else {
 			$has_access = false;
@@ -117,9 +115,7 @@ add_shortcode( 'restrict', 'rcp_restrict_shortcode' );
  */
 function rcp_is_paid_user_shortcode( $atts, $content = null ) {
 
-	$customer = rcp_get_customer(); // currently logged in customer
-
-	if ( ! empty( $customer ) && $customer->has_paid_membership() ) {
+	if ( rcp_user_has_paid_membership() ) {
 		return do_shortcode( $content );
 	}
 
@@ -142,10 +138,8 @@ function rcp_is_free_user_shortcode( $atts, $content = null ) {
 		'hide_from_paid' => true
 	), $atts, 'is_free' );
 
-	$customer = rcp_get_customer(); // currently logged in customer
-
 	if( $atts['hide_from_paid'] ) {
-		if( ! empty( $customer ) && ! $customer->has_paid_membership() && is_user_logged_in() ) {
+		if( is_user_logged_in() && ! rcp_user_has_paid_membership() ) {
 			return do_shortcode( $content );
 		}
 	} elseif( is_user_logged_in() ) {
@@ -166,17 +160,7 @@ add_shortcode( 'is_free', 'rcp_is_free_user_shortcode' );
  */
 function rcp_is_expired_user_shortcode( $atts, $content = null ) {
 
-	$customer = rcp_get_customer(); // currently logged in customer
-
-	if ( empty( $customer ) ) {
-		return '';
-	}
-
-	$memberships = $customer->get_memberships( array(
-		'status' => 'expired'
-	) );
-
-	if( ! empty( $memberships ) ) {
+	if( rcp_user_has_expired_membership() ) {
 		return do_shortcode( $content );
 	}
 
@@ -213,10 +197,8 @@ add_shortcode( 'not_logged_in', 'rcp_not_logged_in' );
  */
 function rcp_is_not_paid( $atts, $content = null ) {
 
-	$customer = rcp_get_customer(); // currently logged in customer
-
 	// If there are no paid, active memberships then show the content.
-	if ( empty( $customer ) || ! $customer->has_paid_membership() ) {
+	if ( ! rcp_user_has_paid_membership() ) {
 		return do_shortcode( $content );
 	}
 
@@ -257,21 +239,44 @@ add_shortcode( 'user_name', 'rcp_user_name' );
  */
 function rcp_registration_form( $atts, $content = null ) {
 
-	$customer   = rcp_get_customer(); // current customer
-	$membership = ! empty( $customer ) ? rcp_get_customer_single_membership( $customer->get_id() ) : false;
+	$customer          = rcp_get_customer(); // current customer
+	$logged_in_header  = __( 'Register New Membership', 'rcp' );
+	$registration_type = rcp_get_registration()->get_registration_type();
+	$membership        = rcp_get_registration()->get_membership();
+
+	if ( empty( $membership ) ) {
+		$membership = ! empty( $customer ) ? rcp_get_customer_single_membership( $customer->get_id() ) : false;
+	}
+
+	if ( rcp_multiple_memberships_enabled() && 'renewal' == $registration_type ) {
+		$logged_in_header = __( 'Renew Your Membership', 'rcp' );
+	} elseif ( rcp_multiple_memberships_enabled() && 'upgrade' == $registration_type ) {
+		$logged_in_header = __( 'Change Your Membership', 'rcp' );
+	} elseif ( ! rcp_multiple_memberships_enabled() && ! empty( $membership ) ) {
+		$logged_in_header = __( 'Upgrade or Renew Your Membership', 'rcp' );
+	} elseif ( ! rcp_multiple_memberships_enabled() ) {
+		$logged_in_header = __( 'Join Now', 'rcp' );
+	}
 
 	$atts = shortcode_atts( array(
 		'id'  => null, // Single specific level
 		'ids' => null, // Multiple specific levels
 		'registered_message' => __( 'You are already registered and have an active subscription.', 'rcp' ),
 		'logged_out_header'  => __( 'Register New Account', 'rcp' ),
-		'logged_in_header'   => ! empty( $membership ) ? __( 'Upgrade or Renew Your Subscription', 'rcp' ) : __( 'Join Now', 'rcp' )
+		'logged_in_header'   => $logged_in_header
 	), $atts, 'register_form' );
 
 	global $user_ID;
 
-	// only show the registration form to non-logged-in members
-	if( empty( $membership ) || ( ! empty( $membership ) && ( ! $membership->is_active() || $membership->upgrade_possible() || $membership->is_trialing() ) ) ) {
+	/*
+	 * Only show the registration form if:
+	 *
+	 * 		- User does not have a membership; or
+	 * 		- User has a membership and one of the following applies:
+	 * 			- The membership has upgrades available; or
+	 * 			- The membership can be renewed.
+	 */
+	if( empty( $membership ) || ( ! empty( $membership ) && ( $membership->upgrade_possible() || $membership->can_renew() ) ) ) {
 
 		global $rcp_options, $rcp_load_css, $rcp_load_scripts;
 
@@ -299,7 +304,7 @@ add_shortcode( 'register_form', 'rcp_registration_form' );
  * @access public
  * @return string
  */
-function rcp_register_form_stripe_checkout( $atts ) {
+function rcp_register_form_stripe_checkout( $atts, $content = '' ) {
 	global $rcp_options;
 
 	if ( empty( $atts['id'] ) ) {
@@ -322,7 +327,7 @@ function rcp_register_form_stripe_checkout( $atts ) {
 	$is_trial     = ! empty( $subscription->trial_duration ) && ! empty( $subscription->trial_duration_unit ) && ! $has_trialed;
 
 	if( ! empty( $membership ) ) {
-		$amount -= $membership->get_prorate_credit_amount(); // @todo this may need to be removed in 3.1
+		$amount -= $membership->get_prorate_credit_amount();
 	}
 
 	if( $amount < 0 || $is_trial ) {
@@ -553,6 +558,14 @@ function rcp_update_billing_card_shortcode( $atts, $content = null ) {
 
 	if( is_object( $membership ) && $membership->can_update_billing_card() ) {
 
+		/*
+		 * Membership can be found and the billing card can be updated.
+		 */
+
+		if ( $membership->get_customer()->get_user_id() != get_current_user_id() ) {
+			return __( 'You do not have permission to perform this action.', 'rcp' );
+		}
+
 		$rcp_membership   = $membership;
 		$rcp_load_css     = true;
 		$rcp_load_scripts = true;
@@ -587,6 +600,28 @@ function rcp_update_billing_card_shortcode( $atts, $content = null ) {
 
 		rcp_get_template_part( 'card-update', 'form' );
 		do_action( 'rcp_after_update_billing_card_form', $membership );
+
+	} elseif ( is_object ( $membership ) && ! $membership->can_update_billing_card() ) {
+
+		/*
+		 * Membership can be found and the billing card CANNOT be updated.
+		 */
+
+		// Generic message first.
+		$message = __( 'Updating billing card details is not supported by your chosen payment method.', 'rcp' );
+
+		// Special PayPal message.
+		if ( false !== strpos( $membership->get_gateway(), 'paypal' ) ) {
+			$message = __( 'Your billing details can be updated from inside your PayPal account.', 'rcp' );
+		}
+
+		echo '<p class="rcp-update-billing-details-unsupported">' . $message . '</p>';
+
+	} elseif ( empty( $membership ) && is_user_logged_in() ) {
+
+		/*
+		 * Can't find the membership record at all.
+		 */
 
 	}
 

@@ -69,6 +69,15 @@ $code = rcp_get_discount_details( urldecode( $_GET['edit_discount'] ) );
 			</tr>
 			<tr class="form-field">
 				<th scope="row" valign="top">
+					<label for="rcp-discount-one-time"><?php _e( 'One Time', 'rcp' ); ?></label>
+				</th>
+				<td>
+					<input type="checkbox" value="1" name="one_time" id="rcp-discount-one-time" <?php checked( ! empty( $code->one_time ) ); ?>/>
+					<span class="description"><?php _e( 'Check this to make this discount only apply to the first payment in a membership. When this option is not enabled, the discount code will apply to all payments in a membership instead of just the initial payment.', 'rcp' ); ?></span>
+				</td>
+			</tr>
+			<tr class="form-field">
+				<th scope="row" valign="top">
 					<label for="rcp-subscription"><?php _e( 'Membership Levels', 'rcp' ); ?></label>
 				</th>
 				<td>

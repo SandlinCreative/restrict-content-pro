@@ -437,19 +437,41 @@ function rcp_show_subscription_level( $level_id = 0, $user_id = 0 ) {
 	$used_trial       = is_object( $customer ) ? $customer->has_trialed() : false;
 	$trial_duration   = $rcp_levels_db->trial_duration( $level_id );
 
-	// Don't show free trial if user has already used it. Don't show if sub is free and user already has it. Don't show if sub is unlimited and user already has it.
-	if (
-		is_user_logged_in()
-		&&
-		( $sub_price == '0' && $sub_length->duration > 0 && $used_trial )
-		||
-		( $sub_price == '0' && $membership_level == $level_id )
-		||
-		( empty( $sub_length->duration ) && $membership_level == $level_id )
-		||
-		( ! empty( $trial_duration ) && $used_trial && ( $membership_level == $level_id && ! $membership->is_expired() ) )
-	) {
-		$ret = false;
+
+	if ( ! rcp_multiple_memberships_enabled() ) {
+		/*
+		 * Don't show if user is logged in and one of the following applies:
+		 * 		- Membership level is a free trial and the customer has already trialed.
+		 * 		- Membership level is free and the customer already has it.
+		 * 		- Membership level doesn't expire (`0` duration) and the customer already has it.
+		 * 		- Membership level contains a free trial, the customer has already trialed, the customer is currently on this level, and the membership status is "active".
+		 * 		- Customer has a membership but is NOT on this membership level, their membership is active, but upgrades are disabled.
+		 * 		- Customer is trying to renew their current membership but it cannot be renewed.
+		 */
+		if (
+			is_user_logged_in()
+			&&
+			( $sub_price == '0' && $sub_length->duration > 0 && $used_trial )
+			||
+			( $sub_price == '0' && $membership_level == $level_id )
+			||
+			( empty( $sub_length->duration ) && $membership_level == $level_id && ! empty( $membership ) && $membership->is_active() )
+			||
+			( ! empty( $trial_duration ) && $used_trial && ( $membership_level == $level_id && 'active' == $membership->get_status() ) )
+			||
+			( ! empty( $membership ) && $membership->is_active() && ! $membership->upgrade_possible() && $membership_level != $level_id )
+			||
+			( $membership_level == $level_id && ! $membership->can_renew() )
+		) {
+			$ret = false;
+		}
+	} else {
+		/*
+		 * Don't show free trial if user has already used it.
+		 */
+		if ( $sub_price == '0' && $sub_length->duration > 0 && $used_trial ) {
+			$ret = false;
+		}
 	}
 
 	// If multiple levels are specified in shortcode, like [register_form ids="1,2"]
@@ -516,6 +538,10 @@ function rcp_get_term_restrictions( $term_id ) {
 	// fallback to older method of handling term meta if term meta does not exist
 	if ( ( ! function_exists( 'get_term_meta' ) ) || ! $restrictions = get_term_meta( $term_id, 'rcp_restricted_meta', true ) ) {
 		$restrictions = get_option( "rcp_category_meta_$term_id" );
+	}
+
+	if ( ! empty( $restrictions['access_level'] ) && 'none' === strtolower( $restrictions['access_level'] ) ) {
+		unset( $restrictions['access_level'] );
 	}
 
 	return apply_filters( 'rcp_get_term_restrictions', $restrictions, $term_id );

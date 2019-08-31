@@ -3,7 +3,8 @@
  * Subscription Details
  *
  * This template displays the current user's membership details with [subscription_details]
- * @link http://docs.restrictcontentpro.com/article/1600-subscriptiondetails
+ *
+ * @link        http://docs.restrictcontentpro.com/article/1600-subscriptiondetails
  *
  * For modifying this template, please see: http://docs.restrictcontentpro.com/article/1738-template-files
  *
@@ -22,10 +23,12 @@ $memberships = is_object( $customer ) ? $customer->get_memberships() : false;
 
 do_action( 'rcp_subscription_details_top' );
 
-if( isset( $_GET['profile'] ) && 'cancelled' == $_GET['profile'] && ! empty( $_GET['membership_id'] ) ) :
+if ( isset( $_GET['profile'] ) && 'cancelled' == $_GET['profile'] && ! empty( $_GET['membership_id'] ) ) :
 	$cancelled_membership = rcp_get_membership( absint( $_GET['membership_id'] ) );
 	?>
-	<p class="rcp_success"><span><?php printf( __( 'Your %s subscription has been successfully cancelled. Your membership will expire on %s.', 'rcp' ), $cancelled_membership->get_membership_level_name(), $cancelled_membership->get_expiration_date() ); ?></span></p>
+	<p class="rcp_success">
+		<span><?php printf( __( 'Your %s subscription has been successfully cancelled. Your membership will expire on %s.', 'rcp' ), $cancelled_membership->get_membership_level_name(), $cancelled_membership->get_expiration_date() ); ?></span>
+	</p>
 <?php elseif ( isset( $_GET['cancellation_failure'] ) ) : ?>
 	<p class="rcp_error"><span><?php echo esc_html( urldecode( $_GET['cancellation_failure'] ) ); ?> </span></p>
 <?php endif;
@@ -49,8 +52,8 @@ if ( ! empty( $memberships ) ) {
 	}
 }
 ?>
-<table class="rcp-table" id="rcp-account-overview">
-	<thead>
+	<table class="rcp-table" id="rcp-account-overview">
+		<thead>
 		<tr>
 			<th><?php _e( 'Membership', 'rcp' ); ?></th>
 			<th><?php _e( 'Status', 'rcp' ); ?></th>
@@ -60,8 +63,8 @@ if ( ! empty( $memberships ) ) {
 			<?php endif; ?>
 			<th><?php _e( 'Actions', 'rcp' ); ?></th>
 		</tr>
-	</thead>
-	<tbody>
+		</thead>
+		<tbody>
 		<?php if ( ! empty( $memberships ) ) : ?>
 			<?php foreach ( $memberships as $membership ) : ?>
 				<tr>
@@ -107,41 +110,55 @@ if ( ! empty( $memberships ) ) {
 						}
 
 						if ( $membership->can_renew() ) {
-							$links[] = apply_filters( 'rcp_subscription_details_action_renew', '<a href="' . esc_url( get_permalink( $rcp_options['registration_page'] ) ) . '" title="' . esc_attr__( 'Renew your membership', 'rcp' ) . '" class="rcp_sub_details_renew">' . __( 'Renew your membership', 'rcp' ) . '</a>', $user_ID );
+							$links[] = apply_filters( 'rcp_subscription_details_action_renew', '<a href="' . esc_url( rcp_get_membership_renewal_url( $membership->get_id() ) ) . '" title="' . esc_attr__( 'Renew your membership', 'rcp' ) . '" class="rcp_sub_details_renew">' . __( 'Renew your membership', 'rcp' ) . '</a>', $user_ID );
 						}
 
 						if ( $membership->upgrade_possible() ) {
-							$links[] = apply_filters( 'rcp_subscription_details_action_upgrade', '<a href="' . esc_url( get_permalink( $rcp_options['registration_page'] ) ) . '" title="' . esc_attr__( 'Upgrade or change your membership', 'rcp' ) . '" class="rcp_sub_details_renew">' . __( 'Upgrade or change your membership', 'rcp' ) . '</a>', $user_ID );
+							$links[] = apply_filters( 'rcp_subscription_details_action_upgrade', '<a href="' . esc_url( rcp_get_membership_upgrade_url( $membership->get_id() ) ) . '" title="' . esc_attr__( 'Upgrade or change your membership', 'rcp' ) . '" class="rcp_sub_details_renew">' . __( 'Upgrade or change your membership', 'rcp' ) . '</a>', $user_ID );
 						}
 
 						if ( $membership->is_active() && $membership->can_cancel() && ! $membership->has_payment_plan() ) {
 							$links[] = apply_filters( 'rcp_subscription_details_action_cancel', '<a href="' . esc_url( rcp_get_membership_cancel_url( $membership->get_id() ) ) . '" title="' . esc_attr__( 'Cancel your membership', 'rcp' ) . '" class="rcp_sub_details_cancel" id="rcp_cancel_membership_' . esc_attr( $membership->get_id() ) . '">' . __( 'Cancel your membership', 'rcp' ) . '</a>', $user_ID );
 						}
 
-						echo apply_filters( 'rcp_subscription_details_actions', implode( '<br/>', $links ), $links, $user_ID );
+						/**
+						 * Filters the action links HTML.
+						 *
+						 * @param string         $actions    Formatted HTML links.
+						 * @param array          $links      Array of links before they're imploded into an HTML string.
+						 * @param int            $user_ID    ID of the current user.
+						 * @param RCP_Membership $membership Current membership record being displayed.
+						 */
+						echo apply_filters( 'rcp_subscription_details_actions', implode( '<br/>', $links ), $links, $user_ID, $membership );
 
-						do_action( 'rcp_subscription_details_action_links', $links );
+						/**
+						 * Add custom HTML to the "Actions" column.
+						 *
+						 * @param array          $links      Existing links.
+						 * @param RCP_Membership $membership Current membership record being displayed.
+						 */
+						do_action( 'rcp_subscription_details_action_links', $links, $membership );
 
 						if ( $membership->is_active() && $membership->can_cancel() && ! $membership->has_payment_plan() ) {
 							?>
 							<script>
 								// Adds a confirm dialog to the cancel link
-								var cancel_link = document.querySelector("#rcp_cancel_membership_<?php echo $membership->get_id(); ?>");
+								var cancel_link = document.querySelector( "#rcp_cancel_membership_<?php echo $membership->get_id(); ?>" );
 
 								if ( cancel_link ) {
 
-									cancel_link.addEventListener("click", function(event) {
+									cancel_link.addEventListener( "click", function ( event ) {
 										event.preventDefault();
 
 										var message = '<?php printf( __( "Are you sure you want to cancel your %s subscription? If you cancel, your membership will expire on %s.", "rcp" ), $membership->get_membership_level_name(), $membership->get_expiration_date() ); ?>';
 										var confirmed = confirm( message );
 
 										if ( true === confirmed ) {
-											location.assign(event.target.href);
+											location.assign( event.target.href );
 										} else {
 											return false;
 										}
-									});
+									} );
 
 								}
 							</script>
@@ -156,10 +173,10 @@ if ( ! empty( $memberships ) ) {
 				<td data-th="<?php esc_attr_e( 'Membership', 'rcp' ); ?>" colspan="4"><?php _e( 'You do not have any memberships.', 'rcp' ); ?></td>
 			</tr>
 		<?php endif; ?>
-	</tbody>
-</table>
-<table class="rcp-table" id="rcp-payment-history">
-	<thead>
+		</tbody>
+	</table>
+	<table class="rcp-table" id="rcp-payment-history">
+		<thead>
 		<tr>
 			<th><?php _e( 'Invoice #', 'rcp' ); ?></th>
 			<th><?php _e( 'Membership', 'rcp' ); ?></th>
@@ -168,24 +185,28 @@ if ( ! empty( $memberships ) ) {
 			<th><?php _e( 'Date', 'rcp' ); ?></th>
 			<th><?php _e( 'Actions', 'rcp' ); ?></th>
 		</tr>
-	</thead>
-	<tbody>
-	<?php
-	$payments = is_object( $customer ) ? $customer->get_payments() : false;
-	if( $payments ) : ?>
-		<?php foreach( $payments as $payment ) : ?>
+		</thead>
+		<tbody>
+		<?php
+		$payments = is_object( $customer ) ? $customer->get_payments() : false;
+		if ( $payments ) : ?>
+			<?php foreach ( $payments as $payment ) : ?>
+				<tr>
+					<td data-th="<?php esc_attr_e( 'Invoice #', 'rcp' ); ?>"><?php echo $payment->id; ?></td>
+					<td data-th="<?php esc_attr_e( 'Membership', 'rcp' ); ?>"><?php echo esc_html( $payment->subscription ); ?></td>
+					<td data-th="<?php esc_attr_e( 'Amount', 'rcp' ); ?>"><?php echo rcp_currency_filter( $payment->amount ); ?></td>
+					<td data-th="<?php esc_attr_e( 'Payment Status', 'rcp' ); ?>"><?php echo rcp_get_payment_status_label( $payment ); ?></td>
+					<td data-th="<?php esc_attr_e( 'Date', 'rcp' ); ?>"><?php echo date_i18n( get_option( 'date_format' ), strtotime( $payment->date, current_time( 'timestamp' ) ) ); ?></td>
+					<td data-th="<?php esc_attr_e( 'Actions', 'rcp' ); ?>">
+						<a href="<?php echo esc_url( rcp_get_invoice_url( $payment->id ) ); ?>"><?php _e( 'View Receipt', 'rcp' ); ?></a>
+					</td>
+				</tr>
+			<?php endforeach; ?>
+		<?php else : ?>
 			<tr>
-				<td data-th="<?php esc_attr_e( 'Invoice #', 'rcp' ); ?>"><?php echo $payment->id; ?></td>
-				<td data-th="<?php esc_attr_e( 'Membership', 'rcp' ); ?>"><?php echo esc_html( $payment->subscription ); ?></td>
-				<td data-th="<?php esc_attr_e( 'Amount', 'rcp' ); ?>"><?php echo rcp_currency_filter( $payment->amount ); ?></td>
-				<td data-th="<?php esc_attr_e( 'Payment Status', 'rcp' ); ?>"><?php echo rcp_get_payment_status_label( $payment ); ?></td>
-				<td data-th="<?php esc_attr_e( 'Date', 'rcp' ); ?>"><?php echo date_i18n( get_option( 'date_format' ), strtotime( $payment->date, current_time( 'timestamp' ) ) ); ?></td>
-				<td data-th="<?php esc_attr_e( 'Actions', 'rcp' ); ?>"><a href="<?php echo esc_url( rcp_get_invoice_url( $payment->id ) ); ?>"><?php _e( 'View Receipt', 'rcp' ); ?></a></td>
+				<td data-th="<?php _e( 'Membership', 'rcp' ); ?>" colspan="6"><?php _e( 'You have not made any payments.', 'rcp' ); ?></td>
 			</tr>
-		<?php endforeach; ?>
-	<?php else : ?>
-		<tr><td data-th="<?php _e( 'Membership', 'rcp' ); ?>" colspan="6"><?php _e( 'You have not made any payments.', 'rcp' ); ?></td></tr>
-	<?php endif; ?>
-	</tbody>
-</table>
+		<?php endif; ?>
+		</tbody>
+	</table>
 <?php do_action( 'rcp_subscription_details_bottom' );

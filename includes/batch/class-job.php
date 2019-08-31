@@ -69,6 +69,21 @@ final class Job extends Base_Object {
 	protected $status = 'incomplete';
 
 	/**
+	 * @var array
+	 */
+	protected $data = array();
+
+	/**
+	 * @var string
+	 */
+	protected $date_created = '0000-00-00 00:00:00';
+
+	/**
+	 * @var string
+	 */
+	protected $date_completed = '0000-00-00 00:00:00';
+
+	/**
 	 * @var string
 	 */
 	protected $error_key = '';
@@ -204,6 +219,18 @@ final class Job extends Base_Object {
 	}
 
 	/**
+	 * Set the current count to a specific value
+	 *
+	 * @param int $count
+	 *
+	 * @since 3.1
+	 */
+	public function set_current_count( $count = 0 ) {
+		$this->current_count = $count;
+		$this->save();
+	}
+
+	/**
 	 * Add to the current count
 	 *
 	 * @param int $amount Amount to add.
@@ -248,6 +275,57 @@ final class Job extends Base_Object {
 	}
 
 	/**
+	 * Get job data
+	 *
+	 * @since 3.1
+	 * @return array
+	 */
+	public function get_data() {
+		return ! empty( $this->data ) ? $this->data : array();
+	}
+
+	/**
+	 * Get the date the job was created
+	 *
+	 * @since 3.1.2
+	 * @return string
+	 */
+	public function get_date_created() {
+		return $this->date_created;
+	}
+
+	/**
+	 * Get the date the job was completed
+	 *
+	 * @since 3.1.2
+	 * @return string
+	 */
+	public function get_date_completed() {
+		return $this->date_completed;
+	}
+
+	/**
+	 * Adds additional data to the existing data (merging the two arrays). It does not overwrite.
+	 *
+	 * To overwrite the existing data, use `update_job()`
+	 * @see update_job()
+	 *
+	 * @param array $new_data New data to add.
+	 *
+	 * @since 3.1
+	 */
+	public function add_data( $new_data ) {
+
+		$existing_data = $this->get_data();
+		$new_data      = array_merge( $existing_data, $new_data );
+
+		$this->data = $new_data;
+
+		$this->save();
+
+	}
+
+	/**
 	 * Set the job status
 	 *
 	 * @since 3.0
@@ -256,6 +334,11 @@ final class Job extends Base_Object {
 	 */
 	public function set_status( $status = 'complete' ) {
 		$this->status = sanitize_key( $status );
+
+		if ( 'complete' === $status ) {
+			$this->date_completed = current_time( 'mysql' );
+		}
+
 		$this->save();
 	}
 
@@ -370,14 +453,17 @@ final class Job extends Base_Object {
 	 */
 	public function save() {
 		$args = array(
-			'queue'         => $this->get_queue(),
-			'name'          => $this->get_name(),
-			'description'   => $this->get_description(),
-			'callback'      => $this->get_callback(),
-			'total_count'   => $this->get_total_count(),
-			'current_count' => $this->get_current_count(),
-			'step'          => $this->get_step(),
-			'status'        => $this->get_status()
+			'queue'          => $this->get_queue(),
+			'name'           => $this->get_name(),
+			'description'    => $this->get_description(),
+			'callback'       => $this->get_callback(),
+			'total_count'    => $this->get_total_count(),
+			'current_count'  => $this->get_current_count(),
+			'step'           => $this->get_step(),
+			'status'         => $this->get_status(),
+			'data'           => maybe_serialize( $this->get_data() ),
+			'date_created'   => $this->get_date_created(),
+			'date_completed' => $this->get_date_completed()
 		);
 
 		$updated = $this->queue_query->update_item( $this->get_id(), $args );
@@ -427,15 +513,18 @@ final class Job extends Base_Object {
 	 */
 	private function sanitize( $config ) {
 		return [
-			'id'            => ! empty( $config->id ) ? absint( $config->id ) : false,
-			'queue'         => ! empty( $config->queue ) ? sanitize_key( $config->queue ) : 'rcp_core',
-			'name'          => sanitize_text_field( $config->name ),
-			'description'   => wp_kses_post( $config->description ),
-			'callback'      => $config->callback, // already validated to be a callable class
-			'total_count'   => ! empty( $config->total_count ) ? absint( $config->total_count ) : 0,
-			'current_count' => ! empty( $config->current_count ) ? absint( $config->current_count ) : 0,
-			'step'          => ! empty( $config->step ) ? absint( $config->step ) : 0,
-			'status'        => empty( $config->status ) ? 'incomplete' : $config->status,
+			'id'             => ! empty( $config->id ) ? absint( $config->id ) : false,
+			'queue'          => ! empty( $config->queue ) ? sanitize_key( $config->queue ) : 'rcp_core',
+			'name'           => sanitize_text_field( $config->name ),
+			'description'    => wp_kses_post( $config->description ),
+			'callback'       => $config->callback, // already validated to be a callable class
+			'total_count'    => ! empty( $config->total_count ) ? absint( $config->total_count ) : 0,
+			'current_count'  => ! empty( $config->current_count ) ? absint( $config->current_count ) : 0,
+			'step'           => ! empty( $config->step ) ? absint( $config->step ) : 0,
+			'status'         => empty( $config->status ) ? 'incomplete' : $config->status,
+			'data'           => ! empty( $config->data ) ? maybe_unserialize( $config->data ) : array(),
+			'date_created'   => ! empty( $config->date_created ) ? sanitize_text_field( $config->date_created ) : current_time( 'timestamp' ),
+			'date_completed' => ! empty( $config->date_completed ) ? sanitize_text_field( $config->date_completed ) : '0000-00-00 00:00:00'
 		];
 	}
 }

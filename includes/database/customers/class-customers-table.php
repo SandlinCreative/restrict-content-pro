@@ -31,7 +31,11 @@ final class Customers extends Table {
 	/**
 	 * @var string Database version
 	 */
-	protected $version = 201810051;
+	protected $version = 201908151;
+
+	protected $upgrades = array(
+		'201908151' => 201908151
+	);
 
 	/**
 	 * Customers constructor.
@@ -41,8 +45,6 @@ final class Customers extends Table {
 	 * @return void
 	 */
 	public function __construct() {
-
-		$this->global = is_plugin_active_for_network( plugin_basename( RCP_PLUGIN_FILE ) );
 
 		parent::__construct();
 
@@ -61,11 +63,40 @@ final class Customers extends Table {
 			date_registered datetime NOT NULL,
 			email_verification enum('verified', 'pending', 'none') DEFAULT 'none',
 			last_login datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+			has_trialed smallint unsigned DEFAULT NULL,
 			ips longtext NOT NULL DEFAULT '',
 			notes longtext NOT NULL DEFAULT '',
 			uuid varchar(100) NOT NULL default '',
 			PRIMARY KEY (id),
 			KEY user_id (user_id)";
+	}
+
+	/**
+	 * Upgrade to version 201908151
+	 * - Add `has_trialed` column.
+	 *
+	 * @since 3.1.2
+	 * @return void
+	 */
+	protected function __201908151() {
+
+		// Look for column
+		$result = $this->column_exists( 'renewed_date' );
+
+		// Maybe add column
+		if ( false === $result ) {
+			$result = $this->get_db()->query( "
+				ALTER TABLE {$this->table_name} ADD COLUMN `has_trialed` smallint unsigned DEFAULT NULL AFTER `last_login`;
+			" );
+		}
+
+		// Return success/fail
+		$success = $this->is_success( $result );
+
+		rcp_log( sprintf( 'Upgrading customers table to version 201908151. Result: %s', var_export( $success, true ) ), true );
+
+		return $success;
+
 	}
 
 

@@ -116,6 +116,10 @@ function rcp_currency_filter( $price ) {
  */
 function rcp_get_currency_symbol( $currency = false ) {
 
+	global $rcp_options;
+
+	$position = isset( $rcp_options['currency_position'] ) ? $rcp_options['currency_position'] : 'before';
+
 	if ( empty( $currency ) ) {
 		$currency = rcp_get_currency();
 	}
@@ -142,7 +146,7 @@ function rcp_get_currency_symbol( $currency = false ) {
 		case "JPY" : $symbol = '&#165;'; break;
 		case "MXN" : $symbol = '&#36;'; break;
 		case "MYR" : $symbol = '&#82;&#77;'; break;
-		case "NOK" : $symbol = '&#107;&#114;'; break;
+		case "NOK" : $symbol = 'after' == $position ? '&nbsp;&#107;&#114;' : '&#107;&#114;&nbsp;'; break;
 		case "NZD" : $symbol = '&#36;'; break;
 		case "PHP" : $symbol = '&#8369;'; break;
 		case "PLN" : $symbol = '&#122;&#322;'; break;
@@ -152,7 +156,7 @@ function rcp_get_currency_symbol( $currency = false ) {
 		case "THB" : $symbol = '&#3647;'; break;
 		case "TRY" : $symbol = '&#8356;'; break;
 		case "TWD" : $symbol = '&#78;&#84;&#36;'; break;
-		default: $symbol = '';
+		default: $symbol = $currency;
 	}
 
 	return apply_filters( 'rcp_' . strtolower( $currency ) . '_symbol', $symbol, $currency );
@@ -709,10 +713,7 @@ function rcp_is_restricted_content( $post_id ) {
 
 	// Check if the post is restricted via a term.
 	if ( ! $restricted ) {
-		$term_restricted_post_ids = rcp_get_post_ids_assigned_to_restricted_terms();
-		if ( in_array( $post_id, $term_restricted_post_ids ) ) {
-			$restricted = true;
-		}
+		$restricted = rcp_has_term_restrictions( $post_id );
 	}
 
 	return apply_filters( 'rcp_is_restricted_content', $restricted, $post_id );
@@ -824,6 +825,44 @@ function rcp_has_post_restrictions( $post_id ) {
 }
 
 /**
+ * Checks if a given post is assigned to any terms that have restrictions.
+ *
+ * This does not check if the current user meets the requirements, it just checks if any
+ * restrictions are in place.
+ *
+ * @uses rcp_get_term_restrictions()
+ *
+ * @param int $post_id ID of the post to check.
+ *
+ * @since 3.0.6
+ * @return bool
+ */
+function rcp_has_term_restrictions( $post_id ) {
+
+	if ( empty( $post_id ) || ! is_numeric( $post_id ) ) {
+		return false;
+	}
+
+	$restricted = false;
+	$term_ids   = rcp_get_connected_term_ids( $post_id );
+
+	// Post doesn't have any terms - bail.
+	if ( empty( $term_ids ) ) {
+		return $restricted;
+	}
+
+	foreach ( $term_ids as $term_id ) {
+		if ( rcp_get_term_restrictions( $term_id ) ) {
+			$restricted = true;
+			break;
+		}
+	}
+
+	return $restricted;
+
+}
+
+/**
  * Returns an array of all restricted post types (keys) and their restriction
  * settings (values).
  *
@@ -872,7 +911,7 @@ function rcp_is_restricted_post_type( $post_type ) {
  * @since      2.5
  * @param int      $post_id ID of the post to check.
  * @param string   $taxonomy
- * @param null|int $user_id User ID or leave as null to use curently logged in user.
+ * @param null|int $user_id User ID or leave as null to use currently logged in user.
  *
  * @return int|bool true if tax is restricted, false if user can access, -1 if unrestricted or invalid
  */
@@ -1466,7 +1505,7 @@ function rcp_get_restricted_content_message( $paid = false ) {
 		$message = $rcp_options['free_message'];
 	}
 
-	if ( ! empty( $rcp_options['paid_message'] ) && ( rcp_is_paid_content( $post->ID ) || in_array( $post->ID, rcp_get_post_ids_assigned_to_restricted_terms() ) || $paid ) ) {
+	if ( ! empty( $rcp_options['paid_message'] ) && ( rcp_is_paid_content( $post->ID ) || rcp_has_term_restrictions( $post->ID ) || $paid ) ) {
 		$message = $rcp_options['paid_message'];
 	}
 

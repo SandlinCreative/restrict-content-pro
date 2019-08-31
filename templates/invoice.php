@@ -206,10 +206,53 @@ global $rcp_options, $rcp_payment, $rcp_member; ?>
 			display: none;
 		}
 	}
+
+	<?php
+	/**
+	* RTL styles
+	 */
+	if ( is_rtl() ) {
+		?>
+		body.rcp-is-rtl {
+			direction: rtl;
+			unicode-bidi: embed;
+		}
+
+		.rcp-is-rtl #main,
+		.rcp-is-rtl .alignleft,
+		.rcp-is-rtl section,
+		.rcp-is-rtl section header,
+		.rcp-is-rtl section article,
+		.rcp-is-rtl header#header,
+		.rcp-is-rtl header#header .alignleft img,
+		.rcp-is-rtl section#contacts article,
+		.rcp-is-rtl section#items table {
+			float: right;
+		}
+
+		.rcp-is-rtl .alignright,
+		section header .right {
+			float: left;
+		}
+
+		.rcp-is-rtl thead tr th {
+			text-align: right;
+		}
+
+		.rcp-is-rtl header#header .alignright h1,
+		.rcp-is-rtl section#items table tbody tr td.price,
+		.rcp-is-rtl section#items table tfoot tr td.name,
+		.rcp-is-rtl section#items table tfoot tr td.price,
+		.rcp-is-rtl section#additional-info .alignright {
+			text-align: left;
+		}
+		<?php
+	}
+	 ?>
 	</style>
 </head>
 
-<body>
+<body<?php echo is_rtl() ? ' class="rcp-is-rtl"' : ''; ?>>
 	<div id="main">
 		<header id="header">
 			<!-- Logo -->

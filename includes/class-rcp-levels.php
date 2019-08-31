@@ -125,6 +125,7 @@ class RCP_Levels {
 		$defaults = array(
 			'status'  => 'all',
 			'limit'   => null,
+			'offset'  => 0,
 			'orderby' => 'list_order'
 		);
 
@@ -138,10 +139,14 @@ class RCP_Levels {
 			$where = "";
 		}
 
-		if( ! empty( $args['limit'] ) )
-			$limit = " LIMIT {$args['limit']}";
-		else
+		if( ! empty( $args['limit'] ) ) {
+			$max    = absint( $args['limit'] );
+			$offset = absint( $args['offset'] );
+
+			$limit = " LIMIT {$offset},{$max}";
+		} else {
 			$limit = '';
+		}
 
 		$cache_key = md5( implode( '|', $args ) );
 

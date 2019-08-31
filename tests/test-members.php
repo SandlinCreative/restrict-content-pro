@@ -472,11 +472,16 @@ class RCP_Member_Tests extends WP_UnitTestCase {
 	 */
 	function test_has_trialed() {
 
+		$this->membership->set_status( 'pending' );
+
 		$this->assertFalse( $this->customer->has_trialed() );
 
 		$this->membership->update( array(
+			'status'         => 'active',
 			'trial_end_date' => date( 'Y-n-d 23:59:59', strtotime( '+1 month' ) )
 		) );
+
+		$this->customer = rcp_get_customer( $this->membership->get_customer_id() );
 
 		$this->assertTrue( $this->customer->has_trialed() );
 
@@ -1175,7 +1180,7 @@ class RCP_Member_Tests extends WP_UnitTestCase {
 	 * @covers RCP_Membership::complete_payment_plan()
 	 * @covers RCP_Membership::at_maximum_renewals()
 	 * @covers RCP_Membership::is_payment_plan_complete()
-	 *                                                   
+	 *
 	 * @since  3.0
 	 */
 	public function test_payment_plan_completion() {
@@ -1305,6 +1310,60 @@ class RCP_Member_Tests extends WP_UnitTestCase {
 		$expiration_date = rcp_get_expiration_date( $this->member->ID );
 
 		$this->assertEquals( $expiration_date, $this->membership->get_expiration_date( true ) );
+
+	}
+
+	/**
+	 * Test multiple membership permissions.
+	 *
+	 * @covers ::rcp_multiple_memberships_enabled()
+	 * @covers RCP_Customer::can_access()
+	 *
+	 * @since 3.1
+	 */
+	public function test_multiple_membership_permissions() {
+
+		global $rcp_options;
+
+		$rcp_options['multiple_memberships'] = true;
+
+		$this->assertTrue( rcp_multiple_memberships_enabled() );
+		$this->assertEquals( $this->membership->get_object_id(), $this->level_id );
+
+		update_post_meta( $this->post_id, 'rcp_subscription_level', array( $this->level_id ) );
+
+		// Ensure customer can view restricted post with just one membership to level #1.
+		$this->assertTrue( $this->customer->can_access( $this->post_id ) );
+
+		// Create a second post and restrict it to level #2.
+		$post_id_2 = wp_insert_post( array(
+			'post_title'  => 'Test 2',
+			'post_status' => 'publish',
+		) );
+		update_post_meta( $post_id_2, 'rcp_subscription_level', array( $this->level_id_2 ) );
+
+		$this->assertFalse( $this->customer->can_access( $post_id_2 ) );
+
+		// Add a second membership.
+		$membership_2_id = $this->customer->add_membership( array(
+			'object_id' => $this->level_id_2,
+			'status'    => 'active'
+		) );
+
+		// Ensure customer has two active memberships.
+		$this->assertEquals( 2, count( $this->customer->get_memberships( array( 'status' => 'active' ) ) ) );
+
+		// Ensure customer can now view post #2.
+		$this->assertTrue( $this->customer->can_access( $post_id_2 ) );
+
+		$membership_2 = rcp_get_membership( $membership_2_id );
+
+		// Expire membership #2 and ensure customer loses access to post #2, but can still access post #1.
+		$membership_2->expire();
+		$this->assertEquals( 'expired', $membership_2->get_status() );
+		$this->assertFalse( $this->customer->can_access( $post_id_2 ) );
+		$this->assertEquals( 'active', $this->membership->get_status() );
+		$this->assertTrue( $this->customer->can_access( $this->post_id ) );
 
 	}
 

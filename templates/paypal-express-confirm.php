@@ -17,7 +17,8 @@ global $rcp_checkout_details;
 
 $payments         = new RCP_Payments();
 $customer         = rcp_get_customer(); // current customer
-$payment_id       = ! empty( $customer ) ? $customer->get_pending_payment_id() : false;
+$membership_id    = ! empty( $rcp_checkout_details['membership_id'] ) ? absint( $rcp_checkout_details['membership_id'] ) : 0;
+$payment_id       = ! empty( $membership_id ) ? rcp_get_membership_meta( $membership_id, 'pending_payment_id', true ) : false;
 $payment          = $payments->get_payment( $payment_id );
 $membership_level = rcp_get_subscription_details( $payment->object_id );
 ?>
@@ -53,7 +54,7 @@ $membership_level = rcp_get_subscription_details( $payment->object_id );
 				<td data-th="<?php esc_attr_e( 'Fees', 'rcp' ); ?>" class="rcp-ppe-confirm-price"><?php echo rcp_currency_filter( $payment->fees ); ?></td>
 			</tr>
 		<?php endif; ?>
-		<?php if ( ! empty( $payment->fees ) ) : ?>
+		<?php if ( ! empty( $payment->credits ) ) : ?>
 			<tr>
 				<th scope="row" class="rcp-ppe-confirm-name"><?php _e( 'Credits:', 'rcp' ); ?></th>
 				<td data-th="<?php esc_attr_e( 'Credits', 'rcp' ); ?>" class="rcp-ppe-confirm-price"><?php echo rcp_currency_filter( -1 * abs( $payment->credits ) ); ?></td>

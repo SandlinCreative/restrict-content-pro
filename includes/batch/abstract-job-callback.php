@@ -78,6 +78,32 @@ abstract class Abstract_Job_Callback implements Job_Callback_Interface {
 	}
 
 	/**
+	 * Retrieves the amount of records processed per step.
+	 *
+	 * @return int
+	 */
+	public function get_amount_per_step() {
+		return $this->size;
+	}
+
+	/**
+	 * Count the total number of results and save the value.
+	 *
+	 * @since 3.1
+	 * @return int
+	 */
+	public function get_total_count() {
+		$total_count = $this->get_job()->get_total_count();
+
+		if ( $total_count ) {
+			$total_count = 0; // count total here
+			$this->get_job()->set_total_count( $total_count );
+		}
+
+		return $total_count;
+	}
+
+	/**
 	 * Runs any tasks required to finish a job.
 	 *
 	 * @since 3.0
@@ -102,7 +128,7 @@ abstract class Abstract_Job_Callback implements Job_Callback_Interface {
 	 * @return string
 	 */
 	public function get_complete_message() {
-		return sprintf( __( 'Successfully processed %d/%d items. You may now leave the page.', 'rcp' ), $this->get_job()->get_total_count(), $this->get_job()->get_current_count() );
+		return sprintf( __( 'Successfully processed %d/%d items. You may now leave the page.', 'rcp' ), $this->get_job()->get_current_count(), $this->get_job()->get_total_count() );
 	}
 
 	/**

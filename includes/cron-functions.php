@@ -58,16 +58,31 @@ function rcp_check_for_expired_users() {
 
 	rcp_log( 'Starting rcp_check_for_expired_users() cron job.', true );
 
-	$current_time = date( 'Y-m-d H:i:s', strtotime( '-1 day', current_time( 'timestamp' ) ) );
-
-	$expired_memberships = rcp_get_memberships( array(
-		'expiration_date' => array(
-			'end' => $current_time
+	$args = array(
+		'expiration_date_query' => array(
+			'after'  => '0000-00-00 00:00:00',
+			'before' => current_time( 'mysql' )
 		),
 		'status' => array( 'active', 'cancelled' ),
-		'number' => -1
-	) );
+		'number' => 99999
+	);
 
+	/**
+	 * Filters the query arguments.
+	 *
+	 * @param array $args
+	 *
+	 * @since 3.1.1
+	 */
+	$args = apply_filters( 'rcp_check_for_expired_memberships_query_args', $args );
+
+	$expired_memberships = rcp_get_memberships( $args );
+
+	/**
+	 * Filters the array of memberships found via the query.
+	 *
+	 * @param array $expired_memberships Array of RCP_Membership objects.
+	 */
 	$expired_memberships = apply_filters( 'rcp_check_for_expired_users_members_filter', $expired_memberships );
 
 	if( $expired_memberships ) {
@@ -78,7 +93,7 @@ function rcp_check_for_expired_users() {
 			 */
 
 			$expiration_date = $membership->get_expiration_time();
-			if( $expiration_date && strtotime( '-2 days', current_time( 'timestamp' ) ) > $expiration_date ) {
+			if( $expiration_date && current_time( 'timestamp' ) > $expiration_date ) {
 				rcp_log( sprintf( 'Expiring membership #%d via cron job.', $membership->get_id() ) );
 				$membership->set_status( 'expired' );
 			}

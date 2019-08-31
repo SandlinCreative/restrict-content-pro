@@ -36,7 +36,14 @@ global $rcp_membership;
 		<?php endforeach; ?>
 	<?php endif; ?>
 
-	<fieldset class="rcp_card_fieldset">
+	<fieldset id="rcp-card-name-wrapper" class="rcp_card_fieldset">
+		<p id="rcp_card_name_wrap">
+			<label><?php _e( 'Name on Card', 'rcp' ); ?></label>
+			<input type="text" size="20" name="rcp_card_name" class="rcp_card_name card-name" />
+		</p>
+	</fieldset>
+
+	<fieldset id="rcp-card-wrapper" class="rcp_card_fieldset">
 		<p id="rcp_card_number_wrap">
 			<label><?php _e( 'Card Number', 'rcp' ); ?></label>
 			<input type="text" size="20" maxlength="20" name="rcp_card_number" class="rcp_card_number card-number" />
@@ -48,10 +55,6 @@ global $rcp_membership;
 		<p id="rcp_card_zip_wrap">
 			<label><?php _e( 'Card ZIP or Postal Code', 'rcp' ); ?></label>
 			<input type="text" size="10" name="rcp_card_zip" class="rcp_card_zip card-zip" />
-		</p>
-		<p id="rcp_card_name_wrap">
-			<label><?php _e( 'Name on Card', 'rcp' ); ?></label>
-			<input type="text" size="20" name="rcp_card_name" class="rcp_card_name card-name" />
 		</p>
 		<p id="rcp_card_exp_wrap">
 			<label><?php _e( 'Expiration (MM/YYYY)', 'rcp' ); ?></label>

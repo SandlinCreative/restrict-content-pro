@@ -124,6 +124,58 @@ function rcp_user_can_access( $user_id = 0, $post_id = 0 ) {
 	return $can_access;
 }
 
+/**
+ * Returns true if the user meets all the requirements to access the term.
+ *
+ * @param int $user_id ID of the user to check.
+ * @param int $term_id ID of the term to check.
+ *
+ * @since 3.0.2
+ * @return bool
+ */
+function rcp_user_can_access_term( $user_id, $term_id ) {
+
+	// If the user is an admin, they can access.
+	if ( user_can( $user_id, 'manage_options' ) ) {
+		return true;
+	}
+
+	$restrictions = rcp_get_term_restrictions( $term_id );
+
+	// There are no restrictions - bail.
+	if ( empty( $restrictions ) ) {
+		return true;
+	}
+
+	$customer = rcp_get_customer_by_user_id( $user_id );
+
+	// If there's no customer record, there's no way they can access.
+	if ( empty( $customer ) ) {
+		return false;
+	}
+
+	// Assume they can access, then we can try to prove otherwise.
+	$can_access = true;
+
+	// Check "paid only".
+	if ( ! empty( $restrictions['paid_only'] ) && ! rcp_user_has_paid_membership( $user_id ) )  {
+		$can_access = false;
+	}
+
+	// Check access level.
+	if ( ! empty( $restrictions['access_level'] ) && ! rcp_user_has_access( $user_id, $restrictions['access_level'] ) ) {
+		$can_access = false;
+	}
+
+	// Check selected membership level IDs.
+	if ( ! empty( $restrictions['subscriptions'] ) && is_array( $restrictions['subscriptions'] ) && ! count( array_intersect( rcp_get_customer_membership_level_ids( $customer->get_id() ), $restrictions['subscriptions'] ) ) ) {
+		$can_access = false;
+	}
+
+	return $can_access;
+
+}
+
 
 /**
  * Checks if a user is currently trialing
@@ -345,7 +397,25 @@ function rcp_get_upgrade_paths( $user_id = 0 ) {
 		return apply_filters( 'rcp_get_upgrade_paths', $subscriptions, $user_id );
 	}
 
-	return $membership->get_upgrade_paths();
+	$upgrade_paths = $membership->upgrade_possible() ? $membership->get_upgrade_paths() : array();
+
+	/*
+	 * If the current membership can be renewed, add it back to the list. This is for backwards
+	 * compatibility because it used to be in `RCP_Membership::get_upgrade_paths()`.
+	 */
+	if ( $membership->can_renew() ) {
+		$upgrade_paths[] = rcp_get_subscription_details( $membership->get_object_id() );
+	}
+
+	// Sort by "list_order" first, then "id".
+	if ( function_exists( 'wp_list_sort' ) ) {
+		$upgrade_paths = wp_list_sort( $upgrade_paths, array(
+			'list_order' => 'ASC',
+			'id'         => 'ASC'
+		) );
+	}
+
+	return $upgrade_paths;
 }
 
 /**
@@ -797,15 +867,23 @@ function rcp_resend_email_verification() {
 
 	rcp_send_email_verification( $customer->get_user_id() );
 
-	// Redirect back to Edit Profile page with success message.
-	global $rcp_options;
+	// Redirect back to `redirect` query arg or Edit Profile page with success message.
+	if ( isset( $_GET['redirect'] ) ) {
+		$redirect = urldecode( $_GET['redirect'] );
+	} else {
+		global $rcp_options;
 
-	$account_page = $rcp_options['account_page'];
-	if ( ! $redirect = add_query_arg( array( 'rcp-message' => 'verification-resent' ), get_post_permalink( $account_page ) ) ) {
+		$account_page = $rcp_options['account_page'];
+		$redirect     = get_permalink( $account_page );
+	}
+
+	if ( empty( $redirect ) ) {
 		return;
 	}
 
-	wp_safe_redirect( $redirect );
+	$redirect = add_query_arg( array( 'rcp-message' => 'verification-resent' ), $redirect );
+
+	wp_safe_redirect( esc_url_raw( $redirect ) );
 	exit;
 
 }

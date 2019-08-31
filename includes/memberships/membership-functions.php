@@ -21,7 +21,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return RCP_Membership|false
  */
 function rcp_get_membership( $membership_id ) {
-	return rcp_get_membership_by( 'id', $membership_id );
+
+	$memberships = new RCP\Database\Queries\Membership();
+
+	return $memberships->get_item( $membership_id );
+
 }
 
 /**
@@ -35,9 +39,21 @@ function rcp_get_membership( $membership_id ) {
  */
 function rcp_get_membership_by( $field = '', $value = '' ) {
 
-	$memberships = new \RCP\Database\Queries\Membership();
+	/*
+	 * We don't use \RCP\Database\Queries\Membership::get_item_by() because that may return
+	 * disabled memberships, and thus have unexpected results. Using rcp_get_memberships()
+	 * allows us to check enabled memberships only more easily.
+	 */
+	$memberships = rcp_get_memberships( array(
+		$field   => $value,
+		'number' => 1
+	) );
 
-	return $memberships->get_item_by( $field, $value );
+	if ( empty( $memberships ) ) {
+		return false;
+	}
+
+	return reset( $memberships );
 
 }
 
@@ -239,6 +255,11 @@ function rcp_add_membership( $data = array() ) {
 	$set_trial        = ( $has_trial && ! $customer->has_trialed() );
 	$expiration_date  = ! empty( $data['object_id'] ) ? rcp_calculate_subscription_expiration( $data['object_id'], $set_trial ) : '';
 
+	// Convert "free" status to "active".
+	if ( ! empty( $data['status'] ) && 'free' === $data['status'] ) {
+		$data['status'] = 'active';
+	}
+
 	if ( has_filter( 'rcp_member_calculated_expiration' ) ) {
 		/**
 		 * @deprecated 3.0 Use `rcp_membership_calculated_expiration_date` instead.
@@ -419,6 +440,44 @@ function rcp_can_update_membership_billing_card( $membership_id_or_object ) {
 }
 
 /**
+ * Get the renewal URL for a membership.
+ *
+ * @param int $membership_id
+ *
+ * @since 3.1
+ * @return string
+ */
+function rcp_get_membership_renewal_url( $membership_id ) {
+
+	$url = add_query_arg( array(
+		'registration_type' => 'renewal',
+		'membership_id'     => urlencode( $membership_id )
+	), rcp_get_registration_page_url() );
+
+	return $url;
+
+}
+
+/**
+ * Get the upgrade URL for a membership.
+ *
+ * @param int $membership_id
+ *
+ * @since 3.1
+ * @return string
+ */
+function rcp_get_membership_upgrade_url( $membership_id ) {
+
+	$url = add_query_arg( array(
+		'registration_type' => 'upgrade',
+		'membership_id'     => urlencode( $membership_id )
+	),rcp_get_registration_page_url() );
+
+	return $url;
+
+}
+
+/**
  * Get the cancellation URL for a membership.
  *
  * @param int $membership_id ID of the membership to get the cancel URL for.
@@ -562,7 +621,9 @@ function rcp_membership_has_access_level( $membership_id, $access_level = 0 ) {
  * @return bool
  */
 function rcp_multiple_memberships_enabled() {
-	return false;
+	global $rcp_options;
+
+	return isset( $rcp_options['multiple_memberships'] );
 }
 
 /**

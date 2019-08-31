@@ -1,6 +1,6 @@
 <?php
 /**
- * Add/Edit Subscription Reminder
+ * Add/Edit Membership Reminder
  *
  * @package     Restrict Content Pro
  * @subpackage  Admin/Reminders/Subscription Reminders View
@@ -18,7 +18,8 @@ $default       = array(
 	'subject'     => '',
 	'send_period' => 'today',
 	'message'     => '',
-	'enabled'     => false
+	'enabled'     => false,
+	'levels'      => array()
 );
 $notice        = ! $new_notice ? $notices->get_notice( $notice_id ) : $default;
 ?>
@@ -78,6 +79,31 @@ $notice        = ! $new_notice ? $notices->get_notice( $notice_id ) : $default;
 					</select>
 
 					<p class="description"><?php _e( 'When should this email be sent?', 'rcp' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row" valign="top">
+					<label for="rcp-notice-levels"><?php _e( 'Membership Levels', 'rcp' ); ?></label>
+				</th>
+				<td>
+					<?php
+					$levels = rcp_get_subscription_levels( 'all' );
+					if ( $levels ) : ?>
+						<?php
+						$current = ! empty( $notice['levels'] ) && is_array( $notice['levels'] ) ? $notice['levels'] : array();
+						foreach ( $levels as $level ) :
+							// Don't bother showing levels that never expire.
+							if ( empty( $level->duration ) ) {
+								continue;
+							}
+							?>
+							<input type="checkbox" id="rcp-notice-levels-<?php echo esc_attr( $level->id ); ?>" name="rcp_reminder_levels[]" value="<?php echo esc_attr( $level->id ); ?>" <?php checked( true, in_array( $level->id, $current ) ); ?>>
+							<label for="rcp-notice-levels-<?php echo esc_attr( $level->id ); ?>"><?php echo esc_html( $level->name ); ?></label>
+							<br>
+						<?php
+						endforeach;
+					endif; ?>
+					<p class="description"><?php _e( 'The membership levels this reminder will be sent for. Leave blank for all levels.', 'rcp' ); ?></p>
 				</td>
 			</tr>
 			<tr>

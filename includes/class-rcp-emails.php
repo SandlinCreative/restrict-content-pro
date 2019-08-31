@@ -177,6 +177,16 @@ class RCP_Emails {
 	}
 
 	/**
+	 * Get the corresponding user ID.
+	 *
+	 * @since 3.0.8
+	 * @return int
+	 */
+	public function get_user_id() {
+		return absint( $this->member_id );
+	}
+
+	/**
 	 * Get the corresponding membership object.
 	 *
 	 * @access public

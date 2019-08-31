@@ -286,6 +286,11 @@ class RCP_Membership {
 	 */
 	public function update( $data = array() ) {
 
+		// Convert "free" status to "active".
+		if ( ! empty( $data['status'] ) && 'free' === $data['status'] ) {
+			$data['status'] = 'active';
+		}
+
 		// Remove "notes" for our log because it's annoying.
 		$log_data = $data;
 		if ( ! empty( $log_data['notes'] ) ) {
@@ -294,8 +299,6 @@ class RCP_Membership {
 		if ( ! empty( $log_data ) ) {
 			rcp_log( sprintf( 'Updating membership #%d. New data: %s.', $this->get_id(), var_export( $log_data, true ) ) );
 		}
-
-		// @todo validation stuff
 
 		// Expiration date.
 		if ( ! empty( $data['expiration_date'] ) && 'none' == $data['expiration_date'] ) {
@@ -307,6 +310,11 @@ class RCP_Membership {
 		$updated = $memberships->update_item( $this->get_id(), $data );
 
 		if ( $updated ) {
+			// If setting the status to "active", verify the user role is added.
+			if ( ! empty( $data['status'] ) && 'active' === $data['status'] ) {
+				$this->add_user_role();
+			}
+
 			foreach ( $data as $key => $value ) {
 				// Record changes of these columns.
 				$columns_to_note = array(
@@ -652,11 +660,6 @@ class RCP_Membership {
 
 		if ( ! empty( $new_status ) ) {
 
-			// We don't have a "free" status anymore.
-			if ( 'free' == $new_status ) {
-				$new_status = 'active';
-			}
-
 			$update_data = array( 'status' => $new_status );
 
 			if ( 'cancelled' == $new_status ) {
@@ -681,7 +684,7 @@ class RCP_Membership {
 				delete_user_meta( $this->get_customer()->get_user_id(), '_rcp_expired_email_sent' );
 			}
 
-			if ( 'expired' == $new_status || 'cancelled' == $new_status ) {
+			if ( 'cancelled' == $new_status ) {
 				$this->set_recurring( false );
 			}
 
@@ -1085,7 +1088,7 @@ class RCP_Membership {
 	 * @return int
 	 */
 	public function get_times_billed() {
-		return $this->times_billed;
+		return (int) $this->times_billed;
 	}
 
 	/**
@@ -1148,11 +1151,18 @@ class RCP_Membership {
 	/**
 	 * Determines if this is a paid membership.
 	 *
+	 * @param bool $include_trial Whether or not to count trial memberships as paid.
+	 *
 	 * @access public
 	 * @since  3.0
 	 * @return bool
 	 */
-	public function is_paid() {
+	public function is_paid( $include_trial = true ) {
+
+		// If the membership is trialing, we consider them paid.
+		if ( $include_trial && $this->is_trialing() ) {
+			return true;
+		}
 
 		if ( $this->recurring_amount > 0 || $this->initial_amount > 0 ) {
 			return true;
@@ -1190,7 +1200,8 @@ class RCP_Membership {
 		}
 
 		// If the expiration date is in the past but the status isn't "expired", let's update it now.
-		if ( $is_expired && 'expired' != $this->get_status() ) {
+		// Note: "pending" memberships are not affected by this. They will stay on "pending".
+		if ( $is_expired && ! in_array( $this->get_status(), array( 'expired', 'pending' ) ) ) {
 			$this->set_status( 'expired' );
 		}
 
@@ -1586,15 +1597,7 @@ class RCP_Membership {
 		}
 
 		// Apply user role granted by this membership level.
-		$old_role         = get_option( 'default_role', 'subscriber' );
-		$membership_level = rcp_get_subscription_details( $this->get_object_id() );
-		$role             = ! empty( $membership_level->role ) ? $membership_level->role : get_option( 'default_role', 'subscriber' );
-		$user             = new WP_User( $this->get_customer()->get_user_id() );
-
-		rcp_log( sprintf( 'Removing old role %s, adding new role %s for membership #%d (user ID #%d).', $old_role, $role, $this->get_id(), $user->ID ) );
-
-		$user->remove_role( $old_role );
-		$user->add_role( apply_filters( 'rcp_default_user_level', $role, $membership_level->id ) );
+		$this->add_user_role();
 
 		/**
 		 * Triggers after the membership is activated.
@@ -1613,6 +1616,31 @@ class RCP_Membership {
 	}
 
 	/**
+	 * Add the membership level's assigned user role to the customer's account.
+	 *
+	 * @access public
+	 * @since 3.0.5
+	 * @return void
+	 */
+	private function add_user_role() {
+
+		$old_role         = get_option( 'default_role', 'subscriber' );
+		$membership_level = rcp_get_subscription_details( $this->get_object_id() );
+		$role             = ! empty( $membership_level->role ) ? $membership_level->role : get_option( 'default_role', 'subscriber' );
+		$user             = new WP_User( $this->get_customer()->get_user_id() );
+
+		if ( in_array( $role, $user->roles ) ) {
+			return;
+		}
+
+		rcp_log( sprintf( 'Removing old role %s, adding new role %s for membership #%d (user ID #%d).', $old_role, $role, $this->get_id(), $user->ID ) );
+
+		$user->remove_role( $old_role );
+		$user->add_role( apply_filters( 'rcp_default_user_level', $role, $membership_level->id ) );
+
+	}
+
+	/**
 	 * Determines whether or not the membership can be renewed.
 	 *
 	 * @access public
@@ -1627,7 +1655,7 @@ class RCP_Membership {
 			$can_renew = false;
 		}
 
-		if ( 'none' == $this->get_expiration_date( false ) ) {
+		if ( 'none' == $this->get_expiration_date( false ) && $this->is_active() ) {
 			$can_renew = false;
 		}
 
@@ -1638,6 +1666,24 @@ class RCP_Membership {
 		// Can't renew a completed payment plan.
 		if ( $this->is_payment_plan_complete() ) {
 			$can_renew = false;
+		}
+
+		// Can't reset if this membership level has been deactivated.
+		if ( $can_renew ) {
+			$details = rcp_get_subscription_details( $this->get_object_id() );
+
+			/**
+			 * Filters whether or not deactivated membership levels can be renewed.
+			 *
+			 * @param bool $can_renew_deactivated
+			 *
+			 * @since 3.1
+			 */
+			$can_renew_deactivated = apply_filters( 'rcp_can_renew_deactivated_membership_levels', false );
+
+			if ( 'active' != $details->status && ! $can_renew_deactivated ) {
+				$can_renew = false;
+			}
 		}
 
 		/**
@@ -1737,13 +1783,6 @@ class RCP_Membership {
 
 		$this->set_recurring( $recurring );
 
-		// Add the role if the user doesn't already have it.
-		$role = ! empty( $membership_level->role ) ? $membership_level->role : get_option( 'default_role', 'subscriber' );
-		$user = new WP_User( $this->get_customer()->get_user_id() );
-		if ( ! in_array( $role, $user->roles ) ) {
-			$user->add_role( $role );
-		}
-
 		// Set the renewal date.
 		$this->set_renewed_date(); // Current time.
 
@@ -1784,15 +1823,7 @@ class RCP_Membership {
 	 */
 	public function upgrade_possible() {
 
-		$upgrade_possible = false;
-
-		if ( ( ! $this->is_active() || ! $this->is_recurring() || ! $this->is_paid() ) && rcp_has_paid_levels() ) {
-			$upgrade_possible = true;
-		}
-
-		if ( $this->has_upgrade_path() ) {
-			$upgrade_possible = true;
-		}
+		$upgrade_possible = $this->has_upgrade_path();
 
 		if ( has_filter( 'rcp_can_upgrade_subscription' ) ) {
 			/**
@@ -1829,6 +1860,7 @@ class RCP_Membership {
 
 	/**
 	 * Returns the available upgrade paths for this membership.
+	 * This will be all the available membership levels except the one this membership is already on.
 	 *
 	 * @access public
 	 * @since  3.0
@@ -1840,12 +1872,9 @@ class RCP_Membership {
 		$membership_levels        = rcp_get_subscription_levels( 'active' );
 
 		// Remove the user's current subscription from the list.
-		// @todo Maybe remove this `if` statement in 3.1.
-		if ( ! $this->can_renew() ) {
-			foreach ( $membership_levels as $key => $membership_level ) {
-				if ( $current_membership_level == $membership_level->id ) {
-					unset( $membership_levels[$key] );
-				}
+		foreach ( $membership_levels as $key => $membership_level ) {
+			if ( $current_membership_level == $membership_level->id ) {
+				unset( $membership_levels[$key] );
 			}
 		}
 
@@ -2104,12 +2133,9 @@ class RCP_Membership {
 		$this->update( array( 'disabled' => null ) );
 
 		/**
-		 * Add associated user orle.
+		 * Add associated user role.
 		 */
-		$membership_level = rcp_get_subscription_details( $this->get_object_id() );
-		$role             = ! empty( $membership_level->role ) ? $membership_level->role : get_option( 'default_role', 'subscriber' );
-		$user             = new WP_User( $this->get_customer()->get_user_id() );
-		$user->add_role( apply_filters( 'rcp_default_user_level', $role, $membership_level->id ) );
+		$this->add_user_role();
 
 	}
 
@@ -2195,10 +2221,6 @@ class RCP_Membership {
 				$can_cancel = true;
 
 			} elseif ( 'twocheckout' == $this->get_gateway() && defined( 'TWOCHECKOUT_ADMIN_USER' ) && defined( 'TWOCHECKOUT_ADMIN_PASSWORD' ) ) {
-
-				$can_cancel = true;
-
-			} elseif ( 'authorizenet' == $this->get_gateway() && rcp_has_authnet_api_access() ) {
 
 				$can_cancel = true;
 
@@ -2305,24 +2327,6 @@ class RCP_Membership {
 			if ( is_wp_error( $cancelled ) ) {
 
 				rcp_log( sprintf( 'Failed to cancel 2Checkout payment profile for membership #%d. Error code: %s; Error Message: %s.', $this->get_id(), $cancelled->get_error_code(), $cancelled->get_error_message() ) );
-
-				$success = $cancelled;
-
-			} else {
-				$success = true;
-			}
-
-		} elseif ( 'authorizenet' == $this->get_gateway() ) {
-
-			/**
-			 * Cancel Authorize.net
-			 */
-
-			$cancelled = rcp_authnet_cancel_membership( $gateway_subscription_id );
-
-			if ( is_wp_error( $cancelled ) ) {
-
-				rcp_log( sprintf( 'Failed to cancel Authorize.net payment profile for membership #%d. Error code: %s; Error Message: %s.', $this->get_id(), $cancelled->get_error_code(), $cancelled->get_error_message() ) );
 
 				$success = $cancelled;
 
@@ -2527,11 +2531,10 @@ class RCP_Membership {
 		}
 
 		// Check term restrictions.
-		$has_post_restrictions    = rcp_has_post_restrictions( $post_id );
-		$term_restricted_post_ids = rcp_get_post_ids_assigned_to_restricted_terms();
+		$has_post_restrictions = rcp_has_post_restrictions( $post_id );
 
 		// since no post-level restrictions, check to see if user is restricted via term
-		if ( $can_access && ! $has_post_restrictions && in_array( $post_id, $term_restricted_post_ids ) ) {
+		if ( $can_access && ! $has_post_restrictions && rcp_has_term_restrictions( $post_id ) ) {
 
 			$restricted = false;
 
@@ -2575,7 +2578,7 @@ class RCP_Membership {
 			}
 
 			// since user doesn't pass post-level restrictions, see if user is allowed via term
-		} else if ( ! $can_access && $has_post_restrictions && in_array( $post_id, $term_restricted_post_ids ) ) {
+		} else if ( ! $can_access && $has_post_restrictions && rcp_has_term_restrictions( $post_id ) ) {
 
 			$allowed = false;
 
@@ -2667,7 +2670,7 @@ class RCP_Membership {
 	public function get_prorate_credit_amount() {
 
 		// Make sure this is an active, paid membership.
-		if ( ! $this->is_active() || ! $this->is_paid() ) {
+		if ( ! $this->is_active() || ! $this->is_paid() || $this->is_trialing() ) {
 			return apply_filters( 'rcp_membership_get_prorate_credit', 0, $this->get_id(), $this );
 		}
 
@@ -2862,9 +2865,7 @@ class RCP_Membership {
 
 		if ( rcp_is_stripe_membership( $this ) ) {
 			$can_update = true;
-		} elseif ( rcp_is_paypal_membership( $this ) && rcp_has_paypal_api_access() ) {
-			$can_update = true;
-		} elseif ( rcp_is_authnet_membership( $this ) && rcp_has_authnet_api_access() ) {
+		} elseif ( rcp_is_paypal_membership( $this ) && 'paypal_pro' == $this->get_gateway() && rcp_has_paypal_api_access() ) {
 			$can_update = true;
 		}
 
@@ -2874,6 +2875,17 @@ class RCP_Membership {
 			 */
 			$can_update = apply_filters( 'rcp_member_can_update_billing_card', $can_update, $this->get_customer()->get_user_id() );
 		}
+
+		/**
+		 * Filters whether or not the card details can be updated for this membership.
+		 *
+		 * @param bool           $can_update    Whether or not the billing card can be updated.
+		 * @param int            $membership_id ID of the membership.
+		 * @param RCP_Membership $this          Membership object.
+		 *
+		 * @since 3.1
+		 */
+		$can_update = apply_filters( 'rcp_membership_can_update_billing_card', $can_update, $this->get_id(), $this );
 
 		return $can_update;
 

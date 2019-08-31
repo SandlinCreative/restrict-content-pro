@@ -54,6 +54,11 @@ function rcp_validate_captcha( $data ) {
 		return;
 	}
 
+	// Skip for [register_form_stripe] shortcode.
+	if ( ! empty( $_POST['rcp_stripe_checkout'] ) ) {
+		return;
+	}
+
 	if ( empty( $data['g-recaptcha-response'] ) || empty( $data['g-recaptcha-remoteip'] ) ) {
 		rcp_errors()->add( 'invalid_recaptcha', __( 'Please verify that you are not a robot', 'rcp' ), 'register' );
 		return;

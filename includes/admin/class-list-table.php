@@ -55,6 +55,8 @@ abstract class List_Table extends \WP_List_Table {
 		parent::__construct( $args );
 
 		$this->set_per_page();
+
+		add_filter( 'removable_query_args', array( $this, 'removable_query_args' ) );
 	}
 
 	/**
@@ -140,7 +142,38 @@ abstract class List_Table extends \WP_List_Table {
 	 * @return int Current page number.
 	 */
 	protected function get_search() {
-		return urldecode( trim( $this->get_request_var( 's', '' ) ) );
+		return rawurldecode( trim( $this->get_request_var( 's', '' ) ) );
+	}
+
+	/**
+	 * Generate the table navigation above or below the table.
+	 *
+	 * We're overriding this to turn off the referer param in `wp_nonce_field()`.
+	 *
+	 * @param string $which
+	 *
+	 * @since 3.1
+	 */
+	protected function display_tablenav( $which ) {
+		if ( 'top' === $which ) {
+			wp_nonce_field( 'bulk-' . $this->_args['plural'], '_wpnonce', false );
+		}
+		?>
+		<div class="tablenav <?php echo esc_attr( $which ); ?>">
+
+			<?php if ( $this->has_items() ) : ?>
+				<div class="alignleft actions bulkactions">
+					<?php $this->bulk_actions( $which ); ?>
+				</div>
+			<?php
+			endif;
+			$this->extra_tablenav( $which );
+			$this->pagination( $which );
+			?>
+
+			<br class="clear"/>
+		</div>
+		<?php
 	}
 
 	/**
@@ -244,6 +277,20 @@ abstract class List_Table extends \WP_List_Table {
 		}
 
 		return $views;
+	}
+
+	/**
+	 * Remove "action" query arg. This prevents the bulk action admin notice from persisting across page views.
+	 *
+	 * @param array $query_args
+	 *
+	 * @since 3.1
+	 * @return array
+	 */
+	public function removable_query_args( $query_args ) {
+		$query_args[] = 'action';
+
+		return $query_args;
 	}
 
 }

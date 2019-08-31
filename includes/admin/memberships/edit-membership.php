@@ -205,19 +205,22 @@ $payments = $membership->get_payments( array( 'number' => 5 ) );
 						<?php if ( 'free' != $membership->get_gateway() ) : ?>
 							<tr>
 								<th scope="row" class="row-title">
-									<label><?php _e( 'Payment Method:', 'rcp' ); ?></label>
+									<label for="rcp-payment-method"><?php _e( 'Payment Method:', 'rcp' ); ?></label>
 								</th>
 								<td>
 									<?php
 									$gateways     = rcp_get_payment_gateways();
 									$gateway_used = $membership->get_gateway();
-
-									if ( array_key_exists( $gateway_used, $gateways ) && ! empty( $gateways[$gateway_used]['admin_label'] ) ) {
-										echo $gateways[$gateway_used]['admin_label'];
-									} else {
-										echo esc_html( $gateway_used );
-									}
 									?>
+									<select id="rcp-payment-method" name="gateway">
+										<?php
+										foreach ( $gateways as $gateway_key => $gateway ) {
+											?>
+											<option value="<?php echo esc_attr( $gateway_key ); ?>" <?php selected( $gateway_key, $gateway_used ); ?>><?php echo esc_html( $gateway['admin_label'] ); ?></option>
+											<?php
+										}
+										?>
+									</select>
 								</td>
 							</tr>
 							<tr>
@@ -369,16 +372,22 @@ $payments = $membership->get_payments( array( 'number' => 5 ) );
 									<span alt="f223" class="rcp-help-tip dashicons dashicons-editor-help" title="<?php esc_attr_e( 'Note: this does not initiate a charge in your merchant processor. This should only be used for recording a missed payment or one that was manually collected.', 'rcp' ); ?>"></span>
 								</p>
 								<p>
-									<label>
-										<span style="display: inline-block; width: 150px; padding: 3px;"><?php _e( 'Amount:', 'rcp' ); ?></span>
-										<input type="text" class="regular-text" style="width: 100px; padding: 3px;" name="amount" value="<?php echo esc_attr( $membership->get_recurring_amount() ); ?>" placeholder="0.00">
-									</label>
+									<label for="rcp-payment-amount" class="rcp-payment-field-label"><?php _e( 'Amount:', 'rcp' ); ?></label>
+									<input type="text" id="rcp-payment-amount" class="regular-text" style="width: 100px; padding: 3px;" name="amount" value="<?php echo esc_attr( $membership->get_recurring_amount() ); ?>" placeholder="0.00">
 								</p>
 								<p>
-									<label>
-										<span style="display: inline-block; width: 150px; padding: 3px;"><?php _e( 'Transaction ID:', 'rcp' ); ?></span>
-										<input type="text" class="regular-text" style="width: 100px; padding: 3px;" name="transaction_id" value="" placeholder="">
-									</label>
+									<label for="rcp-payment-transaction-id" class="rcp-payment-field-label"><?php _e( 'Transaction ID:', 'rcp' ); ?></label>
+									<input type="text" id="rcp-payment-transaction-id" class="regular-text" style="width: 100px; padding: 3px;" name="transaction_id" value="" placeholder="">
+								</p>
+								<p>
+									<label for="rcp-payment-status" class="rcp-payment-field-label"><?php _e( 'Status', 'rcp' ); ?></label>
+									<select id="rcp-payment-status" name="status">
+										<option value="pending"><?php _e( 'Pending', 'rcp' ); ?></option>
+										<option value="complete" selected="selected"><?php _e( 'Complete', 'rcp' ); ?></option>
+										<option value="failed"><?php _e( 'Failed', 'rcp' ); ?></option>
+										<option value="refunded"><?php _e( 'Refunded', 'rcp' ); ?></option>
+										<option value="abandoned"><?php _e( 'Abandoned', 'rcp' ); ?></option>
+									</select>
 								</p>
 
 								<input type="hidden" name="rcp-action" value="add_membership_payment"/>

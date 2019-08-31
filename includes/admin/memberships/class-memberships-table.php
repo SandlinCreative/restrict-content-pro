@@ -181,7 +181,7 @@ class Memberships_Table extends List_Table {
 		$cancel_url          = wp_nonce_url( add_query_arg( array(
 			'rcp-action'    => 'cancel_membership',
 			'membership_id' => $membership_id
-		), $this->get_base_url() ), 'rcp-cancel-nonce' );
+		), $this->get_base_url() ), 'cancel_membership' );
 
 		$actions = array(
 			'edit_membership' => '<a href="' . esc_url( $edit_membership_url ) . '">' . __( 'Edit Membership', 'rcp' ) . '</a>',
@@ -326,6 +326,8 @@ class Memberships_Table extends List_Table {
 			return;
 		}
 
+		$current_user = wp_get_current_user();
+
 		foreach ( $ids as $id ) {
 			$membership = rcp_get_membership( absint( $id ) );
 
@@ -339,10 +341,12 @@ class Memberships_Table extends List_Table {
 					break;
 
 				case 'expire':
+					$membership->add_note( sprintf( __( 'Membership expired via bulk action by user %s (#%d).', 'rcp' ), $current_user->user_login, $current_user->ID ) );
 					$membership->expire();
 					break;
 
 				case 'cancel':
+					$membership->add_note( sprintf( __( 'Membership cancelled via bulk action by user %s (#%d).', 'rcp' ), $current_user->user_login, $current_user->ID ) );
 					if ( $membership->can_cancel() ) {
 						$membership->cancel_payment_profile();
 					} else {
@@ -355,6 +359,47 @@ class Memberships_Table extends List_Table {
 					break;
 			}
 		}
+
+		$this->show_admin_notice( $this->current_action() );
+
+	}
+
+	/**
+	 * Show admin notice for bulk actions.
+	 *
+	 * @param string $action The action to show the notice for.
+	 *
+	 * @access private
+	 * @since 3.0.8
+	 * @return void
+	 */
+	private function show_admin_notice( $action ) {
+
+		$message = '';
+
+		switch ( $action ) {
+			case 'activate' :
+				$message = __( 'Membership(s) activated.', 'rcp' );
+				break;
+
+			case 'expire' :
+				$message = __( 'Membership(s) expired.', 'rcp' );
+				break;
+
+			case 'cancel' :
+				$message = __( 'Membership(s) cancelled.', 'rcp' );
+				break;
+
+			case 'delete' :
+				$message = __( 'Membership(s) deleted.', 'rcp' );
+				break;
+		}
+
+		if ( empty( $message ) ) {
+			return;
+		}
+
+		echo '<div class="updated"><p>' . $message . '</p></div>';
 
 	}
 
@@ -498,6 +543,10 @@ class Memberships_Table extends List_Table {
 					<option value="<?php echo esc_attr( $level->id ); ?>" <?php selected( $level_id, $level->id ); ?>><?php echo esc_html( $level->name ); ?></option>
 				<?php endforeach; ?>
 			</select>
+
+			<?php if ( $this->get_status() ) : ?>
+				<input type="hidden" name="status" value="<?php echo esc_attr( $this->get_status() ); ?>" />
+			<?php endif; ?>
 
 			<?php submit_button( __( 'Filter' ), '', 'filter_action', false ); ?>
 		</div>

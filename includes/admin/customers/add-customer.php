@@ -52,7 +52,8 @@ if ( ! isset( $_GET['view'] ) || 'add' != $_GET['view'] ) {
 									<label for="rcp-customer-email"><?php _e( 'Email:', 'rcp' ); ?></label>
 								</th>
 								<td>
-									<input type="text" id="rcp-customer-email" name="user_email" value=""/>
+									<input type="text" id="rcp-customer-email" class="rcp-user-search" data-return-field="user_email" name="user_email" value=""/>
+									<div id="rcp_user_search_results"></div>
 								</td>
 							</tr>
 							<tr class="rcp-customer-new-user-field">

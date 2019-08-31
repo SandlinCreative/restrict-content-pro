@@ -55,8 +55,17 @@ function rcp_screen_options() {
 				'option' => 'rcp_payments_per_page'
 			);
 			add_screen_option( 'per_page', $args );
-			break;	
-		
+			break;
+
+		case $rcp_subscriptions_page :
+			$args = array(
+				'label'   => __( 'Membership Levels per page', 'rcp' ),
+				'default' => 10,
+				'option'  => 'rcp_membership_levels_per_page'
+			);
+			add_screen_option( 'per_page', $args );
+			break;
+
 	endswitch; 
 }
 
@@ -77,6 +86,9 @@ function rcp_set_screen_option($status, $option, $value) {
 		return $value;
 	}
 	if ( 'rcp_payments_per_page' == $option ) {
+		return $value;
+	}
+	if ( 'rcp_membership_levels_per_page' == $option ) {
 		return $value;
 	}
 

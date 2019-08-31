@@ -51,8 +51,6 @@ final class Memberships extends Table {
 	 */
 	public function __construct() {
 
-		$this->global = is_plugin_active_for_network( plugin_basename( RCP_PLUGIN_FILE ) );
-
 		parent::__construct();
 
 	}

@@ -46,6 +46,11 @@ if ( ! class_exists( 'Restrict_Content_Pro' ) ) :
 		public $memberships_table;
 
 		/**
+		 * @var \RCP\Database\Tables\Membership_Meta
+		 */
+		public $membership_meta_table;
+
+		/**
 		 * @var \RCP\Database\Tables\Queue
 		 */
 		public $queue_table;
@@ -159,7 +164,7 @@ if ( ! class_exists( 'Restrict_Content_Pro' ) ) :
 		private function setup_constants() {
 
 			if ( ! defined( 'RCP_PLUGIN_VERSION' ) ) {
-				define( 'RCP_PLUGIN_VERSION', '3.0.4' );
+				define( 'RCP_PLUGIN_VERSION', '3.1.2' );
 			}
 
 			if ( ! defined( 'RCP_PLUGIN_FILE' ) ) {
@@ -219,9 +224,8 @@ if ( ! class_exists( 'Restrict_Content_Pro' ) ) :
 
 			self::$instance->customers_table   = new \RCP\Database\Tables\Customers();
 			self::$instance->memberships_table = new \RCP\Database\Tables\Memberships();
+			self::$instance->membership_meta_table = new \RCP\Database\Tables\Membership_Meta();
 			self::$instance->queue_table       = new \RCP\Database\Tables\Queue();
-
-			new \RCP\Database\Tables\Membership_Meta();
 
 		}
 
@@ -263,6 +267,9 @@ if ( ! class_exists( 'Restrict_Content_Pro' ) ) :
 			require( RCP_PLUGIN_DIR . 'includes/install.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/class-rcp-base-object.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/class-rcp-capabilities.php' );
+			if ( defined( 'WP_CLI' ) && WP_CLI ) {
+				require_once( RCP_PLUGIN_DIR . 'includes/class-rcp-cli.php' );
+			}
 			require_once( RCP_PLUGIN_DIR . 'includes/class-rcp-emails.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/class-rcp-integrations.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/class-rcp-levels.php' );
@@ -278,12 +285,12 @@ if ( ! class_exists( 'Restrict_Content_Pro' ) ) :
 			require_once( RCP_PLUGIN_DIR . 'includes/compat/class-base.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/compat/class-member.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/customers/class-rcp-customer.php' );
+			require_once( RCP_PLUGIN_DIR . 'includes/customers/customer-actions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/customers/customer-functions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/deprecated/functions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/discount-functions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/email-functions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/gateways/class-rcp-payment-gateway.php' );
-			require_once( RCP_PLUGIN_DIR . 'includes/gateways/class-rcp-payment-gateway-authorizenet.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/gateways/class-rcp-payment-gateway-braintree.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/gateways/class-rcp-payment-gateway-manual.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/gateways/class-rcp-payment-gateway-paypal.php' );
@@ -297,6 +304,7 @@ if ( ! class_exists( 'Restrict_Content_Pro' ) ) :
 			rcp_load_gateway_files();
 			require_once( RCP_PLUGIN_DIR . 'includes/invoice-functions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/levels/level-actions.php' );
+			require_once( RCP_PLUGIN_DIR . 'includes/levels/meta.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/login-functions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/member-forms.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/member-functions.php' );
@@ -304,7 +312,9 @@ if ( ! class_exists( 'Restrict_Content_Pro' ) ) :
 			require_once( RCP_PLUGIN_DIR . 'includes/memberships/membership-actions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/memberships/membership-functions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/memberships/meta.php' );
+			require_once( RCP_PLUGIN_DIR . 'includes/payments/meta.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/misc-functions.php' );
+			require_once( RCP_PLUGIN_DIR . 'includes/payments/payment-actions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/registration-functions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/subscription-functions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/error-tracking.php' );
@@ -360,6 +370,8 @@ if ( ! class_exists( 'Restrict_Content_Pro' ) ) :
 			require_once( RCP_PLUGIN_DIR . 'includes/admin/reports/reports-page.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/admin/export.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/admin/tools/tools-page.php' );
+			require_once( RCP_PLUGIN_DIR . 'includes/admin/import/import-actions.php' );
+			require_once( RCP_PLUGIN_DIR . 'includes/admin/import/import-functions.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/admin/help/help-menus.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/admin/metabox.php' );
 			require_once( RCP_PLUGIN_DIR . 'includes/admin/add-ons.php' );

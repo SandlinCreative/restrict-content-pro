@@ -88,22 +88,16 @@ function rcp_process_edit_payment() {
 	$payments     = new RCP_Payments();
 	$payment_id   = absint( $_POST['payment-id'] );
 	$user         = get_user_by( 'login', $_POST['user'] );
-	$member       = new RCP_Member( $user->ID );
 	$current_user = wp_get_current_user();
 
 	rcp_log( sprintf( '%s manually updating payment #%d.', $current_user->user_login, $payment_id ) );
 
 	if ( $user && $payment_id ) {
 
-		$pending_subscription     = $member->get_pending_subscription_name();
-		$pending_subscription_key = $member->get_pending_subscription_key();
-
 		$data = array(
 			'amount'           => empty( $_POST['amount'] ) ? 0.00 : sanitize_text_field( $_POST['amount'] ),
 			'user_id'          => $user->ID,
 			'date'             => empty( $_POST['date'] ) ? date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ) : date( 'Y-m-d H:i:s', strtotime( $_POST['date'], current_time( 'timestamp' ) ) ),
-			'subscription'     => ! empty( $pending_subscription ) ? $pending_subscription : $member->get_subscription_name(),
-			'subscription_key' => ! empty( $pending_subscription_key ) ? $pending_subscription_key : $member->get_subscription_key(),
 			'transaction_id'   => sanitize_text_field( $_POST['transaction-id'] ),
 			'status'           => sanitize_text_field( $_POST['status'] ),
 		);

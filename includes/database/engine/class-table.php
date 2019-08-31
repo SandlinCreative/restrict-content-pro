@@ -112,6 +112,14 @@ if ( ! class_exists( '\\RCP\\Database\\Tables\\Base' ) ) :
 		 */
 		public function __construct() {
 
+			$this->global = (
+				is_plugin_active_for_network( plugin_basename( RCP_PLUGIN_FILE ) ) &&
+				(
+					! defined( 'RCP_NETWORK_SEPARATE_SITES') ||
+					! RCP_NETWORK_SEPARATE_SITES
+				)
+			);
+
 			// Setup the database table
 			$this->setup();
 

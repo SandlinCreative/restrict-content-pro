@@ -211,7 +211,7 @@ class RCP_Payment_Gateway_Braintree extends RCP_Payment_Gateway {
 			/**
 			 * Process signup fees and one-time discounts as a separate payment.
 			 */
-			if ( $this->initial_amount != $this->amount ) {
+			if ( $this->initial_amount != $this->amount && $this->initial_amount > 0 ) {
 
 				try {
 					$single_payment = Braintree_Transaction::sale( array(
@@ -249,27 +249,6 @@ class RCP_Payment_Gateway_Braintree extends RCP_Payment_Gateway {
 
 			}
 
-			/**
-			 * Set up the trial values.
-			 *
-			 * Braintree only supports 'day' and 'month' units.
-			 * If the trial is set to x year, force it to 12 months.
-			 */
-			if ( $this->is_trial() ) {
-
-				$duration      = $this->subscription_data['trial_duration'];
-				$duration_unit = $this->subscription_data['trial_duration_unit'];
-
-				if ( 'year' === $duration_unit ) {
-					$duration = '12';
-					$duration_unit = 'month';
-				}
-
-				$txn_args['trialPeriod'] = true;
-				$txn_args['trialDuration'] = $duration;
-				$txn_args['trialDurationUnit'] = $duration_unit;
-			}
-
 			$txn_args['planId']             = $this->subscription_data['subscription_id'];
 			$txn_args['price']              = $this->amount;
 			$txn_args['paymentMethodToken'] = $payment_token;
@@ -279,7 +258,9 @@ class RCP_Payment_Gateway_Braintree extends RCP_Payment_Gateway {
 			 * a signup fee, we need to start the subscription at the end
 			 * of the first period.
 			 */
-			if ( $this->initial_amount != $this->amount ) {
+			if ( ! empty( $this->subscription_start_date ) ) {
+				$txn_args['firstBillingDate'] = new DateTime( $this->subscription_start_date );
+			} elseif ( $this->initial_amount != $this->amount ) {
 				$txn_args['firstBillingDate'] = date( 'Y-m-d g:i:s', strtotime( '+ ' . $this->subscription_data['length'] . ' ' . $this->subscription_data['length_unit'] ) );
 			}
 
@@ -378,7 +359,7 @@ class RCP_Payment_Gateway_Braintree extends RCP_Payment_Gateway {
 			 * Braintree does not send a webhook when a new trial
 			 * subscription is created.
 			 */
-			if ( $this->is_trial() ) {
+			if ( ! $this->initial_amount > 0 ) {
 
 				$rcp_payments_db->update( $this->payment->id, array(
 					'payment_type'   => 'Braintree Credit Card',
@@ -474,7 +455,14 @@ class RCP_Payment_Gateway_Braintree extends RCP_Payment_Gateway {
 				$customer = rcp_get_customer_by_user_id( $user_id );
 
 				if ( ! empty( $customer ) ) {
-					$this->membership = rcp_get_customer_single_membership( $customer->get_id() );
+					/*
+					 * We can only use this function if:
+					 * 		- Multiple memberships is disabled; or
+					 * 		- The customer only has one membership anyway.
+					 */
+					if ( ! rcp_multiple_memberships_enabled() || 1 === count( $customer->get_memberships() ) ) {
+						$this->membership = rcp_get_customer_single_membership( $customer->get_id() );
+					}
 				}
 			}
 
@@ -495,6 +483,8 @@ class RCP_Payment_Gateway_Braintree extends RCP_Payment_Gateway {
 
 			die( 'no membership level found' );
 		}
+
+		$pending_payment_id = rcp_get_membership_meta( $this->membership->get_id(), 'pending_payment_id', true );
 
 		$rcp_payments = new RCP_Payments;
 
@@ -533,7 +523,7 @@ class RCP_Payment_Gateway_Braintree extends RCP_Payment_Gateway {
 					$this->membership->set_expiration_date( $data->subscription->paidThroughDate->format( 'Y-m-d 23:59:59' ) );
 				}
 
-				$this->membership->add_note( __( 'Subscription cancelled in Braintree', 'rcp' ) );
+				$this->membership->add_note( __( 'Subscription cancelled in Braintree via webhook.', 'rcp' ) );
 
 				do_action( 'rcp_webhook_cancel', $member, $this );
 
@@ -586,6 +576,7 @@ class RCP_Payment_Gateway_Braintree extends RCP_Payment_Gateway {
 						'customer_id'      => $this->membership->get_customer_id(),
 						'membership_id'    => $this->membership->get_id(),
 						'amount'           => $transaction->amount,
+						'subtotal'         => $transaction->subtotal,
 						'transaction_id'   => $transaction->id,
 						'subscription'     => rcp_get_subscription_name( $this->membership->get_object_id() ),
 						'subscription_key' => $member->get_subscription_key(),
@@ -759,46 +750,42 @@ class RCP_Payment_Gateway_Braintree extends RCP_Payment_Gateway {
 					return;
 				}
 
-				// Get the subscription price
-				if ( jQuery('.rcp_level:checked').length ) {
-					var price = jQuery('.rcp_level:checked').closest('.rcp_subscription_level').find('span.rcp_price').attr('rel');
-				} else {
-					var price = jQuery('.rcp_level').attr('rel');
-				}
-
-				// Bail if this is a free subscription.
-				if ( price <= 0 || jQuery('.rcp_gateway_fields').hasClass('rcp_discounted_100') ) {
-					return;
-				}
-
 				event.preventDefault();
 
-				var token = rcp_form.querySelector('#rcp-braintree-client-token').value;
+				/*
+				 * Create token if the amount due today is greater than $0, or if the recurring
+				 * amount is greater than $0 and auto renew is enabled.
+				 */
+				if( response.total > 0 || ( response.recurring_total > 0 && true == response.auto_renew ) ) {
 
-				braintree.setup(token, 'custom', {
+					var token = rcp_form.querySelector( '#rcp-braintree-client-token' ).value;
 
-					id: 'rcp_registration_form',
-					onReady: function (response) {
-						var client = new braintree.api.Client({clientToken: token});
-						client.tokenizeCard({
-							number: rcp_form.querySelector("[data-braintree-name='number']").value,
-							expirationDate: rcp_form.querySelector("[data-braintree-name='expiration_month']").value + '/' + rcp_form.querySelector("[data-braintree-name='expiration_year']").value,
-							cvv: rcp_form.querySelector("[data-braintree-name='cvv']").value,
-							billingAddress: {
-								postalCode: rcp_form.querySelector("[data-braintree-name='postal_code']").value
-							}
-						}, function (err, nonce) {
-							rcp_form.querySelector("[name='payment_method_nonce']").value = nonce;
-							rcp_form.submit();
-						});
-					},
-					onError: function (response) {
-						//@todo
-						console.log('onError');
-						console.log(response);
-					}
+					braintree.setup( token, 'custom', {
 
-				});
+						id: 'rcp_registration_form',
+						onReady: function ( response ) {
+							var client = new braintree.api.Client( {clientToken: token} );
+							client.tokenizeCard( {
+								number: rcp_form.querySelector( "[data-braintree-name='number']" ).value,
+								expirationDate: rcp_form.querySelector( "[data-braintree-name='expiration_month']" ).value + '/' + rcp_form.querySelector( "[data-braintree-name='expiration_year']" ).value,
+								cvv: rcp_form.querySelector( "[data-braintree-name='cvv']" ).value,
+								billingAddress: {
+									postalCode: rcp_form.querySelector( "[data-braintree-name='postal_code']" ).value
+								}
+							}, function ( err, nonce ) {
+								rcp_form.querySelector( "[name='payment_method_nonce']" ).value = nonce;
+								rcp_form.submit();
+							} );
+						},
+						onError: function ( response ) {
+							//@todo
+							console.log( 'onError' );
+							console.log( response );
+						}
+
+					} );
+
+				}
 
 			});
 		</script>

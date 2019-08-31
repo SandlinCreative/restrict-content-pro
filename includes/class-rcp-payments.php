@@ -459,7 +459,8 @@ class RCP_Payments {
 			'orderby'          => 'id',
 			'object_type'      => '',
 			'object_id'        => '',
-			'transaction_type' => ''
+			'transaction_type' => '',
+			'gateway'          => ''
 		);
 
 		$args  = wp_parse_args( $args, $defaults );
@@ -630,6 +631,11 @@ class RCP_Payments {
 			$values[] = $args['transaction_type'];
 		}
 
+		if ( ! empty( $args['gateway'] ) ) {
+			$where   .= " AND `gateway` = %s";
+			$values[] = $args['gateway'];
+		}
+
 		if ( 'DESC' === strtoupper( $args['order'] ) ) {
 			$order = 'DESC';
 		} else {
@@ -763,7 +769,8 @@ class RCP_Payments {
 			's'                => '',
 			'object_id'        => '',
 			'object_type'      => '',
-			'transaction_type' => ''
+			'transaction_type' => '',
+			'gateway'          => ''
 		);
 
 		$args  = wp_parse_args( $args, $defaults );
@@ -853,6 +860,12 @@ class RCP_Payments {
 		if ( ! empty( $args['transaction_type'] ) ) {
 			$where   .= " AND `transaction_type` = %s";
 			$values[] = $args['transaction_type'];
+		}
+
+		// Gateway
+		if ( ! empty( $args['gateway'] ) ) {
+			$where   .= " AND `gateway` = %s";
+			$values[] = $args['gateway'];
 		}
 
 		$key   = md5( 'rcp_payments_count_' . serialize( $args ) );

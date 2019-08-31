@@ -54,6 +54,11 @@ function rcp_options_install( $network_wide = false ) {
 		update_option( 'rcp_reminder_notices', $notices );
 	}
 
+	// Insert default email templates.
+	if ( empty( $rcp_options ) ) {
+		$rcp_options = rcp_create_default_email_templates();
+	}
+
 	update_option( 'rcp_settings', $rcp_options );
 
 	// and option that allows us to make sure RCP is installed
@@ -153,6 +158,7 @@ function rcp_create_tables() {
 		status tinytext NOT NULL,
 		expiration mediumtext NOT NULL,
 		membership_level_ids text NOT NULL,
+		one_time smallint NOT NULL DEFAULT 0,
 		PRIMARY KEY id (id)
 		) CHARACTER SET utf8 COLLATE utf8_general_ci;";
 
@@ -348,3 +354,119 @@ function rcp_create_pages() {
 }
 
 add_action( 'admin_init', 'rcp_create_pages' );
+
+/**
+ * Create default email templates.
+ *
+ * @since 3.1
+ * @return array
+ */
+function rcp_create_default_email_templates() {
+
+	$templates = array();
+
+	$site_name = stripslashes_deep( html_entity_decode( get_bloginfo('name'), ENT_COMPAT, 'UTF-8' ) );
+
+	// Email verification
+	$templates['verification_subject'] = __( 'Please verify your email address', 'rcp' );
+	$verification_email                = sprintf( __( 'Hi %s,', 'rcp' ), '%displayname%' ) . "\n\n";
+	$verification_email               .= __( 'Please click here to verify your email address:', 'rcp' ) . "\n\n";
+	$verification_email               .= '%verificationlink%';
+	$templates['verification_email']   = $verification_email;
+
+	// Active Membership Email (member)
+	$templates['active_subject'] = sprintf( __( 'Your %s membership has been activated', 'rcp' ), $site_name );
+	$active_email                = __( 'Hi %displayname%,', 'rcp' ) . "\n\n";
+	$active_email               .= sprintf( __( 'Your %s membership has been activated.', 'rcp' ), '%subscription_name%' );
+	$templates['active_email']   = $active_email;
+
+	// Active Membership Email (admin)
+	$templates['active_subject_admin'] = sprintf( __( 'New membership on %s', 'rcp' ), $site_name );
+	$active_admin_email                = __( 'Hello', 'rcp' ) . "\n\n";
+	$active_admin_email               .= sprintf( __( '%s (%s) is now a member of %s', 'rcp' ), '%displayname%', '%username%', $site_name ). ".\n\n";
+	$active_admin_email               .= sprintf( __( 'Membership level: %s', 'rcp' ), '%subscription_name%' ) . "\n\n";
+	$active_admin_email               .= __( 'Thank you', 'rcp' );
+	$templates['active_email_admin']   = $active_admin_email;
+
+	// Free Membership Email (member)
+	$templates['free_subject'] = sprintf( __( 'Your %s membership has been activated', 'rcp' ), $site_name );
+	$free_email                = __( 'Hi %displayname%,', 'rcp' ) . "\n\n";
+	$free_email               .= sprintf( __( 'Your %s membership has been activated.', 'rcp' ), '%subscription_name%' );
+	$templates['free_email']   = $free_email;
+
+	// Free Membership Email (admin)
+	$templates['free_subject_admin'] = sprintf( __( 'New free membership on %s', 'rcp' ), $site_name );
+	$free_admin_email                = __( 'Hello', 'rcp' ) . "\n\n";
+	$free_admin_email               .= sprintf( __( '%s (%s) is now a member of %s', 'rcp' ), '%displayname%', '%username%', $site_name ). ".\n\n";
+	$free_admin_email               .= sprintf( __( 'Membership level: %s', 'rcp' ), '%subscription_name%' ) . "\n\n";
+	$free_admin_email               .= __( 'Thank you', 'rcp' );
+	$templates['free_email_admin']   = $free_admin_email;
+
+	// Trial Membership Email (member)
+	$templates['trial_subject'] = sprintf( __( 'Your %s membership has been activated', 'rcp' ), $site_name );
+	$trial_email                = __( 'Hi %displayname%,', 'rcp' ) . "\n\n";
+	$trial_email               .= sprintf( __( 'Your %s membership has been activated.', 'rcp' ), '%subscription_name%' );
+	$templates['trial_email']   = $trial_email;
+
+	// Trial Membership Email (admin)
+	$templates['trial_subject_admin'] = sprintf( __( 'New trial membership on %s', 'rcp' ), $site_name );
+	$trial_admin_email                = __( 'Hello', 'rcp' ) . "\n\n";
+	$trial_admin_email               .= sprintf( __( '%s (%s) is now a member of %s', 'rcp' ), '%displayname%', '%username%', $site_name ). ".\n\n";
+	$trial_admin_email               .= sprintf( __( 'Membership level: %s', 'rcp' ), '%subscription_name%' ) . "\n\n";
+	$trial_admin_email               .= __( 'Thank you', 'rcp' );
+	$templates['trial_email_admin']   = $trial_admin_email;
+
+	// Cancelled Membership Email (member)
+	$templates['cancelled_subject'] = sprintf( __( 'Your %s membership has been cancelled', 'rcp' ), $site_name );
+	$cancelled_email                = __( 'Hi %displayname%,', 'rcp' ) . "\n\n";
+	$cancelled_email               .= sprintf( __( 'Your %s membership has been cancelled. You will retain access to content until %s.', 'rcp' ), '%subscription_name%', '%expiration%' );
+	$templates['cancelled_email']   = $cancelled_email;
+
+	// Cancelled Membership Email (admin)
+	$templates['cancelled_subject_admin'] = sprintf( __( 'Cancelled membership on %s', 'rcp' ), $site_name );
+	$cancelled_admin_email                = __( 'Hello', 'rcp' ) . "\n\n";
+	$cancelled_admin_email               .= sprintf( __( '%s (%s) has cancelled their membership to %s', 'rcp' ), '%displayname%', '%username%', $site_name ). ".\n\n";
+	$cancelled_admin_email               .= sprintf( __( 'Their membership level was: %s', 'rcp' ), '%subscription_name%' ) . "\n\n";
+	$cancelled_admin_email               .= sprintf( __( 'They will retain access until: %s', 'rcp' ), '%expiration%' ) . "\n\n";
+	$cancelled_admin_email               .= __( 'Thank you', 'rcp' );
+	$templates['cancelled_email_admin']   = $cancelled_admin_email;
+
+	// Expired Membership Email (member)
+	$templates['expired_subject'] = sprintf( __( 'Your %s membership has expired', 'rcp' ), $site_name );
+	$expired_email                = __( 'Hi %displayname%,', 'rcp' ) . "\n\n";
+	$expired_email               .= sprintf( __( 'Your %s membership has expired.', 'rcp' ), '%subscription_name%' );
+	$templates['expired_email']   = $expired_email;
+
+	// Expired Membership Email (admin)
+	$templates['expired_subject_admin'] = sprintf( __( 'Expired membership on %s', 'rcp' ), $site_name );
+	$expired_admin_email                = __( 'Hello', 'rcp' ) . "\n\n";
+	$expired_admin_email               .= sprintf( __( '%s\'s (%s) membership has expired.', 'rcp' ), '%displayname%', '%username%' ). ".\n\n";
+	$expired_admin_email               .= sprintf( __( 'Their membership level was: %s', 'rcp' ), '%subscription_name%' ) . "\n\n";
+	$expired_admin_email               .= __( 'Thank you', 'rcp' );
+	$templates['expired_email_admin']   = $expired_admin_email;
+
+	// Payment Received Email (member)
+	$templates['payment_received_subject'] = sprintf( __( 'Your %s payment has been received', 'rcp' ), $site_name );
+	$payment_received_email                = __( 'Hi %displayname%,', 'rcp' ) . "\n\n";
+	$payment_received_email               .= sprintf( __( 'Your %s payment has been received.', 'rcp' ), '%subscription_name%' ) . "\n\n";
+	$payment_received_email               .= sprintf( __( 'Payment Amount: ', 'rcp' ), '%amount%' ) . "\n\n";
+	$payment_received_email               .= sprintf( __( 'Invoice: ', 'rcp' ), '%invoice_url%' );
+	$templates['payment_received_email']   = $payment_received_email;
+
+	// Renewal Payment Failed Email (member)
+	$templates['renewal_payment_failed_subject'] = sprintf( __( 'Your %s payment could not be processed', 'rcp' ), $site_name );
+	$renewal_payment_failed_email                = __( 'Hi %displayname%,', 'rcp' ) . "\n\n";
+	$renewal_payment_failed_email               .= sprintf( __( 'Your %s renewal payment could not be processed. Please log in and update your billing information so we can reattempt payment.', 'rcp' ), '%subscription_name%' ) . "\n\n";
+	$renewal_payment_failed_email               .= wp_login_url( home_url() );
+	$templates['renewal_payment_failed_email']   = $renewal_payment_failed_email;
+
+	// Renewal Payment Failed (admin)
+	$templates['renewal_payment_failed_subject_admin'] = sprintf( __( 'Renewal payment failed on %s', 'rcp' ), $site_name );
+	$renewal_payment_failed_admin_email                = __( 'Hello', 'rcp' ) . "\n\n";
+	$renewal_payment_failed_admin_email               .= sprintf( __( '%s\'s (%s) renewal payment failed to be processed.', 'rcp' ), '%displayname%', '%username%' );
+	$renewal_payment_failed_admin_email               .= __( 'Thank you', 'rcp' );
+	$templates['renewal_payment_failed_email_admin']   = $renewal_payment_failed_admin_email;
+
+	return $templates;
+
+}

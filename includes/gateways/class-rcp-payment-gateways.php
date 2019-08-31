@@ -88,11 +88,6 @@ class RCP_Payment_Gateways {
 				'admin_label'  => __( '2Checkout', 'rcp' ),
 				'class'        => 'RCP_Payment_Gateway_2Checkout'
 			),
-			'authorizenet' => array(
-				'label'        => __( 'Credit / Debit Card', 'rcp' ),
-				'admin_label'  => __( 'Authorize.net', 'rcp' ),
-				'class'        => 'RCP_Payment_Gateway_Authorizenet'
-			),
 			'braintree' => array(
 				'label'        => __( 'Credit / Debit Card', 'rcp' ),
 				'admin_label'  => __( 'Braintree', 'rcp' ),
@@ -163,19 +158,43 @@ class RCP_Payment_Gateways {
 
 		if( ! empty( $_POST['rcp_gateway'] ) ) {
 
-			$gateway = $this->get_gateway( sanitize_text_field( $_POST['rcp_gateway'] ) );
+			$fields = $this->get_gateway_fields( $_POST['rcp_gateway'] );
 
-			if( isset( $gateway['class'] ) ) {
-				$gateway = new $gateway['class'];
-			}
-
-			if ( is_object( $gateway ) ) {
-				wp_send_json_success( array( 'success' => true, 'fields' => $gateway->fields() ) );
+			if ( ! empty( $fields ) ) {
+				wp_send_json_success( array( 'success' => true, 'fields' => $fields ) );
 			} else {
 				wp_send_json_error( array( 'success' => false ) );
 			}
 
 		}
+	}
+
+	/**
+	 * Returns the fields for a specific gateway.
+	 *
+	 * @param string $gateway Gateway slug.
+	 *
+	 * @return string|false
+	 */
+	public function get_gateway_fields( $gateway ) {
+
+		$gateway     = $this->get_gateway( sanitize_text_field( $gateway ) );
+		$gateway_obj = false;
+
+		if( isset( $gateway['class'] ) ) {
+			$gateway_obj = new $gateway['class'];
+		}
+
+		if( ! is_object( $gateway_obj ) ) {
+			return false;
+		}
+
+		/**
+		 * @var RCP_Payment_Gateway $gateway_obj
+		 */
+
+		return $gateway_obj->fields();
+
 	}
 
 }

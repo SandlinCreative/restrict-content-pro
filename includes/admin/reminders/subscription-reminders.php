@@ -51,6 +51,7 @@ function rcp_subscription_reminder_table( $type = 'expiration' ) {
 			<th scope="col" class="rcp-reminder-subject-col"><?php _e( 'Subject', 'rcp' ); ?></th>
 			<th scope="col" class="rcp-reminder-period-col"><?php _e( 'Send Period', 'rcp' ); ?></th>
 			<th scope="col" class="rcp-reminder-status"><?php _e( 'Status', 'rcp' ); ?></th>
+			<th scope="col" class="rcp-reminder-levels"><?php _e( 'Level(s)', 'rcp' ); ?></th>
 			<th scope="col" class="rcp-reminder-action-col"><?php _e( 'Actions', 'rcp' ); ?></th>
 		</tr>
 		</thead>
@@ -60,6 +61,18 @@ function rcp_subscription_reminder_table( $type = 'expiration' ) {
 					<td><?php echo esc_html( stripslashes( $notice['subject'] ) ); ?></td>
 					<td><?php echo esc_html( $reminders->get_notice_period_label( $key ) ); ?></td>
 					<td><?php echo ! empty( $notice['enabled'] ) ? __( 'Enabled', 'rcp' ) : __( 'Disabled', 'rcp' ); ?></td>
+					<td>
+						<?php
+						$levels = ! empty( $notice['levels'] ) && is_array( $notice['levels'] ) ? $notice['levels'] : array();
+						if ( ! empty( $levels ) && count( $levels ) > 1 ) {
+							esc_html_e( 'Multiple Levels', 'rcp' );
+						} elseif ( is_array( $levels ) && count( $levels ) == 1 ) {
+							echo rcp_get_subscription_name( $levels[0] );
+						} else {
+							esc_html_e( 'All Levels', 'rcp' );
+						}
+						?>
+					</td>
 					<td>
 						<a href="<?php echo esc_url( admin_url( 'admin.php?page=rcp-reminder&rcp-action=edit_subscription_reminder&notice=' . $key ) ); ?>" class="rcp-edit-reminder-notice" data-key="<?php echo esc_attr( $key ); ?>"><?php _e( 'Edit', 'rcp' ); ?></a>&nbsp;|
 						<a href="<?php echo esc_url( add_query_arg( array( 'rcp_preview_email' => urlencode( $key ) ), home_url() ) ); ?>" class="rcp-preview-reminder-notice" target="_blank"><?php _e( 'Preview', 'rcp' ); ?></a> |
@@ -103,6 +116,7 @@ function rcp_process_add_edit_reminder_notice() {
 	$message   = isset( $_POST['rcp_reminder_message'] ) ? wp_kses( stripslashes( $_POST['rcp_reminder_message'] ), wp_kses_allowed_html( 'post' ) ) : false;
 	$type      = isset( $_POST['rcp_reminder_type'] ) ? sanitize_text_field( $_POST['rcp_reminder_type'] ) : 'renewal';
 	$enabled   = isset( $_POST['rcp_reminder_enabled'] );
+	$levels    = isset( $_POST['rcp_reminder_levels'] ) && is_array( $_POST['rcp_reminder_levels'] ) ? array_map( 'absint', $_POST['rcp_reminder_levels'] ) : '';
 
 	// Disable message if subject and/or message are empty.
 	if ( $enabled && ( empty( $message ) || empty( $subject ) ) ) {
@@ -116,7 +130,8 @@ function rcp_process_add_edit_reminder_notice() {
 		'message'     => $message,
 		'send_period' => $period,
 		'type'        => $type,
-		'enabled'     => $enabled
+		'enabled'     => $enabled,
+		'levels'      => $levels
 	);
 
 	if ( '' != $notice_id ) {

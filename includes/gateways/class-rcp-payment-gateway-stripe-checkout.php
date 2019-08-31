@@ -121,13 +121,11 @@ class RCP_Payment_Gateway_Stripe_Checkout extends RCP_Payment_Gateway_Stripe {
 					$level = submission_form.find('input[name=rcp_level]');
 				}
 
-				var $price = $level.parent().find('.rcp_price').attr('rel') * <?php echo rcp_stripe_get_currency_multiplier(); ?>;
-
-				if( jQuery('.rcp_gateway_fields').hasClass('rcp_discounted_100') ) {
-					return true;
-				}
-
-				if ( ( $price && ! $price > 0 ) || ! response.total > 0 ) {
+				/*
+				 * Bail if the amount due today is 0 AND:
+				 * the recurring amount is 0, or auto renew is off
+				 */
+				if ( ! response.total && ( ! response.recurring_total || ! response.auto_renew ) ) {
 					submission_form.submit();
 					return true;
 				}
@@ -142,7 +140,7 @@ class RCP_Payment_Gateway_Stripe_Checkout extends RCP_Payment_Gateway_Stripe {
 					rcpStripeCheckoutGotToken = true;
 					// Add the token to the form and submit it
 					submission_form.append('<input type="hidden" name="stripeToken" value="' + token.id + '" />').submit();
-				}
+				};
 
 				checkoutArgs.closed = function() {
 					// Unblock the form if the Checkout modal is closed without a successful payment
@@ -152,7 +150,7 @@ class RCP_Payment_Gateway_Stripe_Checkout extends RCP_Payment_Gateway_Stripe {
 						jQuery('.stripe_checkout_app').hide();
 						submission_form.unblock();
 					}
-				}
+				};
 
 				if ( ! response.level.trial ) {
 					checkoutArgs.amount = response.total * <?php echo rcp_stripe_get_currency_multiplier(); ?>;

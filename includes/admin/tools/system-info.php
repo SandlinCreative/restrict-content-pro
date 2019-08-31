@@ -68,6 +68,7 @@ function rcp_tools_system_info_report() {
 	$return .= "\n" . '-- RCP Configuration' . "\n\n";
 	$return .= 'Version:                          ' . RCP_PLUGIN_VERSION . "\n";
 	$return .= 'License Key:                      ' . ( ! empty( $rcp_options['license_key'] ) ? $rcp_options['license_key'] . "\n" : "Not set\n" );
+	$return .= 'Multiple Memberships:             ' . ( rcp_multiple_memberships_enabled() ? "Enabled\n" : "Disabled\n" );
 	$return .= 'Auto Renew:                       ' . ( ! empty( $rcp_options['auto_renew'] ) && array_key_exists( $rcp_options['auto_renew'], $auto_renew_options ) ? $auto_renew_options[$rcp_options['auto_renew']] . "\n" : "Invalid Configuration\n" );
 	$return .= 'Currency:                         ' . ( ! empty( $rcp_options['currency'] ) ? $rcp_options['currency'] . "\n" : "Invalid Configuration\n" );
 	$return .= 'Currency Position:                ' . ( ! empty( $rcp_options['currency_position'] ) ? $rcp_options['currency_position'] . "\n" : "Invalid Configuration\n" );
@@ -183,7 +184,6 @@ function rcp_tools_system_info_report() {
 	$return .= 'Auto Add Users To Membership:     ' . ( ( ! empty( $rcp_options['auto_add_users'] ) && ! empty( $rcp_options['auto_add_users_level'] ) ) ? rcp_get_subscription_name( $rcp_options['auto_add_users_level'] ) . ' (ID #' . $rcp_options['auto_add_users_level'] . ")\n" : "None\n" );
 	$return .= 'Content Excerpts:                 ' . ( ! empty( $rcp_options['content_excerpts'] ) ? ucwords( $rcp_options['content_excerpts'] ) : 'Individual' ) . "\n";
 	$return .= 'Prevent Account Sharing:          ' . ( ! empty( $rcp_options['no_login_sharing'] ) ? "True\n" : "False\n" );
-	$return .= 'One Time Discounts                ' . ( ! empty( $rcp_options['one_time_discounts'] ) ? "True\n" : "False\n" );
 	$return .= 'Disable WordPress Toolbar         ' . ( ! empty( $rcp_options['disable_toolbar'] ) ? "True\n" : "False\n" );
 	$return .= 'Disable Form CSS:                 ' . ( ! empty( $rcp_options['disable_css'] ) ? "True\n" : "False\n" );
 	$return .= 'Enable reCaptcha:                 ' . ( ! empty( $rcp_options['enable_recaptcha'] ) ? "True\n" : "False\n" );

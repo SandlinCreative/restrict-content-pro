@@ -114,6 +114,7 @@ class Customer extends Query {
 	 * @type array         $date_registered_query   Date query clauses to limit customers by. See WP_Date_Query.
 	 *                                              Default null.
 	 * @type array         $last_login_query        Date query clauses to limit by. See WP_Date_Query. Default null.
+	 * @type bool          $has_trialed             Filter by whether or not the customer has trialed. Default null.
 	 * @type bool          $count                   Whether to return a customer count (true) or array of customer
 	 *                                              objects. Default false.
 	 * @type string        $fields                  Item fields to return. Accepts any column known names
